@@ -4,10 +4,27 @@ pragma solidity ^0.8.0;
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IDiamondLoupe} from "../interfaces/facets/IDiamondLoupe.sol";
 import {IERC165} from "../interfaces/IERC165.sol";
+import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
-contract DiamondLoupeFacet is IDiamondLoupe, IERC165 {
+contract DiamondLoupeFacet is BaseFacetInitializer, IDiamondLoupe, IERC165 {
+    function INITIALIZABLE_STORAGE_SLOT()
+        internal
+        pure
+        override
+        returns (bytes32)
+    {
+        return keccak256("MoreVaults.storage.initializable.DiamondLoupeFacet");
+    }
+
     function facetName() external pure returns (string memory) {
         return "DiamondLoupeFacet";
+    }
+
+    function initialize(bytes calldata) external initializerFacet {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
+        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
     }
 
     /// @notice Gets all facets and their selectors.

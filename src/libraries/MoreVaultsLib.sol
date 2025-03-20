@@ -228,10 +228,7 @@ library MoreVaultsLib {
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
             }
-            if (
-                action == IDiamondCut.FacetCutAction.Add &&
-                _diamondCut[facetIndex].initData.length > 0
-            ) {
+            if (action == IDiamondCut.FacetCutAction.Add) {
                 initializeAfterAddition(
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].initData

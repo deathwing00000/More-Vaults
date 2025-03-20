@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IGenericMoreVaultFacet} from "./IGenericMoreVaultFacet.sol";
+import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
 /**
  * @title IMulticallFacet
  * @notice Interface for MulticallFacet that allows batching multiple calls into a single transaction
  */
-interface IMulticallFacet is IGenericMoreVaultFacet {
+interface IMulticallFacet is IGenericMoreVaultFacetInitializable {
     error ActionsStillPending(uint256 actionsNonce);
     error MulticallFailed(uint256 index, bytes reason);
     error NoSuchActions(uint256 actionsNonce);

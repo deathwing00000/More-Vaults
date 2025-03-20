@@ -5,10 +5,38 @@ import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IAccessControlFacet} from "../interfaces/facets/IAccessControlFacet.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
+import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
-contract AccessControlFacet is IAccessControlFacet {
+contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
+    function INITIALIZABLE_STORAGE_SLOT()
+        internal
+        pure
+        override
+        returns (bytes32)
+    {
+        return keccak256("MoreVaults.storage.initializable.AccessControlFacet");
+    }
+
     function facetName() external pure returns (string memory) {
         return "AccessControlFacet";
+    }
+
+    function initialize(bytes calldata data) external initializerFacet {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        AccessControlLib.AccessControlStorage storage acs = AccessControlLib
+            .accessControlStorage();
+
+        (address _curator, address _guardian, address _registry) = abi.decode(
+            data,
+            (address, address, address)
+        );
+
+        acs.curator = _curator;
+        acs.guardian = _guardian;
+        acs.moreVaultsRegistry = _registry;
+
+        ds.supportedInterfaces[type(IAccessControlFacet).interfaceId] = true; // AccessControlFacet
     }
 
     function setMoreVaultRegistry(address newRegistry) external {

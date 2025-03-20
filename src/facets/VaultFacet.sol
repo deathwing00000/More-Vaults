@@ -11,13 +11,6 @@ import {ERC4626Upgradeable, SafeERC20} from "@openzeppelin/contracts-upgradeable
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {IConfigurationFacet} from "../interfaces/facets/IConfigurationFacet.sol";
-import {IDiamondCut} from "../interfaces/facets/IDiamondCut.sol";
-import {IDiamondLoupe} from "../interfaces/facets/IDiamondLoupe.sol";
-import {IMulticallFacet} from "../interfaces/facets/IMulticallFacet.sol";
-import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC173} from "../interfaces/IERC173.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
 contract VaultFacet is
@@ -49,60 +42,22 @@ contract VaultFacet is
             string memory name,
             string memory symbol,
             address asset,
-            address registry,
-            address curator,
-            address guardian,
             address feeRecipient,
-            uint96 fee,
-            uint256 timeLockPeriod
-        ) = abi.decode(
-                data,
-                (
-                    string,
-                    string,
-                    address,
-                    address,
-                    address,
-                    address,
-                    address,
-                    uint96,
-                    uint256
-                )
-            );
-        if (
-            asset == address(0) ||
-            curator == address(0) ||
-            guardian == address(0) ||
-            feeRecipient == address(0) ||
-            registry == address(0)
-        ) revert InvalidParameters();
+            uint96 fee
+        ) = abi.decode(data, (string, string, address, address, uint96));
+        if (asset == address(0) || feeRecipient == address(0))
+            revert InvalidParameters();
         if (fee > 10000) revert InvalidParameters(); // max 100% = 10000 basis points
-        if (timeLockPeriod == 0) revert InvalidParameters();
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        AccessControlLib.AccessControlStorage storage acs = AccessControlLib
-            .accessControlStorage();
-
-        // Base interfaces
-        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
-        ds.supportedInterfaces[type(IERC173).interfaceId] = true;
 
         // Facet interfaces
-        ds.supportedInterfaces[type(IAccessControl).interfaceId] = true; // AccessControlFacet
-        ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true; // ConfigurationFacet
-        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true; // DiamondCutFacet
-        ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true; // DiamondLoupeFacet
-        ds.supportedInterfaces[type(IMulticallFacet).interfaceId] = true; // MulticallFacet
         ds.supportedInterfaces[type(IERC4626).interfaceId] = true; // ERC4626 base interface
         ds.supportedInterfaces[type(IVaultFacet).interfaceId] = true; // VaultFacet (extended ERC4626)
 
-        // Initialize vault
-        acs.curator = curator;
-        acs.guardian = guardian;
         ds.feeRecipient = feeRecipient;
         ds.fee = fee;
-        ds.timeLockPeriod = timeLockPeriod;
         __ERC4626_init(IERC20(asset));
         __ERC20_init(name, symbol);
         ds.availableAssets.push(asset);

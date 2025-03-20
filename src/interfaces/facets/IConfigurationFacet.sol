@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IGenericMoreVaultFacet} from "./IGenericMoreVaultFacet.sol";
+import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
-interface IConfigurationFacet is IGenericMoreVaultFacet {
+interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
     /**
      * @dev Custom errors
      */
@@ -12,7 +12,6 @@ interface IConfigurationFacet is IGenericMoreVaultFacet {
     error InvalidPeriod();
     error AssetAlreadyAvailable();
     error AssetNotAvailable();
-    error InvalidParameters();
 
     /**
      * @dev Events for configuration changes

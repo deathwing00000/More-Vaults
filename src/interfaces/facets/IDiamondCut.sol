@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IGenericMoreVaultFacet} from "./IGenericMoreVaultFacet.sol";
+import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
-interface IDiamondCut is IGenericMoreVaultFacet {
+interface IDiamondCut is IGenericMoreVaultFacetInitializable {
     enum FacetCutAction {
         Add,
         Replace,

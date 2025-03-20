@@ -42,38 +42,12 @@ contract VaultsFactory is IVaultsFactory, AccessControl {
 
     /**
      * @notice Deploy new vault instance
-     * @param asset Underlying asset address
-     * @param name Vault token name
-     * @param symbol Vault token symbol
-     * @param curator Curator address
-     * @param guardian Guardian address
-     * @param feeRecipient Fee recipient address
-     * @param fee Initial fee (in basis points)
-     * @param timeLockPeriod Time lock period for actions
      * @param facets Array of facets to add
      * @return vault Address of deployed vault
      */
     function deployVault(
-        address asset,
-        string memory name,
-        string memory symbol,
-        address curator,
-        address guardian,
-        address feeRecipient,
-        uint96 fee,
-        uint256 timeLockPeriod,
         IDiamondCut.FacetCut[] calldata facets
-    ) external override returns (address vault) {
-        if (
-            asset == address(0) ||
-            curator == address(0) ||
-            guardian == address(0) ||
-            feeRecipient == address(0)
-        ) revert ZeroAddress();
-        if (timeLockPeriod == 0) revert InvalidTimeLock();
-        if (fee > 10000) revert InvalidFee(); // max 100% = 10000 basis points
-
-        // Convert FacetCut[] to IDiamondCut.FacetCut[]
+    ) external returns (address vault) {
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](
             facets.length
         );
@@ -94,15 +68,7 @@ contract VaultsFactory is IVaultsFactory, AccessControl {
         );
         isFactoryVault[vault] = true;
         deployedVaults.push(vault);
-        emit VaultDeployed(
-            vault,
-            asset,
-            name,
-            symbol,
-            curator,
-            guardian,
-            address(registry)
-        );
+        emit VaultDeployed(vault, address(registry), facets);
     }
 
     /**

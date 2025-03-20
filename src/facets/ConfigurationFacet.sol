@@ -4,10 +4,26 @@ pragma solidity ^0.8.0;
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IConfigurationFacet} from "../interfaces/facets/IConfigurationFacet.sol";
+import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
-contract ConfigurationFacet is IConfigurationFacet {
+contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
+    function INITIALIZABLE_STORAGE_SLOT()
+        internal
+        pure
+        override
+        returns (bytes32)
+    {
+        return keccak256("MoreVaults.storage.initializable.ConfigurationFacet");
+    }
+
     function facetName() external pure returns (string memory) {
         return "ConfigurationFacet";
+    }
+
+    function initialize(bytes calldata) external initializerFacet {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
     }
 
     /**

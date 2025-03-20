@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {IGenericMoreVaultFacet} from "./IGenericMoreVaultFacet.sol";
+import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
-interface IAccessControlFacet is IGenericMoreVaultFacet {
+interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
     error VaultHasNotAllowedFacet(address facet);
     error VaultHasNotAllowedSelector(address facet, bytes4 selector);
 

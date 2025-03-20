@@ -82,70 +82,6 @@ contract VaultsFactoryTest is Test {
         );
     }
 
-    function test_deployVault_ShouldRevertWithZeroAddresses() public {
-        IDiamondCut.FacetCut[] memory facets = new IDiamondCut.FacetCut[](0);
-
-        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
-        VaultsFactory(factory).deployVault(
-            address(0), // zero asset address
-            VAULT_NAME,
-            VAULT_SYMBOL,
-            curator,
-            guardian,
-            feeRecipient,
-            FEE,
-            TIME_LOCK_PERIOD,
-            facets
-        );
-
-        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
-        VaultsFactory(factory).deployVault(
-            asset,
-            VAULT_NAME,
-            VAULT_SYMBOL,
-            address(0), // zero curator address
-            guardian,
-            feeRecipient,
-            FEE,
-            TIME_LOCK_PERIOD,
-            facets
-        );
-    }
-
-    function test_deployVault_ShouldRevertWithInvalidTimeLock() public {
-        IDiamondCut.FacetCut[] memory facets = new IDiamondCut.FacetCut[](0);
-
-        vm.expectRevert(IVaultsFactory.InvalidTimeLock.selector);
-        VaultsFactory(factory).deployVault(
-            asset,
-            VAULT_NAME,
-            VAULT_SYMBOL,
-            curator,
-            guardian,
-            feeRecipient,
-            FEE,
-            0, // zero time lock
-            facets
-        );
-    }
-
-    function test_deployVault_ShouldRevertWithInvalidFee() public {
-        IDiamondCut.FacetCut[] memory facets = new IDiamondCut.FacetCut[](0);
-
-        vm.expectRevert(IVaultsFactory.InvalidFee.selector);
-        VaultsFactory(factory).deployVault(
-            asset,
-            VAULT_NAME,
-            VAULT_SYMBOL,
-            curator,
-            guardian,
-            feeRecipient,
-            10001, // fee > 100%
-            TIME_LOCK_PERIOD,
-            facets
-        );
-    }
-
     function test_deployVault_ShouldDeployVaultWithFacets() public {
         // Prepare facets
         VaultFacet vaultFacet = new VaultFacet();
@@ -157,7 +93,13 @@ contract VaultsFactoryTest is Test {
             facetAddress: address(vaultFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: selectors,
-            initData: ""
+            initData: abi.encode(
+                VAULT_NAME,
+                VAULT_SYMBOL,
+                asset,
+                feeRecipient,
+                FEE
+            )
         });
 
         vm.mockCall(
@@ -196,17 +138,7 @@ contract VaultsFactoryTest is Test {
             abi.encode(vaultFacet)
         );
 
-        address vault = VaultsFactory(factory).deployVault(
-            asset,
-            VAULT_NAME,
-            VAULT_SYMBOL,
-            curator,
-            guardian,
-            feeRecipient,
-            FEE,
-            TIME_LOCK_PERIOD,
-            facets
-        );
+        address vault = VaultsFactory(factory).deployVault(facets);
 
         assertTrue(
             VaultsFactory(factory).isVault(vault),

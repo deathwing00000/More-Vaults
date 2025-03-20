@@ -19,7 +19,7 @@ contract DiamondCutFacetTest is Test {
 
     // Test data
     bytes4 constant TEST_SELECTOR = 0x12345678;
-    address public testFacet;
+    address public mockFacetAddress;
     address public newTestFacet;
 
     function setUp() public {
@@ -29,7 +29,7 @@ contract DiamondCutFacetTest is Test {
 
         // Deploy mock facets
         MockFacet mockFacet = new MockFacet();
-        testFacet = address(mockFacet);
+        mockFacetAddress = address(mockFacet);
         MockFacet mockNewFacet = new MockFacet();
         newTestFacet = address(mockNewFacet);
 
@@ -44,7 +44,7 @@ contract DiamondCutFacetTest is Test {
             REGISTRY,
             abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
-                testFacet
+                mockFacetAddress
             ),
             abi.encode(true)
         );
@@ -54,13 +54,13 @@ contract DiamondCutFacetTest is Test {
                 IMoreVaultsRegistry.selectorToFacet.selector,
                 TEST_SELECTOR
             ),
-            abi.encode(testFacet)
+            abi.encode(mockFacetAddress)
         );
 
         // Prepare facet cut data
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](1);
         cuts[0] = IDiamondCut.FacetCut({
-            facetAddress: testFacet,
+            facetAddress: mockFacetAddress,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: new bytes4[](1),
             initData: ""
@@ -78,11 +78,11 @@ contract DiamondCutFacetTest is Test {
             facet
         );
         assertEq(facets.length, 1, "Should have one facet");
-        assertEq(facets[0], testFacet, "Should have correct facet");
+        assertEq(facets[0], mockFacetAddress, "Should have correct facet");
 
         // Verify function selectors
         bytes4[] memory selectors = MoreVaultsStorageHelper
-            .getFacetFunctionSelectors(facet, testFacet);
+            .getFacetFunctionSelectors(facet, mockFacetAddress);
         assertEq(selectors.length, 1, "Should have one selector");
         assertEq(selectors[0], TEST_SELECTOR, "Should have correct selector");
     }
@@ -93,7 +93,7 @@ contract DiamondCutFacetTest is Test {
             REGISTRY,
             abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
-                testFacet
+                mockFacetAddress
             ),
             abi.encode(true)
         );
@@ -103,13 +103,13 @@ contract DiamondCutFacetTest is Test {
                 IMoreVaultsRegistry.selectorToFacet.selector,
                 TEST_SELECTOR
             ),
-            abi.encode(testFacet)
+            abi.encode(mockFacetAddress)
         );
 
         // First add a facet
         IDiamondCut.FacetCut[] memory addCuts = new IDiamondCut.FacetCut[](1);
         addCuts[0] = IDiamondCut.FacetCut({
-            facetAddress: testFacet,
+            facetAddress: mockFacetAddress,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: new bytes4[](1),
             initData: ""
@@ -173,7 +173,7 @@ contract DiamondCutFacetTest is Test {
             REGISTRY,
             abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
-                testFacet
+                mockFacetAddress
             ),
             abi.encode(true)
         );
@@ -183,13 +183,13 @@ contract DiamondCutFacetTest is Test {
                 IMoreVaultsRegistry.selectorToFacet.selector,
                 TEST_SELECTOR
             ),
-            abi.encode(testFacet)
+            abi.encode(mockFacetAddress)
         );
 
         // First add a facet
         IDiamondCut.FacetCut[] memory addCuts = new IDiamondCut.FacetCut[](1);
         addCuts[0] = IDiamondCut.FacetCut({
-            facetAddress: testFacet,
+            facetAddress: mockFacetAddress,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: new bytes4[](1),
             initData: ""
@@ -225,7 +225,7 @@ contract DiamondCutFacetTest is Test {
 
         // Verify function selectors were removed
         bytes4[] memory selectors = MoreVaultsStorageHelper
-            .getFacetFunctionSelectors(facet, testFacet);
+            .getFacetFunctionSelectors(facet, mockFacetAddress);
         assertEq(selectors.length, 0, "Should have no selectors");
     }
 
@@ -235,7 +235,7 @@ contract DiamondCutFacetTest is Test {
             REGISTRY,
             abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
-                testFacet
+                mockFacetAddress
             ),
             abi.encode(true)
         );
@@ -245,13 +245,13 @@ contract DiamondCutFacetTest is Test {
                 IMoreVaultsRegistry.selectorToFacet.selector,
                 TEST_SELECTOR
             ),
-            abi.encode(testFacet)
+            abi.encode(mockFacetAddress)
         );
 
         // Prepare facet cut data
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](1);
         cuts[0] = IDiamondCut.FacetCut({
-            facetAddress: testFacet,
+            facetAddress: mockFacetAddress,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: new bytes4[](1),
             initData: ""

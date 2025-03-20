@@ -13,12 +13,8 @@ interface IVaultsFactory {
 
     event VaultDeployed(
         address indexed vault,
-        address indexed asset,
-        string name,
-        string symbol,
-        address indexed curator,
-        address guardian,
-        address registry
+        address registry,
+        IDiamondCut.FacetCut[] facets
     );
 
     event DiamondCutFacetUpdated(address indexed newDiamondCutFacet);
@@ -45,26 +41,10 @@ interface IVaultsFactory {
 
     /**
      * @notice Deploy new vault instance
-     * @param asset Underlying asset address
-     * @param name Vault token name
-     * @param symbol Vault token symbol
-     * @param curator Curator address
-     * @param guardian Guardian address
-     * @param feeRecipient Fee recipient address
-     * @param fee Initial fee (in basis points)
-     * @param timeLockPeriod Time lock period for actions
      * @param facetCuts Array of facets to add
      * @return vault Address of deployed vault
      */
     function deployVault(
-        address asset,
-        string memory name,
-        string memory symbol,
-        address curator,
-        address guardian,
-        address feeRecipient,
-        uint96 fee,
-        uint256 timeLockPeriod,
         IDiamondCut.FacetCut[] calldata facetCuts
     ) external returns (address vault);
 

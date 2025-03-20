@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IGenericMoreVaultFacet} from "./IGenericMoreVaultFacet.sol";
+import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
 // A loupe is a small magnifying glass used to look at diamonds.
 // These functions look at diamonds
-interface IDiamondLoupe is IGenericMoreVaultFacet {
+interface IDiamondLoupe is IGenericMoreVaultFacetInitializable {
     /// These functions are expected to be called frequently
     /// by tools.
 

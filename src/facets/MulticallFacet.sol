@@ -7,16 +7,36 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IMulticallFacet} from "../interfaces/facets/IMulticallFacet.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
 contract MulticallFacet is
+    BaseFacetInitializer,
     IMulticallFacet,
     ContextUpgradeable,
     ReentrancyGuard
 {
-    uint256 constant MAX_ACTIONS_DELAY = 7 days;
+    function INITIALIZABLE_STORAGE_SLOT()
+        internal
+        pure
+        override
+        returns (bytes32)
+    {
+        return keccak256("MoreVaults.storage.initializable.MulticallFacet");
+    }
 
     function facetName() external pure returns (string memory) {
         return "MulticallFacet";
+    }
+
+    function initialize(bytes calldata data) external initializerFacet {
+        uint256 timeLockPeriod = abi.decode(data, (uint256));
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IMulticallFacet).interfaceId] = true;
+
+        if (timeLockPeriod == 0) revert InvalidParameters();
+        ds.timeLockPeriod = timeLockPeriod;
     }
 
     function submitActions(
