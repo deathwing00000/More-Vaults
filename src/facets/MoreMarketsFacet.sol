@@ -85,15 +85,6 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         }
     }
 
-    function approveDelegation(
-        address debtToken,
-        address delegatee,
-        uint256 amount
-    ) external {
-        AccessControlLib.validateDiamond(msg.sender);
-        ICreditDelegationToken(debtToken).approveDelegation(delegatee, amount);
-    }
-
     function supply(
         address pool,
         address asset,

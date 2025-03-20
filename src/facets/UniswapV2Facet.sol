@@ -310,59 +310,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             }(amountOut, path, to, deadline);
     }
 
-    function quote(
-        address router,
-        uint amountA,
-        uint reserveA,
-        uint reserveB
-    ) external pure returns (uint amountB) {
-        return IUniswapV2Router02(router).quote(amountA, reserveA, reserveB);
-    }
-
-    function getAmountOut(
-        address router,
-        uint amountIn,
-        uint reserveIn,
-        uint reserveOut
-    ) external pure returns (uint amountOut) {
-        return
-            IUniswapV2Router02(router).getAmountOut(
-                amountIn,
-                reserveIn,
-                reserveOut
-            );
-    }
-
-    function getAmountIn(
-        address router,
-        uint amountOut,
-        uint reserveIn,
-        uint reserveOut
-    ) external pure returns (uint amountIn) {
-        return
-            IUniswapV2Router02(router).getAmountIn(
-                amountOut,
-                reserveIn,
-                reserveOut
-            );
-    }
-
-    function getAmountsOut(
-        address router,
-        uint amountIn,
-        address[] memory path
-    ) external view returns (uint[] memory amounts) {
-        return IUniswapV2Router02(router).getAmountsOut(amountIn, path);
-    }
-
-    function getAmountsIn(
-        address router,
-        uint amountOut,
-        address[] memory path
-    ) external view returns (uint[] memory amounts) {
-        return IUniswapV2Router02(router).getAmountsIn(amountOut, path);
-    }
-
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address router,
         address token,

@@ -13,12 +13,6 @@ interface IMoreMarketsFacet is IGenericMoreVaultFacetInitializable {
 
     function accountingMoreMarketsFacet() external view returns (uint sum);
 
-    function approveDelegation(
-        address debtToken,
-        address delegatee,
-        uint256 amount
-    ) external;
-
     function supply(
         address pool,
         address asset,

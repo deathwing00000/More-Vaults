@@ -110,39 +110,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint deadline
     ) external returns (uint[] memory amounts);
 
-    function quote(
-        address router,
-        uint amountA,
-        uint reserveA,
-        uint reserveB
-    ) external pure returns (uint amountB);
-
-    function getAmountOut(
-        address router,
-        uint amountIn,
-        uint reserveIn,
-        uint reserveOut
-    ) external pure returns (uint amountOut);
-
-    function getAmountIn(
-        address router,
-        uint amountOut,
-        uint reserveIn,
-        uint reserveOut
-    ) external pure returns (uint amountIn);
-
-    function getAmountsOut(
-        address router,
-        uint amountIn,
-        address[] memory path
-    ) external view returns (uint[] memory amounts);
-
-    function getAmountsIn(
-        address router,
-        uint amountOut,
-        address[] memory path
-    ) external view returns (uint[] memory amounts);
-
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address router,
         address token,

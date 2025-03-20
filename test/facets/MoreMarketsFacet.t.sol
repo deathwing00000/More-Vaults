@@ -404,26 +404,6 @@ contract MoreMarketsFacetTest is Test {
         );
     }
 
-    function test_approveDelegation_ShouldCallApproveDelegation() public {
-        uint256 amount = 1e18;
-
-        // Mock approveDelegation
-        vm.mockCall(
-            debtToken1,
-            abi.encodeWithSelector(
-                ICreditDelegationToken.approveDelegation.selector,
-                user,
-                amount
-            ),
-            abi.encode()
-        );
-
-        // Set up as curator
-        vm.prank(facet);
-
-        MoreMarketsFacet(facet).approveDelegation(debtToken1, user, amount);
-    }
-
     function test_claimAllRewards_ShouldCallClaimAllRewards() public {
         address[] memory assets = new address[](2);
         assets[0] = token1;
