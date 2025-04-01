@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {BaseVaultsRegistry} from "./BaseVaultsRegistry.sol";
@@ -12,13 +11,12 @@ import {BaseVaultsRegistry} from "./BaseVaultsRegistry.sol";
  * @notice Registry contract that stores information about allowed facets and their selectors
  */
 contract VaultsRegistry is BaseVaultsRegistry {
+    error InvalidFee();
+
     /// @dev Mapping of facet address => is allowed
     mapping(address => bool) private _allowedFacets;
 
-    constructor(
-        address _oracle,
-        address _usdcAddress
-    ) BaseVaultsRegistry(_oracle, _usdcAddress) {}
+    uint96 private constant MAX_PROTOCOL_FEE = 5000; // 50%
 
     /**
      * @notice Add new facet with its selectors
@@ -67,22 +65,50 @@ contract VaultsRegistry is BaseVaultsRegistry {
         _allowedFacets[facet] = false;
 
         // Remove from facets list
-        for (uint i = 0; i < facetsList.length; i++) {
+        for (uint i = 0; i < facetsList.length; ) {
             if (facetsList[i] == facet) {
                 facetsList[i] = facetsList[facetsList.length - 1];
                 facetsList.pop();
                 break;
             }
+            unchecked {
+                ++i;
+            }
         }
 
         // Remove all selectors
         bytes4[] memory selectors = facetSelectors[facet];
-        for (uint i = 0; i < selectors.length; i++) {
+        for (uint i = 0; i < selectors.length; ) {
             delete selectorToFacet[selectors[i]];
+            unchecked {
+                ++i;
+            }
         }
         delete facetSelectors[facet];
 
         emit FacetRemoved(facet);
+    }
+
+    function setProtocolFeeInfo(
+        address vault,
+        address recipient,
+        uint96 fee
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (recipient == address(0)) revert ZeroAddress();
+        if (fee > MAX_PROTOCOL_FEE) revert InvalidFee();
+
+        _protocolFeeInfo[vault] = ProtocolFeeInfo({
+            recipient: recipient,
+            fee: fee
+        });
+
+        emit ProtocolFeeInfoUpdated(vault, recipient, fee);
+    }
+
+    function protocolFeeInfo(
+        address vault
+    ) external view override returns (address, uint96) {
+        return (_protocolFeeInfo[vault].recipient, _protocolFeeInfo[vault].fee);
     }
 
     function _isFacetAllowed(

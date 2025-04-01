@@ -9,11 +9,7 @@ import {BaseVaultsRegistry} from "./BaseVaultsRegistry.sol";
  */
 contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
     error AllFacetsAllowedByDefault();
-
-    constructor(
-        address _oracle,
-        address _usdcAddress
-    ) BaseVaultsRegistry(_oracle, _usdcAddress) {}
+    error FeeCannotBeSet();
 
     function _isFacetAllowed(address) internal pure override returns (bool) {
         return true;
@@ -31,5 +27,19 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
      */
     function removeFacet(address) external pure override {
         revert AllFacetsAllowedByDefault();
+    }
+
+    function setProtocolFeeInfo(
+        address,
+        address,
+        uint96
+    ) external view override onlyRole(DEFAULT_ADMIN_ROLE) {
+        revert FeeCannotBeSet();
+    }
+
+    function protocolFeeInfo(
+        address
+    ) external pure override returns (address, uint96) {
+        return (address(0), 0);
     }
 }

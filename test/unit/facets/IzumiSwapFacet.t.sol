@@ -2,12 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {IzumiSwapFacet} from "../src/facets/IzumiSwapFacet.sol";
-import {AccessControlLib} from "../src/libraries/AccessControlLib.sol";
-import {MoreVaultsStorageHelper} from "./libraries/MoreVaultsStorageHelper.sol";
-import {ISwap} from "../src/interfaces/iZUMi/ISwap.sol";
+import {IIzumiSwapFacet, IzumiSwapFacet} from "../../../src/facets/IzumiSwapFacet.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {ISwap} from "../../../src/interfaces/iZUMi/ISwap.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {MoreVaultsLib} from "../src/libraries/MoreVaultsLib.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 
 contract IzumiSwapFacetTest is Test {
     IzumiSwapFacet public facet;
@@ -81,6 +81,49 @@ contract IzumiSwapFacetTest is Test {
             "IzumiSwapFacet",
             "Facet name should be correct"
         );
+    }
+
+    function test_initialize_ShouldSetSupportedInterfaces() public {
+        IzumiSwapFacet(facet).initialize("");
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                type(IIzumiSwapFacet).interfaceId
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenCalledByNonDiamond()
+        public
+    {
+        vm.startPrank(unauthorized);
+
+        ISwap.SwapAmountParams memory swapAmountParams = ISwap
+            .SwapAmountParams({
+                path: path,
+                recipient: recipient,
+                amount: uint128(amount),
+                minAcquired: minAcquire,
+                deadline: deadline
+            });
+
+        ISwap.SwapDesireParams memory swapDesireParams = ISwap
+            .SwapDesireParams({
+                path: path,
+                recipient: recipient,
+                desire: uint128(desiredAmount),
+                maxPayed: maxPayed,
+                deadline: deadline
+            });
+
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        IzumiSwapFacet(facet).swapAmount(swapContract, swapAmountParams);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        IzumiSwapFacet(facet).swapDesire(swapContract, swapDesireParams);
+
+        vm.stopPrank();
     }
 
     function test_swapAmount_ShouldPerformSwap() public {

@@ -77,7 +77,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountBDesired,
         uint amountAMin,
         uint amountBMin,
-        address to,
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -102,7 +101,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountBDesired,
                 amountAMin,
                 amountBMin,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -114,7 +113,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountETHDesired,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) external returns (uint amountToken, uint amountETH, uint liquidity) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -134,7 +132,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountTokenDesired,
                 amountTokenMin,
                 amountETHMin,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -146,7 +144,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint liquidity,
         uint amountAMin,
         uint amountBMin,
-        address to,
         uint deadline
     ) external returns (uint amountA, uint amountB) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -159,7 +156,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             liquidity,
             amountAMin,
             amountBMin,
-            to,
             deadline
         );
     }
@@ -170,7 +166,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint liquidity,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) external returns (uint amountToken, uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -181,7 +176,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             liquidity,
             amountTokenMin,
             amountETHMin,
-            to,
             deadline
         );
     }
@@ -191,7 +185,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -204,7 +197,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountIn,
                 amountOutMin,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -214,7 +207,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -227,7 +219,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountOut,
                 amountInMax,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -237,7 +229,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint256 amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -246,7 +237,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             IUniswapV2Router02(router).swapExactETHForTokens{value: amountIn}(
                 amountOutMin,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -256,7 +247,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -268,7 +258,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountOut,
                 amountInMax,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -278,7 +268,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -289,7 +278,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountIn,
                 amountOutMin,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -299,7 +288,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint256 amountInMax,
         uint amountOut,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -307,7 +295,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         return
             IUniswapV2Router02(router).swapETHForExactTokens{
                 value: amountInMax
-            }(amountOut, path, to, deadline);
+            }(amountOut, path, address(this), deadline);
     }
 
     function removeLiquidityETHSupportingFeeOnTransferTokens(
@@ -316,7 +304,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint liquidity,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) external returns (uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
@@ -334,7 +321,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 liquidity,
                 amountTokenMin,
                 amountETHMin,
-                to,
+                address(this),
                 deadline
             );
 
@@ -349,7 +336,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
@@ -362,7 +348,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountIn,
                 amountOutMin,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -372,7 +358,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint256 amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
@@ -381,7 +366,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         IUniswapV2Router02(router)
             .swapExactETHForTokensSupportingFeeOnTransferTokens{
             value: amountIn
-        }(amountOutMin, path, to, deadline);
+        }(amountOutMin, path, address(this), deadline);
     }
 
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
@@ -389,7 +374,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
@@ -401,7 +385,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 amountIn,
                 amountOutMin,
                 path,
-                to,
+                address(this),
                 deadline
             );
     }
@@ -412,7 +396,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint liquidity,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) internal returns (uint amountToken, uint amountETH) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -428,7 +411,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 liquidity,
                 amountTokenMin,
                 amountETHMin,
-                to,
+                address(this),
                 deadline
             );
 
@@ -445,7 +428,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint liquidity,
         uint amountAMin,
         uint amountBMin,
-        address to,
         uint deadline
     ) internal returns (uint amountA, uint amountB) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -461,7 +443,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             liquidity,
             amountAMin,
             amountBMin,
-            to,
+            address(this),
             deadline
         );
 
@@ -470,27 +452,4 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             liquidityToken
         );
     }
-
-    // function _swapTokensAfterRemoveLiquidity(
-    //     uint256 amountA,
-    //     uint256 amountB,
-    //     address tokenA,
-    //     address tokenB,
-    //     address to
-    // ) internal {
-    //     MoreVaultsLib.swapTokensOnWithdrawal(
-    //         amountA,
-    //         0,
-    //         tokenA,
-    //         to,
-    //         block.timestamp
-    //     );
-    //     MoreVaultsLib.swapTokensOnWithdrawal(
-    //         amountB,
-    //         0,
-    //         tokenB,
-    //         to,
-    //         block.timestamp
-    //     );
-    // }
 }

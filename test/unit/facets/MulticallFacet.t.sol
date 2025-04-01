@@ -2,10 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {IMulticallFacet, MulticallFacet} from "../src/facets/MulticallFacet.sol";
-import {AccessControlLib} from "../src/libraries/AccessControlLib.sol";
-import {MoreVaultsStorageHelper} from "./libraries/MoreVaultsStorageHelper.sol";
-import {MoreVaultsLib} from "../src/libraries/MoreVaultsLib.sol";
+import {BaseFacetInitializer, IMulticallFacet, MulticallFacet} from "../../../src/facets/MulticallFacet.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 
 contract MulticallFacetTest is Test {
     MulticallFacet public facet;
@@ -51,6 +51,23 @@ contract MulticallFacetTest is Test {
         );
     }
 
+    function test_initialize_ShouldSetParametersCorrectly() public {
+        MulticallFacet(facet).initialize(abi.encode(timeLockPeriod));
+        assertEq(
+            MoreVaultsStorageHelper.getTimeLockPeriod(address(facet)),
+            timeLockPeriod,
+            "Time lock period should be set"
+        );
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                type(IMulticallFacet).interfaceId
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+    }
+
     function test_submitActions_ShouldSubmitActions() public {
         vm.startPrank(curator);
 
@@ -77,6 +94,46 @@ contract MulticallFacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_submitActions_ShouldExecuteActionsIfTimeLockPeriodIsZero()
+        public
+    {
+        vm.startPrank(curator);
+
+        MoreVaultsStorageHelper.setTimeLockPeriod(address(facet), 0);
+
+        // Mock function calls
+        vm.mockCall(
+            address(facet),
+            abi.encodeWithSignature("mockFunction1()"),
+            abi.encode()
+        );
+        vm.mockCall(
+            address(facet),
+            abi.encodeWithSignature("mockFunction2()"),
+            abi.encode()
+        );
+
+        vm.expectEmit();
+        emit IMulticallFacet.ActionsSubmitted(
+            curator,
+            currentNonce,
+            block.timestamp,
+            actionsData
+        );
+        vm.expectEmit();
+        emit IMulticallFacet.ActionsExecuted(curator, currentNonce);
+        // Submit actions
+        uint256 nonce = facet.submitActions(actionsData);
+
+        // Verify pending actions
+        (bytes[] memory storedActions, uint256 pendingUntil) = facet
+            .getPendingActions(nonce);
+        assertEq(storedActions.length, 0, "Actions length should be deleted");
+        assertEq(pendingUntil, 0, "Pending until should be deleted");
+
+        vm.stopPrank();
+    }
+
     function test_submitActions_ShouldRevertWhenUnauthorized() public {
         vm.startPrank(unauthorized);
 
@@ -92,7 +149,7 @@ contract MulticallFacetTest is Test {
 
         // Attempt to submit empty actions
         bytes[] memory emptyActions = new bytes[](0);
-        vm.expectRevert("Empty actions");
+        vm.expectRevert(IMulticallFacet.EmptyActions.selector);
         facet.submitActions(emptyActions);
 
         vm.stopPrank();
@@ -158,6 +215,27 @@ contract MulticallFacetTest is Test {
         );
         facet.executeActions(999);
 
+        vm.stopPrank();
+    }
+
+    function test_executeActions_ShouldRevertWhenMulticallFailed() public {
+        vm.startPrank(curator);
+
+        // Submit actions
+        uint256 nonce = facet.submitActions(actionsData);
+
+        // Fast forward time
+        vm.warp(block.timestamp + timeLockPeriod + 1);
+
+        // Attempt to execute actions
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                bytes4(keccak256("MulticallFailed(uint256,bytes)")),
+                0,
+                ""
+            )
+        );
+        facet.executeActions(nonce);
         vm.stopPrank();
     }
 

@@ -2,12 +2,13 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {OrigamiFacet} from "../../src/facets/OrigamiFacet.sol";
-import {MoreVaultsStorageHelper} from "../libraries/MoreVaultsStorageHelper.sol";
+import {OrigamiFacet} from "../../../src/facets/OrigamiFacet.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IOrigamiInvestment} from "../../src/interfaces/Origami/IOrigamiInvestment.sol";
-import {IOrigamiLovTokenFlashAndBorrowManager} from "../../src/interfaces/Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";
-import {BaseFacetInitializer} from "../../src/facets/BaseFacetInitializer.sol";
+import {IOrigamiInvestment} from "../../../src/interfaces/Origami/IOrigamiInvestment.sol";
+import {IOrigamiLovTokenFlashAndBorrowManager} from "../../../src/interfaces/Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";
+import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 
 contract OrigamiFacetTest is Test {
     // Test addresses
@@ -43,8 +44,13 @@ contract OrigamiFacetTest is Test {
         availableAssets[1] = toToken;
         MoreVaultsStorageHelper.setAvailableAssets(facet, availableAssets);
         MoreVaultsStorageHelper.setCurator(facet, curator);
+        MoreVaultsStorageHelper.setWrappedNative(facet, address(toToken));
 
         vm.deal(facet, 100000 ether);
+    }
+
+    function test_facetName_ShouldReturnCorrectName() public view {
+        assertEq(OrigamiFacet(facet).facetName(), "OrigamiFacet");
     }
 
     function test_initialize_ShouldSetFacetAddress() public {
@@ -61,6 +67,43 @@ contract OrigamiFacetTest is Test {
         OrigamiFacet(facet).initialize(abi.encode(facet));
     }
 
+    function test_allNonViewFunctions_ShouldRevertWhenCalledByNonDiamond()
+        public
+    {
+        vm.startPrank(user);
+        IOrigamiInvestment.InvestQuoteData
+            memory investQuoteData = IOrigamiInvestment.InvestQuoteData({
+                fromToken: fromToken,
+                fromTokenAmount: AMOUNT,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedInvestmentAmount: AMOUNT,
+                minInvestmentAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+        IOrigamiInvestment.ExitQuoteData
+            memory exitQuoteData = IOrigamiInvestment.ExitQuoteData({
+                investmentTokenAmount: AMOUNT,
+                toToken: toToken,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedToTokenAmount: AMOUNT,
+                minToTokenAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        OrigamiFacet(facet).investWithToken(lovToken, investQuoteData);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        OrigamiFacet(facet).investWithNative(lovToken, investQuoteData);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        OrigamiFacet(facet).exitToToken(lovToken, exitQuoteData);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        OrigamiFacet(facet).exitToNative(lovToken, exitQuoteData);
+
+        vm.stopPrank();
+    }
+
     function test_investWithToken_ShouldAddLovTokenToHeldTokens() public {
         // Mock approvals and investWithToken
         vm.mockCall(
@@ -68,41 +111,22 @@ contract OrigamiFacetTest is Test {
             abi.encodeWithSelector(IERC20.approve.selector, lovToken, AMOUNT),
             abi.encode(true)
         );
-        vm.mockCall(
-            lovToken,
-            abi.encodeWithSelector(
-                IOrigamiInvestment.investQuote.selector,
-                AMOUNT,
-                fromToken,
-                MAX_SLIPPAGE_BPS,
-                deadline
-            ),
-            abi.encode(
-                IOrigamiInvestment.InvestQuoteData({
-                    fromToken: fromToken,
-                    fromTokenAmount: AMOUNT,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedInvestmentAmount: AMOUNT,
-                    minInvestmentAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
-                new uint256[](0)
-            )
-        );
+
+        IOrigamiInvestment.InvestQuoteData
+            memory investQuoteData = IOrigamiInvestment.InvestQuoteData({
+                fromToken: fromToken,
+                fromTokenAmount: AMOUNT,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedInvestmentAmount: AMOUNT,
+                minInvestmentAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
         vm.mockCall(
             lovToken,
             abi.encodeWithSelector(
                 IOrigamiInvestment.investWithToken.selector,
-                IOrigamiInvestment.InvestQuoteData({
-                    fromToken: fromToken,
-                    fromTokenAmount: AMOUNT,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedInvestmentAmount: AMOUNT,
-                    minInvestmentAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                })
+                investQuoteData
             ),
             abi.encode(AMOUNT)
         );
@@ -110,13 +134,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).investWithToken(
-            lovToken,
-            AMOUNT,
-            fromToken,
-            MAX_SLIPPAGE_BPS,
-            deadline
-        );
+        OrigamiFacet(facet).investWithToken(lovToken, investQuoteData);
 
         // Verify lovToken was added to held tokens
         address[] memory lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -128,42 +146,23 @@ contract OrigamiFacetTest is Test {
     }
 
     function test_investWithNative_ShouldAddLovTokenToHeldTokens() public {
+        IOrigamiInvestment.InvestQuoteData
+            memory investQuoteData = IOrigamiInvestment.InvestQuoteData({
+                fromToken: fromToken,
+                fromTokenAmount: AMOUNT,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedInvestmentAmount: AMOUNT,
+                minInvestmentAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+
         // Mock investWithNative
         vm.mockCall(
             lovToken,
             abi.encodeWithSelector(
-                IOrigamiInvestment.investQuote.selector,
-                AMOUNT,
-                fromToken,
-                MAX_SLIPPAGE_BPS,
-                deadline
-            ),
-            abi.encode(
-                IOrigamiInvestment.InvestQuoteData({
-                    fromToken: fromToken,
-                    fromTokenAmount: AMOUNT,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedInvestmentAmount: AMOUNT,
-                    minInvestmentAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
-                new uint256[](0)
-            )
-        );
-        vm.mockCall(
-            lovToken,
-            abi.encodeWithSelector(
                 IOrigamiInvestment.investWithNative.selector,
-                IOrigamiInvestment.InvestQuoteData({
-                    fromToken: fromToken,
-                    fromTokenAmount: AMOUNT,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedInvestmentAmount: AMOUNT,
-                    minInvestmentAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                })
+                investQuoteData
             ),
             abi.encode(AMOUNT)
         );
@@ -171,13 +170,8 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).investWithNative{value: AMOUNT}(
-            lovToken,
-            AMOUNT,
-            fromToken,
-            MAX_SLIPPAGE_BPS,
-            deadline
-        );
+        vm.deal(facet, AMOUNT);
+        OrigamiFacet(facet).investWithNative(lovToken, investQuoteData);
 
         // Verify lovToken was added to held tokens
         address[] memory lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -205,42 +199,23 @@ contract OrigamiFacetTest is Test {
             abi.encode(0)
         );
 
+        IOrigamiInvestment.ExitQuoteData
+            memory exitQuoteData = IOrigamiInvestment.ExitQuoteData({
+                investmentTokenAmount: AMOUNT,
+                toToken: toToken,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedToTokenAmount: AMOUNT,
+                minToTokenAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+
         // Mock exitToToken
         vm.mockCall(
             lovToken,
             abi.encodeWithSelector(
-                IOrigamiInvestment.exitQuote.selector,
-                AMOUNT,
-                toToken,
-                MAX_SLIPPAGE_BPS,
-                deadline
-            ),
-            abi.encode(
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
-                new uint256[](0)
-            )
-        );
-        vm.mockCall(
-            lovToken,
-            abi.encodeWithSelector(
                 IOrigamiInvestment.exitToToken.selector,
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
+                exitQuoteData,
                 facet
             ),
             abi.encode(AMOUNT)
@@ -249,13 +224,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToToken(
-            lovToken,
-            AMOUNT,
-            toToken,
-            MAX_SLIPPAGE_BPS,
-            deadline
-        );
+        OrigamiFacet(facet).exitToToken(lovToken, exitQuoteData);
 
         // Verify lovToken was removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -282,42 +251,23 @@ contract OrigamiFacetTest is Test {
             abi.encode(0)
         );
 
+        IOrigamiInvestment.ExitQuoteData
+            memory exitQuoteData = IOrigamiInvestment.ExitQuoteData({
+                investmentTokenAmount: AMOUNT,
+                toToken: address(0),
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedToTokenAmount: AMOUNT,
+                minToTokenAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+
         // Mock exitToNative
         vm.mockCall(
             lovToken,
             abi.encodeWithSelector(
-                IOrigamiInvestment.exitQuote.selector,
-                AMOUNT,
-                toToken,
-                MAX_SLIPPAGE_BPS,
-                deadline
-            ),
-            abi.encode(
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
-                new uint256[](0)
-            )
-        );
-        vm.mockCall(
-            lovToken,
-            abi.encodeWithSelector(
                 IOrigamiInvestment.exitToNative.selector,
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
+                exitQuoteData,
                 payable(facet)
             ),
             abi.encode(AMOUNT)
@@ -326,13 +276,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToNative(
-            lovToken,
-            AMOUNT,
-            toToken,
-            MAX_SLIPPAGE_BPS,
-            deadline
-        );
+        OrigamiFacet(facet).exitToNative(lovToken, exitQuoteData);
 
         // Verify lovToken was removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -362,41 +306,21 @@ contract OrigamiFacetTest is Test {
         );
 
         // Mock exitToToken
-        vm.mockCall(
-            lovToken,
-            abi.encodeWithSelector(
-                IOrigamiInvestment.exitQuote.selector,
-                AMOUNT,
-                toToken,
-                MAX_SLIPPAGE_BPS,
-                deadline
-            ),
-            abi.encode(
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
-                new uint256[](0)
-            )
-        );
+        IOrigamiInvestment.ExitQuoteData
+            memory exitQuoteData = IOrigamiInvestment.ExitQuoteData({
+                investmentTokenAmount: AMOUNT,
+                toToken: toToken,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedToTokenAmount: AMOUNT,
+                minToTokenAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
         vm.mockCall(
             lovToken,
             abi.encodeWithSelector(
                 IOrigamiInvestment.exitToToken.selector,
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
+                exitQuoteData,
                 facet
             ),
             abi.encode(AMOUNT)
@@ -405,13 +329,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToToken(
-            lovToken,
-            AMOUNT,
-            toToken,
-            MAX_SLIPPAGE_BPS,
-            deadline
-        );
+        OrigamiFacet(facet).exitToToken(lovToken, exitQuoteData);
 
         // Verify lovToken was not removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -441,42 +359,22 @@ contract OrigamiFacetTest is Test {
             abi.encode(10e3 + 1)
         );
 
+        IOrigamiInvestment.ExitQuoteData
+            memory exitQuoteData = IOrigamiInvestment.ExitQuoteData({
+                investmentTokenAmount: AMOUNT,
+                toToken: address(0),
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedToTokenAmount: AMOUNT,
+                minToTokenAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
         // Mock exitToNative
         vm.mockCall(
             lovToken,
             abi.encodeWithSelector(
-                IOrigamiInvestment.exitQuote.selector,
-                AMOUNT,
-                toToken,
-                MAX_SLIPPAGE_BPS,
-                deadline
-            ),
-            abi.encode(
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
-                new uint256[](0)
-            )
-        );
-        vm.mockCall(
-            lovToken,
-            abi.encodeWithSelector(
                 IOrigamiInvestment.exitToNative.selector,
-                IOrigamiInvestment.ExitQuoteData({
-                    investmentTokenAmount: AMOUNT,
-                    toToken: toToken,
-                    maxSlippageBps: MAX_SLIPPAGE_BPS,
-                    deadline: deadline,
-                    expectedToTokenAmount: AMOUNT,
-                    minToTokenAmount: AMOUNT,
-                    underlyingInvestmentQuoteData: ""
-                }),
+                exitQuoteData,
                 payable(facet)
             ),
             abi.encode(AMOUNT)
@@ -485,13 +383,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToNative(
-            lovToken,
-            AMOUNT,
-            toToken,
-            MAX_SLIPPAGE_BPS,
-            deadline
-        );
+        OrigamiFacet(facet).exitToNative(lovToken, exitQuoteData);
 
         // Verify lovToken was not removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(

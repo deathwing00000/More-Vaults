@@ -11,40 +11,26 @@ interface IOrigamiFacet is IGenericMoreVaultFacetInitializable {
 
     function facetName() external pure returns (string memory);
 
-    // function withdrawFromOrigamiFacet(uint proportion, address to) external;
-
     function accountingOrigamiFacet() external view returns (uint sum);
 
     function investWithToken(
         address lovToken,
-        uint256 fromTokenAmount,
-        address fromToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
+        IOrigamiInvestment.InvestQuoteData calldata quoteData
     ) external returns (uint256 investmentAmount);
 
     function investWithNative(
         address lovToken,
-        uint256 fromTokenAmount,
-        address fromToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
-    ) external payable returns (uint256 investmentAmount);
+        IOrigamiInvestment.InvestQuoteData calldata quoteData
+    ) external returns (uint256 investmentAmount);
 
     function exitToToken(
         address lovToken,
-        uint256 investmentAmount,
-        address toToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
+        IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) external returns (uint256 toTokenAmount);
 
     function exitToNative(
         address lovToken,
-        uint256 investmentAmount,
-        address toToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
+        IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) external returns (uint256 toTokenAmount);
 
     function rebalanceUp(

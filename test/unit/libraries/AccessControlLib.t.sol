@@ -2,18 +2,18 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {AccessControlLib} from "../../src/libraries/AccessControlLib.sol";
-import {MoreVaultsStorageHelper} from "./MoreVaultsStorageHelper.sol";
-import {IMoreVaultsRegistry} from "../../src/interfaces/IMoreVaultsRegistry.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 contract MockAccessControl {
-    function validateRegistryOwner(address caller) external view {
-        AccessControlLib.validateRegistryOwner(caller);
-    }
+    // function to exclude from coverage
+    function test_skip() external {}
 }
 
 contract AccessControlLibTest is Test {
+    address public owner = address(111);
     address public curator = address(1);
     address public guardian = address(2);
     address public registry = address(3);
@@ -26,6 +26,7 @@ contract AccessControlLibTest is Test {
         mockAccessControl = new MockAccessControl();
 
         // Set initial values in storage
+        MoreVaultsStorageHelper.setOwner(address(this), owner);
         MoreVaultsStorageHelper.setCurator(address(this), curator);
         MoreVaultsStorageHelper.setGuardian(address(this), guardian);
         MoreVaultsStorageHelper.setMoreVaultsRegistry(address(this), registry);
@@ -47,6 +48,12 @@ contract AccessControlLibTest is Test {
         vm.stopPrank();
     }
 
+    function test_validateCurator_ShouldNotRevertWhenCallerIsOwner() public {
+        vm.startPrank(owner);
+        AccessControlLib.validateCurator(owner);
+        vm.stopPrank();
+    }
+
     function test_validateCurator_ShouldRevertWhenCallerIsNotCurator() public {
         vm.startPrank(unauthorized);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
@@ -59,6 +66,12 @@ contract AccessControlLibTest is Test {
     {
         vm.startPrank(guardian);
         AccessControlLib.validateGuardian(guardian);
+        vm.stopPrank();
+    }
+
+    function test_validateOwner_ShouldNotRevertWhenCallerIsOwner() public {
+        vm.startPrank(owner);
+        AccessControlLib.validateOwner(owner);
         vm.stopPrank();
     }
 
@@ -83,6 +96,26 @@ contract AccessControlLibTest is Test {
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
         AccessControlLib.validateDiamond(unauthorized);
         vm.stopPrank();
+    }
+
+    function test_setVaultOwner_ShouldSetNewOwner() public {
+        address newOwner = address(5);
+        AccessControlLib.setVaultOwner(newOwner);
+        assertEq(
+            AccessControlLib.vaultOwner(),
+            newOwner,
+            "Owner should be updated"
+        );
+    }
+
+    function test_setVaultOwner_ShouldRevertWhenZeroAddress() public {
+        vm.expectRevert(AccessControlLib.ZeroAddress.selector);
+        AccessControlLib.setVaultOwner(zeroAddress);
+    }
+
+    function test_setVaultOwner_ShouldRevertWhenSameAddress() public {
+        vm.expectRevert(AccessControlLib.SameAddress.selector);
+        AccessControlLib.setVaultOwner(owner);
     }
 
     function test_setVaultCurator_ShouldSetNewCurator() public {
@@ -125,6 +158,14 @@ contract AccessControlLibTest is Test {
         AccessControlLib.setVaultGuardian(guardian);
     }
 
+    function test_vaultOwner_ShouldReturnCorrectOwner() public view {
+        assertEq(
+            AccessControlLib.vaultOwner(),
+            owner,
+            "Should return correct owner"
+        );
+    }
+
     function test_vaultCurator_ShouldReturnCorrectCurator() public view {
         assertEq(
             AccessControlLib.vaultCurator(),
@@ -147,41 +188,5 @@ contract AccessControlLibTest is Test {
             registry,
             "Should return correct registry"
         );
-    }
-
-    function test_validateRegistryOwner_ShouldNotRevertWhenCallerHasRole()
-        public
-    {
-        // Mock IAccessControl.hasRole to return true
-        vm.mockCall(
-            registry,
-            abi.encodeWithSelector(
-                IAccessControl.hasRole.selector,
-                bytes32(0),
-                curator
-            ),
-            abi.encode(true)
-        );
-
-        vm.startPrank(curator);
-        AccessControlLib.validateRegistryOwner(curator);
-        vm.stopPrank();
-    }
-
-    function test_validateRegistryOwner_ShouldRevertWhenCallerDoesNotHaveRole()
-        public
-    {
-        // Mock IAccessControl.hasRole to return false
-        bytes memory callData = abi.encodeWithSelector(
-            IAccessControl.hasRole.selector,
-            bytes32(0),
-            unauthorized
-        );
-        vm.mockCall(registry, callData, abi.encode(false));
-
-        vm.startPrank(unauthorized);
-        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        mockAccessControl.validateRegistryOwner(unauthorized);
-        vm.stopPrank();
     }
 }

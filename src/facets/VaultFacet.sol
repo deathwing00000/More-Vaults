@@ -12,6 +12,7 @@ import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Pau
 import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
+import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 
 contract VaultFacet is
     ERC4626Upgradeable,
@@ -45,22 +46,25 @@ contract VaultFacet is
             address feeRecipient,
             uint96 fee
         ) = abi.decode(data, (string, string, address, address, uint96));
-        if (asset == address(0) || feeRecipient == address(0))
-            revert InvalidParameters();
-        if (fee > 10000) revert InvalidParameters(); // max 100% = 10000 basis points
+        if (
+            asset == address(0) ||
+            feeRecipient == address(0) ||
+            fee > MoreVaultsLib.FEE_BASIS_POINT
+        ) revert InvalidParameters();
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
         // Facet interfaces
+        ds.supportedInterfaces[type(IERC20).interfaceId] = true; // ERC20 interface
         ds.supportedInterfaces[type(IERC4626).interfaceId] = true; // ERC4626 base interface
         ds.supportedInterfaces[type(IVaultFacet).interfaceId] = true; // VaultFacet (extended ERC4626)
 
-        ds.feeRecipient = feeRecipient;
-        ds.fee = fee;
+        MoreVaultsLib._setFeeRecipient(feeRecipient);
+        MoreVaultsLib._setFee(fee);
         __ERC4626_init(IERC20(asset));
         __ERC20_init(name, symbol);
-        ds.availableAssets.push(asset);
+        MoreVaultsLib._addAvailableAsset(asset);
     }
 
     function paused()
@@ -91,12 +95,20 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         address[] memory facets = ds.facetsForAccounting;
+        address wrappedNative = ds.wrappedNative;
 
         for (uint i; i < ds.availableAssets.length; ) {
+            address asset = ds.availableAssets[i];
             _totalAssets += MoreVaultsLib.convertToUnderlying(
-                ds.availableAssets[i],
-                IERC20(ds.availableAssets[i]).balanceOf(address(this))
+                asset,
+                IERC20(asset).balanceOf(address(this))
             );
+            if (wrappedNative == asset) {
+                _totalAssets += MoreVaultsLib.convertToUnderlying(
+                    wrappedNative,
+                    address(this).balance
+                );
+            }
             unchecked {
                 ++i;
             }
@@ -131,11 +143,22 @@ contract VaultFacet is
         virtual
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
-        returns (uint256)
+        returns (uint256 shares)
     {
-        _accrueInterest();
+        uint256 newTotalAssets = _accrueInterest();
 
-        return super.deposit(assets, receiver);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.lastTotalAssets = newTotalAssets;
+
+        shares = _convertToSharesWithTotals(
+            assets,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Floor
+        );
+        _deposit(_msgSender(), receiver, assets, shares);
     }
 
     function mint(
@@ -146,11 +169,22 @@ contract VaultFacet is
         virtual
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
-        returns (uint256)
+        returns (uint256 assets)
     {
-        _accrueInterest();
+        uint256 newTotalAssets = _accrueInterest();
 
-        return super.mint(shares, receiver);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.lastTotalAssets = newTotalAssets;
+
+        assets = _convertToAssetsWithTotals(
+            shares,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Floor
+        );
+        _deposit(_msgSender(), receiver, assets, shares);
     }
 
     function withdraw(
@@ -162,11 +196,24 @@ contract VaultFacet is
         virtual
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
-        returns (uint256)
+        returns (uint256 shares)
     {
-        _accrueInterest();
+        uint256 newTotalAssets = _accrueInterest();
 
-        return super.withdraw(assets, receiver, owner);
+        shares = _convertToSharesWithTotals(
+            assets,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Ceil
+        );
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.lastTotalAssets = newTotalAssets > assets
+            ? newTotalAssets - assets
+            : 0;
+
+        _withdraw(_msgSender(), receiver, owner, assets, shares);
     }
 
     function redeem(
@@ -178,22 +225,40 @@ contract VaultFacet is
         virtual
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
-        returns (uint256)
+        returns (uint256 assets)
     {
-        _accrueInterest();
+        uint256 newTotalAssets = _accrueInterest();
 
-        return super.redeem(shares, receiver, owner);
+        assets = _convertToAssetsWithTotals(
+            shares,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Ceil
+        );
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.lastTotalAssets = newTotalAssets > assets
+            ? newTotalAssets - assets
+            : 0;
+
+        _withdraw(_msgSender(), receiver, owner, assets, shares);
     }
 
     function deposit(
         address[] calldata tokens,
         uint256[] calldata assets,
         address receiver
-    ) external whenNotPaused returns (uint256) {
-        _accrueInterest();
+    ) external whenNotPaused returns (uint256 shares) {
+        uint256 newTotalAssets = _accrueInterest();
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.lastTotalAssets = newTotalAssets;
 
         if (assets.length != tokens.length)
-            revert ArraysLengthsDontMatch(assets.length, tokens.length);
+            revert ArraysLengthsDontMatch(tokens.length, assets.length);
 
         uint256 totalConvertedAmount;
         for (uint i; i < tokens.length; ) {
@@ -207,24 +272,58 @@ contract VaultFacet is
             }
         }
 
-        uint256 maxAssets = maxDeposit(receiver);
-        if (totalConvertedAmount > maxAssets) {
-            revert ERC4626ExceededMaxDeposit(
-                receiver,
-                totalConvertedAmount,
-                maxAssets
-            );
-        }
-
-        uint256 shares = previewDeposit(totalConvertedAmount);
+        shares = _convertToSharesWithTotals(
+            totalConvertedAmount,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Floor
+        );
         _deposit(_msgSender(), receiver, tokens, assets, shares);
 
-        return shares;
+        ds.lastTotalAssets = ds.lastTotalAssets + totalConvertedAmount;
     }
 
-    /**
-     * @dev Deposit/mint common workflow.
-     */
+    function _convertToSharesWithTotals(
+        uint256 assets,
+        uint256 newTotalSupply,
+        uint256 newTotalAssets,
+        Math.Rounding rounding
+    ) internal view returns (uint256) {
+        return
+            assets.mulDiv(
+                newTotalSupply + 10 ** _decimalsOffset(),
+                newTotalAssets + 1,
+                rounding
+            );
+    }
+
+    function _convertToAssetsWithTotals(
+        uint256 shares,
+        uint256 newTotalSupply,
+        uint256 newTotalAssets,
+        Math.Rounding rounding
+    ) internal view returns (uint256) {
+        return
+            shares.mulDiv(
+                newTotalAssets + 1,
+                newTotalSupply + 10 ** _decimalsOffset(),
+                rounding
+            );
+    }
+
+    function _deposit(
+        address caller,
+        address receiver,
+        uint256 assets,
+        uint256 shares
+    ) internal virtual override {
+        super._deposit(caller, receiver, assets, shares);
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.lastTotalAssets = ds.lastTotalAssets + assets;
+    }
+
     function _deposit(
         address caller,
         address receiver,
@@ -248,14 +347,32 @@ contract VaultFacet is
         emit Deposit(caller, receiver, tokens, assets, shares);
     }
 
-    function _accrueInterest() internal {
-        (uint256 feeShares, uint256 newTotalAssets) = _accruedFeeShares();
+    function _accrueInterest() internal returns (uint256 newTotalAssets) {
+        uint256 feeShares;
+        (feeShares, newTotalAssets) = _accruedFeeShares();
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        AccessControlLib.AccessControlStorage storage acs = AccessControlLib
+            .accessControlStorage();
 
         ds.lastTotalAssets = newTotalAssets;
 
-        if (feeShares != 0) _mint(ds.feeRecipient, feeShares);
+        (
+            address protocolFeeRecipient,
+            uint96 protocolFee
+        ) = IMoreVaultsRegistry(acs.moreVaultsRegistry).protocolFeeInfo(
+                address(this)
+            );
+        if (feeShares != 0) {
+            if (protocolFee != 0) {
+                uint256 protocolFeeShares = feeShares.mulDiv(
+                    protocolFee,
+                    MoreVaultsLib.FEE_BASIS_POINT
+                );
+                _mint(protocolFeeRecipient, protocolFeeShares);
+                _mint(ds.feeRecipient, feeShares - protocolFeeShares);
+            } else _mint(ds.feeRecipient, feeShares);
+        }
 
         emit AccrueInterest(newTotalAssets, feeShares);
     }
@@ -276,8 +393,11 @@ contract VaultFacet is
 
         uint96 fee = ds.fee;
         if (totalInterest != 0 && fee != 0) {
-            uint256 feeAssets = totalInterest.mulDiv(fee, 1e18);
-            feeShares = feeShares.mulDiv(
+            uint256 feeAssets = totalInterest.mulDiv(
+                fee,
+                MoreVaultsLib.FEE_BASIS_POINT
+            );
+            feeShares = feeAssets.mulDiv(
                 totalSupply() + 10 ** _decimalsOffset(),
                 newTotalAssets - feeAssets,
                 Math.Rounding.Floor

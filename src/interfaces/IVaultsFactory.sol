@@ -14,10 +14,23 @@ interface IVaultsFactory {
     event VaultDeployed(
         address indexed vault,
         address registry,
+        address wrappedNative,
         IDiamondCut.FacetCut[] facets
     );
 
     event DiamondCutFacetUpdated(address indexed newDiamondCutFacet);
+
+    /**
+     * @notice Initialize the factory
+     * @param _registry Registry contract address
+     * @param _diamondCutFacet Diamond cut facet address
+     * @param _wrappedNative Wrapped native token address
+     */
+    function initialize(
+        address _registry,
+        address _diamondCutFacet,
+        address _wrappedNative
+    ) external;
 
     /**
      * @notice Get registry contract address

@@ -24,23 +24,21 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        AccessControlLib.AccessControlStorage storage acs = AccessControlLib
-            .accessControlStorage();
 
-        (address _curator, address _guardian, address _registry) = abi.decode(
+        (address _owner, address _curator, address _guardian) = abi.decode(
             data,
             (address, address, address)
         );
 
-        acs.curator = _curator;
-        acs.guardian = _guardian;
-        acs.moreVaultsRegistry = _registry;
+        AccessControlLib.setVaultOwner(_owner);
+        AccessControlLib.setVaultCurator(_curator);
+        AccessControlLib.setVaultGuardian(_guardian);
 
         ds.supportedInterfaces[type(IAccessControlFacet).interfaceId] = true; // AccessControlFacet
     }
 
     function setMoreVaultRegistry(address newRegistry) external {
-        AccessControlLib.validateRegistryOwner(msg.sender);
+        AccessControlLib.validateOwner(msg.sender);
         if (newRegistry == address(0)) {
             revert AccessControlLib.ZeroAddress();
         }
@@ -68,21 +66,6 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
             if (!registry.isFacetAllowed(facet)) {
                 revert VaultHasNotAllowedFacet(facet);
             }
-
-            // Get all selectors for this facet
-            MoreVaultsLib.FacetFunctionSelectors memory facetSelectorsInfo = ds
-                .facetFunctionSelectors[facet];
-            bytes4[] memory selectors = facetSelectorsInfo.functionSelectors;
-            for (uint256 j; j < selectors.length; ) {
-                bytes4 selector = selectors[j];
-                if (registry.selectorToFacet(selector) != facet) {
-                    revert VaultHasNotAllowedSelector(facet, selector);
-                }
-                unchecked {
-                    ++j;
-                }
-            }
-
             unchecked {
                 ++i;
             }
@@ -91,18 +74,23 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
         emit MoreVaultRegistrySet(previousRegistry, newRegistry);
     }
 
+    function transferOwner(address _newOwner) external {
+        AccessControlLib.validateOwner(msg.sender);
+        AccessControlLib.setVaultOwner(_newOwner);
+    }
+
     function transferCuratorship(address _newCurator) external {
-        AccessControlLib.validateCurator(msg.sender);
-        address previousCurator = AccessControlLib.vaultCurator();
+        AccessControlLib.validateOwner(msg.sender);
         AccessControlLib.setVaultCurator(_newCurator);
-        emit CuratorChanged(previousCurator, _newCurator);
     }
 
     function transferGuardian(address _newGuardian) external {
-        AccessControlLib.validateGuardian(msg.sender);
-        address previousGuardian = AccessControlLib.vaultGuardian();
+        AccessControlLib.validateOwner(msg.sender);
         AccessControlLib.setVaultGuardian(_newGuardian);
-        emit GuardianChanged(previousGuardian, _newGuardian);
+    }
+
+    function owner() external view returns (address) {
+        return AccessControlLib.vaultOwner();
     }
 
     function curator() external view returns (address) {
@@ -111,5 +99,9 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
 
     function guardian() external view returns (address) {
         return AccessControlLib.vaultGuardian();
+    }
+
+    function moreVaultsRegistry() external view returns (address) {
+        return AccessControlLib.vaultRegistry();
     }
 }

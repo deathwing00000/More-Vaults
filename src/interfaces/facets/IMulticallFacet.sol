@@ -11,15 +11,18 @@ interface IMulticallFacet is IGenericMoreVaultFacetInitializable {
     error ActionsStillPending(uint256 actionsNonce);
     error MulticallFailed(uint256 index, bytes reason);
     error NoSuchActions(uint256 actionsNonce);
+    error EmptyActions();
 
     /**
      * @dev Emitted when new actions sequence is submitted
      * @param curator Address of curator who submitted actions
+     * @param nonce Nonce of submitted actions sequence
      * @param pendingUntil Timestamp until which actions are pending
      * @param actionsData Array of encoded function calls
      */
     event ActionsSubmitted(
         address indexed curator,
+        uint256 indexed nonce,
         uint256 pendingUntil,
         bytes[] actionsData
     );

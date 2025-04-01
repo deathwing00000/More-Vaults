@@ -31,17 +31,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
      * @param recipient New fee recipient address
      */
     function setFeeRecipient(address recipient) external {
-        AccessControlLib.validateCurator(msg.sender);
-        if (recipient == address(0)) {
-            revert InvalidAddress();
-        }
-
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        address previousRecipient = ds.feeRecipient;
-        ds.feeRecipient = recipient;
-
-        emit FeeRecipientSet(previousRecipient, recipient);
+        AccessControlLib.validateOwner(msg.sender);
+        MoreVaultsLib._setFeeRecipient(recipient);
     }
 
     /**
@@ -49,18 +40,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
      * @param fee New fee amount
      */
     function setFee(uint96 fee) external {
-        AccessControlLib.validateCurator(msg.sender);
-        if (fee > 10000) {
-            // Max 100% (10000 basis points)
-            revert InvalidFee();
-        }
-
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        uint96 previousFee = ds.fee;
-        ds.fee = fee;
-
-        emit FeeSet(previousFee, fee);
+        AccessControlLib.validateOwner(msg.sender);
+        MoreVaultsLib._setFee(fee);
     }
 
     /**
@@ -68,17 +49,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
      * @param period New time lock period
      */
     function setTimeLockPeriod(uint256 period) external {
-        AccessControlLib.validateCurator(msg.sender);
-        if (period == 0) {
-            revert InvalidPeriod();
-        }
-
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        uint256 previousPeriod = ds.timeLockPeriod;
-        ds.timeLockPeriod = period;
-
-        emit TimeLockPeriodSet(previousPeriod, period);
+        AccessControlLib.validateOwner(msg.sender);
+        MoreVaultsLib._setTimeLockPeriod(period);
     }
 
     /**
@@ -87,20 +59,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
      */
     function addAvailableAsset(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
-        if (asset == address(0)) {
-            revert InvalidAddress();
-        }
-
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        if (ds.isAssetAvailable[asset]) {
-            revert AssetAlreadyAvailable();
-        }
-
-        ds.isAssetAvailable[asset] = true;
-        ds.availableAssets.push(asset);
-
-        emit AssetAdded(asset);
+        MoreVaultsLib._addAvailableAsset(asset);
     }
 
     /**
@@ -110,18 +69,10 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     function addAvailableAssets(address[] calldata assets) external {
         AccessControlLib.validateCurator(msg.sender);
 
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-
-        for (uint256 i = 0; i < assets.length; i++) {
-            address asset = assets[i];
-            if (asset == address(0)) {
-                revert InvalidAddress();
-            }
-            if (!ds.isAssetAvailable[asset]) {
-                ds.isAssetAvailable[asset] = true;
-                ds.availableAssets.push(asset);
-                emit AssetAdded(asset);
+        for (uint256 i = 0; i < assets.length; ) {
+            MoreVaultsLib._addAvailableAsset(assets[i]);
+            unchecked {
+                ++i;
             }
         }
     }

@@ -8,22 +8,6 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
     error VaultHasNotAllowedSelector(address facet, bytes4 selector);
 
     /**
-     * @dev Emitted when curator address is changed
-     */
-    event CuratorChanged(
-        address indexed previousCurator,
-        address indexed newCurator
-    );
-
-    /**
-     * @dev Emitted when guardian address is changed
-     */
-    event GuardianChanged(
-        address indexed previousGuardian,
-        address indexed newGuardian
-    );
-
-    /**
      * @dev Emitted when more vault registry is changed
      */
     event MoreVaultRegistrySet(

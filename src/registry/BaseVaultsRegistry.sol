@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -10,7 +10,10 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
  * @title BaseVaultsRegistry
  * @notice Base registry contract that stores information about allowed facets and their selectors
  */
-abstract contract BaseVaultsRegistry is IMoreVaultsRegistry, AccessControl {
+abstract contract BaseVaultsRegistry is
+    IMoreVaultsRegistry,
+    AccessControlUpgradeable
+{
     /// @dev Aave price oracle address
     IAaveOracle public oracle;
 
@@ -23,21 +26,25 @@ abstract contract BaseVaultsRegistry is IMoreVaultsRegistry, AccessControl {
     /// @dev List of all allowed facets
     address[] public facetsList;
 
-    /// @dev USDC token address
-    address public immutable usdcAddress;
+    /// @dev USD stable token address
+    address public usdStableTokenAddress;
 
-    constructor(address _oracle, address _usdcAddress) {
+    /// @dev Protocol fee info
+    mapping(address => ProtocolFeeInfo) internal _protocolFeeInfo;
+
+    /// @dev Initialize function
+    function initialize(
+        address _oracle,
+        address _usdStableTokenAddress
+    ) external virtual initializer {
         if (_oracle == address(0)) revert ZeroAddress();
 
+        __AccessControl_init();
         oracle = IAaveOracle(_oracle);
-        usdcAddress = _usdcAddress;
+        usdStableTokenAddress = _usdStableTokenAddress;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    /**
-     * @notice Update oracle address
-     * @param newOracle Address of new oracle
-     */
     function updateOracle(
         address newOracle
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -49,34 +56,35 @@ abstract contract BaseVaultsRegistry is IMoreVaultsRegistry, AccessControl {
         emit OracleUpdated(oldOracle, newOracle);
     }
 
-    /**
-     * @notice Get all selectors for facet
-     * @param facet Address of the facet contract
-     * @return bytes4[] Array of selectors
-     */
+    function setProtocolFeeInfo(
+        address vault,
+        address recipient,
+        uint96 fee
+    ) external virtual;
+
     function getFacetSelectors(
         address facet
     ) external view returns (bytes4[] memory) {
         return facetSelectors[facet];
     }
 
-    /**
-     * @notice Get list of all allowed facets
-     * @return address[] Array of facet addresses
-     */
     function getAllowedFacets() external view returns (address[] memory) {
         return facetsList;
     }
 
+    function protocolFeeInfo(
+        address vault
+    ) external view virtual returns (address, uint96);
+
     function getDenominationAsset() external view returns (address) {
-        if (oracle.BASE_CURRENCY() == address(0)) return usdcAddress;
+        if (oracle.BASE_CURRENCY() == address(0)) return usdStableTokenAddress;
         return oracle.BASE_CURRENCY();
     }
 
     function getDenominationAssetDecimals() external view returns (uint8) {
         address denominationAsset = oracle.BASE_CURRENCY();
         if (denominationAsset == address(0))
-            return IERC20Metadata(usdcAddress).decimals();
+            return IERC20Metadata(usdStableTokenAddress).decimals();
         else return IERC20Metadata(denominationAsset).decimals();
     }
 

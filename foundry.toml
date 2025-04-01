@@ -14,5 +14,7 @@ remappings = [
     "forge-std/=lib/forge-std/src/"
 ]
 
+no_match_test = "test_skip"
+
 [rpc_endpoints]
 flow_testnet = "${FLOW_TESTNET_RPC_URL}"

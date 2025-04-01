@@ -2,16 +2,17 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {DiamondCutFacet} from "../../src/facets/DiamondCutFacet.sol";
-import {MoreVaultsStorageHelper} from "../libraries/MoreVaultsStorageHelper.sol";
-import {IDiamondCut} from "../../src/interfaces/facets/IDiamondCut.sol";
-import {MoreVaultsLib} from "../../src/libraries/MoreVaultsLib.sol";
-import {AccessControlLib} from "../../src/libraries/AccessControlLib.sol";
-import {IMoreVaultsRegistry} from "../../src/interfaces/IMoreVaultsRegistry.sol";
-import {MockFacet} from "../mocks/MockFacet.sol";
+import {DiamondCutFacet} from "../../../src/facets/DiamondCutFacet.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {IDiamondCut} from "../../../src/interfaces/facets/IDiamondCut.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {MockFacet} from "../../mocks/MockFacet.sol";
 
 contract DiamondCutFacetTest is Test {
     // Test addresses
+    address public owner = address(1);
     address public facet = address(100);
     address public curator = address(7);
     address public user = address(8);
@@ -34,8 +35,29 @@ contract DiamondCutFacetTest is Test {
         newTestFacet = address(mockNewFacet);
 
         // Set initial values in storage
+        MoreVaultsStorageHelper.setOwner(facet, owner);
         MoreVaultsStorageHelper.setCurator(facet, curator);
         MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, REGISTRY);
+    }
+
+    function test_initialize_ShouldSetSupportedInterfaces() public {
+        IDiamondCut(facet).initialize("");
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                type(IDiamondCut).interfaceId
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+    }
+
+    function test_facetName_ShouldReturnCorrectName() public view {
+        assertEq(
+            IDiamondCut(facet).facetName(),
+            "DiamondCutFacet",
+            "Facet name should be correct"
+        );
     }
 
     function test_diamondCut_ShouldAddNewFacet() public {
@@ -48,14 +70,6 @@ contract DiamondCutFacetTest is Test {
             ),
             abi.encode(true)
         );
-        vm.mockCall(
-            REGISTRY,
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.selectorToFacet.selector,
-                TEST_SELECTOR
-            ),
-            abi.encode(mockFacetAddress)
-        );
 
         // Prepare facet cut data
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](1);
@@ -67,11 +81,11 @@ contract DiamondCutFacetTest is Test {
         });
         cuts[0].functionSelectors[0] = TEST_SELECTOR;
 
-        // Set up as curator
-        vm.prank(curator);
+        // Set up as owner
+        vm.prank(owner);
 
         // Execute diamond cut
-        DiamondCutFacet(facet).diamondCut(cuts);
+        IDiamondCut(facet).diamondCut(cuts);
 
         // Verify facet was added
         address[] memory facets = MoreVaultsStorageHelper.getFacetAddresses(
@@ -97,14 +111,6 @@ contract DiamondCutFacetTest is Test {
             ),
             abi.encode(true)
         );
-        vm.mockCall(
-            REGISTRY,
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.selectorToFacet.selector,
-                TEST_SELECTOR
-            ),
-            abi.encode(mockFacetAddress)
-        );
 
         // First add a facet
         IDiamondCut.FacetCut[] memory addCuts = new IDiamondCut.FacetCut[](1);
@@ -116,8 +122,8 @@ contract DiamondCutFacetTest is Test {
         });
         addCuts[0].functionSelectors[0] = TEST_SELECTOR;
 
-        vm.prank(curator);
-        DiamondCutFacet(facet).diamondCut(addCuts);
+        vm.prank(owner);
+        IDiamondCut(facet).diamondCut(addCuts);
 
         // Prepare replacement facet cut data
         vm.mockCall(
@@ -127,14 +133,6 @@ contract DiamondCutFacetTest is Test {
                 newTestFacet
             ),
             abi.encode(true)
-        );
-        vm.mockCall(
-            REGISTRY,
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.selectorToFacet.selector,
-                TEST_SELECTOR
-            ),
-            abi.encode(newTestFacet)
         );
 
         IDiamondCut.FacetCut[] memory replaceCuts = new IDiamondCut.FacetCut[](
@@ -148,10 +146,10 @@ contract DiamondCutFacetTest is Test {
         });
         replaceCuts[0].functionSelectors[0] = TEST_SELECTOR;
 
-        // Set up as curator
-        vm.prank(curator);
+        // Set up as owner
+        vm.prank(owner);
         // Execute diamond cut
-        DiamondCutFacet(facet).diamondCut(replaceCuts);
+        IDiamondCut(facet).diamondCut(replaceCuts);
 
         // Verify facet was replaced
         address[] memory facets = MoreVaultsStorageHelper.getFacetAddresses(
@@ -177,14 +175,6 @@ contract DiamondCutFacetTest is Test {
             ),
             abi.encode(true)
         );
-        vm.mockCall(
-            REGISTRY,
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.selectorToFacet.selector,
-                TEST_SELECTOR
-            ),
-            abi.encode(mockFacetAddress)
-        );
 
         // First add a facet
         IDiamondCut.FacetCut[] memory addCuts = new IDiamondCut.FacetCut[](1);
@@ -196,8 +186,8 @@ contract DiamondCutFacetTest is Test {
         });
         addCuts[0].functionSelectors[0] = TEST_SELECTOR;
 
-        vm.prank(curator);
-        DiamondCutFacet(facet).diamondCut(addCuts);
+        vm.prank(owner);
+        IDiamondCut(facet).diamondCut(addCuts);
 
         // Prepare removal facet cut data
         IDiamondCut.FacetCut[] memory removeCuts = new IDiamondCut.FacetCut[](
@@ -211,11 +201,11 @@ contract DiamondCutFacetTest is Test {
         });
         removeCuts[0].functionSelectors[0] = TEST_SELECTOR;
 
-        // Set up as curator
-        vm.prank(curator);
+        // Set up as owner
+        vm.prank(owner);
 
         // Execute diamond cut
-        DiamondCutFacet(facet).diamondCut(removeCuts);
+        IDiamondCut(facet).diamondCut(removeCuts);
 
         // Verify facet was removed
         address[] memory facets = MoreVaultsStorageHelper.getFacetAddresses(
@@ -239,14 +229,6 @@ contract DiamondCutFacetTest is Test {
             ),
             abi.encode(true)
         );
-        vm.mockCall(
-            REGISTRY,
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.selectorToFacet.selector,
-                TEST_SELECTOR
-            ),
-            abi.encode(mockFacetAddress)
-        );
 
         // Prepare facet cut data
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](1);
@@ -263,6 +245,38 @@ contract DiamondCutFacetTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(AccessControlLib.UnauthorizedAccess.selector)
         );
-        DiamondCutFacet(facet).diamondCut(cuts);
+        IDiamondCut(facet).diamondCut(cuts);
+    }
+
+    function test_diamondCut_ShouldRevertWhenFacetNotAllowed() public {
+        // Mock registry functions
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
+                mockFacetAddress
+            ),
+            abi.encode(false)
+        );
+
+        // Prepare facet cut data
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](1);
+        cuts[0] = IDiamondCut.FacetCut({
+            facetAddress: mockFacetAddress,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: new bytes4[](1),
+            initData: ""
+        });
+        cuts[0].functionSelectors[0] = TEST_SELECTOR;
+
+        vm.prank(owner);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.FacetNotAllowed.selector,
+                mockFacetAddress
+            )
+        );
+        IDiamondCut(facet).diamondCut(cuts);
     }
 }

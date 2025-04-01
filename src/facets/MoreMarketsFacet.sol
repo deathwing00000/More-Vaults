@@ -14,7 +14,6 @@ import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IAaveV3RewardsController} from "../interfaces/Aave/v3/IAaveV3RewardsController.sol";
 import {IATokenExtended} from "../interfaces/Aave/v3/IATokenExtended.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 import {IMoreMarketsFacet} from "../interfaces/facets/IMoreMarketsFacet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
@@ -40,6 +39,8 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
             .moreVaultsStorage();
         address facetAddress = abi.decode(data, (address));
         ds.facetsForAccounting.push(facetAddress);
+
+        ds.supportedInterfaces[type(IMoreMarketsFacet).interfaceId] = true;
     }
 
     function facetName() external pure returns (string memory) {
@@ -89,17 +90,15 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         address pool,
         address asset,
         uint256 amount,
-        address onBehalfOf,
         uint16 referralCode
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
         MoreVaultsLib.validateAsset(asset);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
         IERC20(asset).approve(pool, amount);
-        IPool(pool).supply(asset, amount, onBehalfOf, referralCode);
+        IPool(pool).supply(asset, amount, address(this), referralCode);
         address mToken = IPool(pool).getReserveData(asset).aTokenAddress;
         ds.tokensHeld[MTOKENS_ID].add(mToken);
     }
@@ -107,14 +106,12 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     function withdraw(
         address pool,
         address asset,
-        uint256 amount,
-        address to
+        uint256 amount
     ) external returns (uint256 withdrawnAmount) {
-        _validatePool(pool);
         MoreVaultsLib.validateAsset(asset);
         AccessControlLib.validateDiamond(msg.sender);
 
-        return _withdraw(pool, asset, amount, to);
+        return _withdraw(pool, asset, amount, address(this));
     }
 
     function borrow(
@@ -126,7 +123,6 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         address onBehalfOf
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
         MoreVaultsLib.validateAsset(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -141,26 +137,27 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         );
 
         address debtToken;
-        if (interestRateMode == 1)
-            debtToken = IPool(pool)
-                .getReserveData(asset)
-                .stableDebtTokenAddress;
-        else
-            debtToken = IPool(pool)
-                .getReserveData(asset)
-                .variableDebtTokenAddress;
-        ds.tokensHeld[MORE_DEBT_TOKENS_ID].add(debtToken);
+        if (onBehalfOf == address(this)) {
+            if (interestRateMode == 1)
+                debtToken = IPool(pool)
+                    .getReserveData(asset)
+                    .stableDebtTokenAddress;
+            else
+                debtToken = IPool(pool)
+                    .getReserveData(asset)
+                    .variableDebtTokenAddress;
+            ds.tokensHeld[MORE_DEBT_TOKENS_ID].add(debtToken);
+        }
     }
 
     function repay(
         address pool,
         address asset,
         uint256 amount,
-        uint256 interestRateMode,
-        address onBehalfOf
+        uint256 interestRateMode
     ) external virtual returns (uint256 repaidAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
+
         MoreVaultsLib.validateAsset(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -171,7 +168,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
             asset,
             amount,
             interestRateMode,
-            onBehalfOf
+            address(this)
         );
 
         address debtToken;
@@ -197,7 +194,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         uint256 interestRateMode
     ) external returns (uint256 repaidAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
+
         MoreVaultsLib.validateAsset(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -233,7 +230,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         uint256 interestRateMode
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
+
         MoreVaultsLib.validateAsset(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -262,7 +259,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         address user
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
+
         MoreVaultsLib.validateAsset(asset);
 
         IPool(pool).rebalanceStableBorrowRate(asset, user);
@@ -274,7 +271,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         bool useAsCollateral
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
+
         MoreVaultsLib.validateAsset(asset);
         IPool(pool).setUserUseReserveAsCollateral(asset, useAsCollateral);
     }
@@ -290,7 +287,6 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         uint16 referralCode
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
 
         IPool(pool).flashLoan(
             receiverAddress,
@@ -301,6 +297,32 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
             params,
             referralCode
         );
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        address debtToken;
+        if (onBehalfOf == address(this)) {
+            for (uint256 i = 0; i < interestRateModes.length; ) {
+                if (interestRateModes[i] == 0) {
+                    unchecked {
+                        ++i;
+                    }
+                    continue;
+                }
+                if (interestRateModes[i] == 1)
+                    debtToken = IPool(pool)
+                        .getReserveData(assets[i])
+                        .stableDebtTokenAddress;
+                else
+                    debtToken = IPool(pool)
+                        .getReserveData(assets[i])
+                        .variableDebtTokenAddress;
+                ds.tokensHeld[MORE_DEBT_TOKENS_ID].add(debtToken);
+                unchecked {
+                    ++i;
+                }
+            }
+        }
     }
 
     function flashLoanSimple(
@@ -312,7 +334,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         uint16 referralCode
     ) public {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
+
         MoreVaultsLib.validateAsset(asset);
 
         IPool(pool).flashLoanSimple(
@@ -326,25 +348,20 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
 
     function setUserEMode(address pool, uint8 categoryId) external {
         AccessControlLib.validateDiamond(msg.sender);
-        _validatePool(pool);
 
         IPool(pool).setUserEMode(categoryId);
     }
 
     function claimAllRewards(
         address rewardsController,
-        address[] calldata assets,
-        address to
+        address[] calldata assets
     )
         external
         returns (address[] memory rewardsList, uint256[] memory claimedAmounts)
     {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
         for (uint i; i < assets.length; ) {
-            if (!ds.isAssetAvailable[assets[i]] && to == address(this))
-                revert UnsupportedAsset(assets[i]);
+            MoreVaultsLib.validateAsset(assets[i]);
             unchecked {
                 ++i;
             }
@@ -353,7 +370,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         return
             IAaveV3RewardsController(rewardsController).claimAllRewards(
                 assets,
-                to
+                address(this)
             );
     }
 
@@ -371,20 +388,5 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         withdrawnAmount = IPool(pool).withdraw(asset, amount, to);
 
         MoreVaultsLib.removeTokenIfnecessary(ds.tokensHeld[MTOKENS_ID], mToken);
-    }
-
-    function _validatePool(address pool) internal view {
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        address registry = ds.morePoolAddressesProviderRegistry;
-        address[] memory providers = IPoolAddressesProviderRegistry(registry)
-            .getAddressesProvidersList();
-        for (uint i; i < providers.length; ) {
-            if (pool == IPoolAddressesProvider(providers[i]).getPool()) return;
-            unchecked {
-                ++i;
-            }
-        }
-        revert UnsupportedPool(pool);
     }
 }

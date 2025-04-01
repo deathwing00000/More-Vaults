@@ -21,7 +21,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
 
     bytes32 constant ORIGAMI_VAULT_TOKENS_ID =
         keccak256("ORIGAMI_VAULT_TOKENS_ID");
-    uint48 constant MAX_SLIPPAGE_BPS = 1000;
+    uint48 constant MAX_SLIPPAGE_BPS_FOR_ACCAUNTING = 1000;
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -32,20 +32,16 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         return keccak256("MoreVaults.storage.initializable.OrigamiFacet");
     }
 
+    function facetName() external pure returns (string memory) {
+        return "OrigamiFacet";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         address facetAddress = abi.decode(data, (address));
         ds.facetsForAccounting.push(facetAddress);
         ds.supportedInterfaces[type(IOrigamiFacet).interfaceId] = true;
-    }
-
-    function facetName() external pure returns (string memory) {
-        return "OrigamiFacet";
-    }
-
-    function validateDiamond() internal view returns (bool) {
-        return msg.sender == address(this);
     }
 
     function accountingOrigamiFacet() external view returns (uint sum) {
@@ -64,7 +60,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
             ) = IOrigamiInvestment(lovToken).exitQuote(
                     balance,
                     underlyingToken,
-                    MAX_SLIPPAGE_BPS,
+                    MAX_SLIPPAGE_BPS_FOR_ACCAUNTING,
                     block.timestamp
                 );
 
@@ -80,26 +76,15 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
 
     function investWithToken(
         address lovToken,
-        uint256 fromTokenAmount,
-        address fromToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
+        IOrigamiInvestment.InvestQuoteData calldata quoteData
     ) external returns (uint256 investmentAmount) {
         AccessControlLib.validateDiamond(msg.sender);
+        address fromToken = quoteData.fromToken;
         MoreVaultsLib.validateAsset(fromToken);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        IERC20(fromToken).approve(lovToken, fromTokenAmount);
-        (
-            IOrigamiInvestment.InvestQuoteData memory quoteData,
-
-        ) = IOrigamiInvestment(lovToken).investQuote(
-                fromTokenAmount,
-                fromToken,
-                maxSlippageBps,
-                deadline
-            );
+        IERC20(fromToken).approve(lovToken, quoteData.fromTokenAmount);
         investmentAmount = IOrigamiInvestment(lovToken).investWithToken(
             quoteData
         );
@@ -108,71 +93,36 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
 
     function investWithNative(
         address lovToken,
-        uint256 fromTokenAmount,
-        address fromToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
-    ) external payable returns (uint256 investmentAmount) {
+        IOrigamiInvestment.InvestQuoteData calldata quoteData
+    ) external returns (uint256 investmentAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(fromToken);
-        // _validateLovToken(lovToken);
+        MoreVaultsLib.validateAsset(quoteData.fromToken);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        (
-            IOrigamiInvestment.InvestQuoteData memory quoteData,
-
-        ) = IOrigamiInvestment(lovToken).investQuote(
-                fromTokenAmount,
-                fromToken,
-                maxSlippageBps,
-                deadline
-            );
         investmentAmount = IOrigamiInvestment(lovToken).investWithNative{
-            value: fromTokenAmount
+            value: quoteData.fromTokenAmount
         }(quoteData);
         ds.tokensHeld[ORIGAMI_VAULT_TOKENS_ID].add(lovToken);
     }
 
     function exitToToken(
         address lovToken,
-        uint256 investmentAmount,
-        address toToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
+        IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) public returns (uint256 toTokenAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(toToken);
-        // _validateLovToken(lovToken);
+        MoreVaultsLib.validateAsset(quoteData.toToken);
 
-        toTokenAmount = _exitTo(
-            lovToken,
-            investmentAmount,
-            toToken,
-            maxSlippageBps,
-            deadline,
-            false
-        );
+        toTokenAmount = _exitTo(lovToken, quoteData, false);
     }
 
     function exitToNative(
         address lovToken,
-        uint256 investmentAmount,
-        address toToken,
-        uint256 maxSlippageBps,
-        uint256 deadline
+        IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) public returns (uint256 toTokenAmount) {
-        MoreVaultsLib.validateAsset(toToken);
-        // _validateLovToken(lovToken);
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAsset(address(0));
 
-        toTokenAmount = _exitTo(
-            lovToken,
-            investmentAmount,
-            toToken,
-            maxSlippageBps,
-            deadline,
-            true
-        );
+        toTokenAmount = _exitTo(lovToken, quoteData, true);
     }
 
     function rebalanceUp(
@@ -267,24 +217,12 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
 
     function _exitTo(
         address lovToken,
-        uint256 investmentAmount,
-        address toToken,
-        uint256 maxSlippageBps,
-        uint256 deadline,
+        IOrigamiInvestment.ExitQuoteData calldata quoteData,
         bool toNative
     ) internal returns (uint256 toTokenAmount) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        (
-            IOrigamiInvestment.ExitQuoteData memory quoteData,
-
-        ) = IOrigamiInvestment(lovToken).exitQuote(
-                investmentAmount,
-                toToken,
-                maxSlippageBps,
-                deadline
-            );
         if (toNative) {
             toTokenAmount = IOrigamiInvestment(lovToken).exitToNative(
                 quoteData,

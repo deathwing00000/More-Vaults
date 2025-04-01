@@ -29,18 +29,18 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         return keccak256("MoreVaults.storage.initializable.IzumiSwapFacet");
     }
 
-    function initialize(bytes calldata) external initializerFacet {
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        ds.supportedInterfaces[type(IIzumiSwapFacet).interfaceId] = true;
-    }
-
     /**
      * @notice Returns the name of the facet
      * @return The facet name
      */
     function facetName() external pure returns (string memory) {
         return "IzumiSwapFacet";
+    }
+
+    function initialize(bytes calldata) external initializerFacet {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IIzumiSwapFacet).interfaceId] = true;
     }
 
     /**
@@ -54,11 +54,14 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
      */
     function swapAmount(
         address swapContract,
-        ISwap.SwapAmountParams calldata params
+        ISwap.SwapAmountParams memory params
     ) external payable returns (uint256 cost, uint256 acquire) {
         AccessControlLib.validateDiamond(msg.sender);
         address inputToken = _getInputTokenAddress(params.path);
         address outputToken = _getOutputTokenAddress(params.path);
+        if (params.recipient != address(this)) {
+            params.recipient = address(this);
+        }
         MoreVaultsLib.validateAsset(inputToken);
         MoreVaultsLib.validateAsset(outputToken);
 
@@ -77,11 +80,14 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
      */
     function swapDesire(
         address swapContract,
-        ISwap.SwapDesireParams calldata params
+        ISwap.SwapDesireParams memory params
     ) external payable returns (uint256 cost, uint256 acquire) {
         AccessControlLib.validateDiamond(msg.sender);
         address inputToken = _getInputTokenAddress(params.path);
         address outputToken = _getOutputTokenAddress(params.path);
+        if (params.recipient != address(this)) {
+            params.recipient = address(this);
+        }
         MoreVaultsLib.validateAsset(inputToken);
         MoreVaultsLib.validateAsset(outputToken);
 
@@ -96,7 +102,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
      * @dev Takes first 20 bytes of the path as input token address
      */
     function _getInputTokenAddress(
-        bytes calldata path
+        bytes memory path
     ) internal pure returns (address inputToken) {
         return address(bytes20(path.slice(0, 20)));
     }
@@ -108,7 +114,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
      * @dev Takes last 20 bytes of the path as output token address
      */
     function _getOutputTokenAddress(
-        bytes calldata path
+        bytes memory path
     ) internal pure returns (address inputToken) {
         return address(bytes20(path.slice(path.length - 20, path.length)));
     }

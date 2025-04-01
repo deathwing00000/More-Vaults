@@ -2,11 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {DiamondLoupeFacet} from "../../src/facets/DiamondLoupeFacet.sol";
-import {MoreVaultsStorageHelper} from "../libraries/MoreVaultsStorageHelper.sol";
-import {IDiamondLoupe} from "../../src/interfaces/facets/IDiamondLoupe.sol";
-import {IERC165} from "../../src/interfaces/IERC165.sol";
-import {MockFacet} from "../mocks/MockFacet.sol";
+import {DiamondLoupeFacet} from "../../../src/facets/DiamondLoupeFacet.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {IDiamondLoupe} from "../../../src/interfaces/facets/IDiamondLoupe.sol";
+import {IERC165} from "../../../src/interfaces/IERC165.sol";
+import {MockFacet} from "../../mocks/MockFacet.sol";
 
 contract DiamondLoupeFacetTest is Test {
     // Test addresses
@@ -76,6 +76,33 @@ contract DiamondLoupeFacetTest is Test {
         );
     }
 
+    function test_facetName_ShouldReturnCorrectName() public view {
+        assertEq(
+            DiamondLoupeFacet(facet).facetName(),
+            "DiamondLoupeFacet",
+            "Facet name should be correct"
+        );
+    }
+
+    function test_initialize_ShouldSetSupportedInterfaces() public {
+        DiamondLoupeFacet(facet).initialize("");
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                INTERFACE_ID
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                type(IDiamondLoupe).interfaceId
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+    }
     function test_facets_ShouldReturnAllFacetsAndSelectors() public view {
         IDiamondLoupe.Facet[] memory facets = DiamondLoupeFacet(facet).facets();
 

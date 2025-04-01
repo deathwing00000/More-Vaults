@@ -8,6 +8,9 @@ contract MockFacet is
     BaseFacetInitializer,
     IGenericMoreVaultFacetInitializable
 {
+    // function to exclude from coverage
+    function test_skip() external {}
+
     function INITIALIZABLE_STORAGE_SLOT()
         internal
         pure

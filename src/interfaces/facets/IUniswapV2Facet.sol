@@ -20,7 +20,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountBDesired,
         uint amountAMin,
         uint amountBMin,
-        address to,
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity);
 
@@ -31,7 +30,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountETHDesired,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) external returns (uint amountToken, uint amountETH, uint liquidity);
 
@@ -42,7 +40,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint liquidity,
         uint amountAMin,
         uint amountBMin,
-        address to,
         uint deadline
     ) external returns (uint amountA, uint amountB);
 
@@ -52,7 +49,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint liquidity,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) external returns (uint amountToken, uint amountETH);
 
@@ -61,7 +57,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
@@ -70,7 +65,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
@@ -79,7 +73,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint256 amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
@@ -88,7 +81,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountOut,
         uint amountInMax,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
@@ -97,7 +89,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
@@ -106,7 +97,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint256 amountInMax,
         uint amountOut,
         address[] calldata path,
-        address to,
         uint deadline
     ) external returns (uint[] memory amounts);
 
@@ -116,7 +106,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint liquidity,
         uint amountTokenMin,
         uint amountETHMin,
-        address to,
         uint deadline
     ) external returns (uint amountETH);
 
@@ -125,7 +114,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external;
 
@@ -134,7 +122,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint256 amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external;
 
@@ -143,7 +130,6 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
         uint amountIn,
         uint amountOutMin,
         address[] calldata path,
-        address to,
         uint deadline
     ) external;
 }

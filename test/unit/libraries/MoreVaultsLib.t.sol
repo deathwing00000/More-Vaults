@@ -2,17 +2,19 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {MoreVaultsLib} from "../../src/libraries/MoreVaultsLib.sol";
-import {MoreVaultsStorageHelper} from "./MoreVaultsStorageHelper.sol";
-import {IMoreVaultsRegistry} from "../../src/interfaces/IMoreVaultsRegistry.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
-import {IAggregatorV2V3Interface} from "../../src/interfaces/Chainlink/IAggregatorV2V3Interface.sol";
+import {IAggregatorV2V3Interface} from "../../../src/interfaces/Chainlink/IAggregatorV2V3Interface.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract MoreVaultsLibTest is Test {
     using EnumerableSet for EnumerableSet.AddressSet;
+    using Math for uint256;
 
     // Test addresses
     address public token1 = address(1);
@@ -30,6 +32,8 @@ contract MoreVaultsLibTest is Test {
     uint256 constant USD_PRICE = 1e8; // 1 USD
 
     function setUp() public {
+        vm.warp(block.timestamp + 1 days);
+
         address[] memory availableAssets = new address[](2);
         availableAssets[0] = token1;
         availableAssets[1] = token2;
@@ -39,8 +43,8 @@ contract MoreVaultsLibTest is Test {
             availableAssets
         );
         MoreVaultsStorageHelper.setWrappedNative(address(this), wrappedNative);
-        MoreVaultsStorageHelper.setUnderlyingToken(address(this), token1);
         MoreVaultsStorageHelper.setMoreVaultsRegistry(address(this), registry);
+        MoreVaultsStorageHelper.setVaultAsset(address(this), token1, 18);
     }
 
     function test_validateAsset_ShouldNotRevertWhenAssetIsAvailable()
@@ -159,9 +163,9 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             aggregator1,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestAnswer.selector
+                IAggregatorV2V3Interface.latestRoundData.selector
             ),
-            abi.encode(ETH_PRICE)
+            abi.encode(0, ETH_PRICE, block.timestamp, block.timestamp, 0)
         );
         vm.mockCall(
             aggregator1,
@@ -171,9 +175,9 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             aggregator2,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestAnswer.selector
+                IAggregatorV2V3Interface.latestRoundData.selector
             ),
-            abi.encode(USD_PRICE)
+            abi.encode(0, USD_PRICE, block.timestamp, block.timestamp, 0)
         );
         vm.mockCall(
             aggregator2,
@@ -183,9 +187,13 @@ contract MoreVaultsLibTest is Test {
 
         uint256 amount = 1e18; // 1 ETH
         uint256 result = MoreVaultsLib.convertToUnderlying(address(0), amount);
+        uint256 expectedResult = (amount.mulDiv(ETH_PRICE, 1e8)).mulDiv(
+            10000 - 100,
+            10000
+        );
         assertEq(
             result,
-            (amount * ETH_PRICE * 1e10) / 1e18, // Convert from 8 decimals to 18 decimals
+            expectedResult, // Convert from 8 decimals to 18 decimals
             "Should convert ETH to underlying tokens with correct price"
         );
     }
@@ -234,9 +242,9 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             aggregator1,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestAnswer.selector
+                IAggregatorV2V3Interface.latestRoundData.selector
             ),
-            abi.encode(SOL_PRICE)
+            abi.encode(0, SOL_PRICE, block.timestamp, block.timestamp, 0)
         );
         vm.mockCall(
             aggregator1,
@@ -246,9 +254,9 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             aggregator2,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestAnswer.selector
+                IAggregatorV2V3Interface.latestRoundData.selector
             ),
-            abi.encode(USD_PRICE)
+            abi.encode(0, USD_PRICE, block.timestamp, block.timestamp, 0)
         );
         vm.mockCall(
             aggregator2,
@@ -258,9 +266,13 @@ contract MoreVaultsLibTest is Test {
 
         uint256 amount = 1e18; // 1 SOL
         uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
+        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8)).mulDiv(
+            10000 - 100,
+            10000
+        );
         assertEq(
             result,
-            (amount * SOL_PRICE * 1e10) / 1e18, // Convert from 8 decimals to 18 decimals
+            expectedResult, // Convert from 8 decimals to 18 decimals
             "Should convert SOL to underlying tokens with correct price"
         );
     }
@@ -311,9 +323,9 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             aggregator1,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestAnswer.selector
+                IAggregatorV2V3Interface.latestRoundData.selector
             ),
-            abi.encode(SOL_PRICE)
+            abi.encode(0, SOL_PRICE, block.timestamp, block.timestamp, 0)
         );
         vm.mockCall(
             aggregator1,
@@ -323,9 +335,9 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             aggregator2,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestAnswer.selector
+                IAggregatorV2V3Interface.latestRoundData.selector
             ),
-            abi.encode(USD_PRICE)
+            abi.encode(0, USD_PRICE, block.timestamp, block.timestamp, 0)
         );
         vm.mockCall(
             aggregator2,
@@ -342,26 +354,55 @@ contract MoreVaultsLibTest is Test {
 
         uint256 amount = 1e8; // 1 SOL with 8 decimals
         uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
+
+        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8)).mulDiv(
+            10000 - 100,
+            10000
+        );
         assertEq(
             result,
-            (amount * SOL_PRICE * 1e10) / 1e8, // Convert from 8 decimals to 18 and apply price
+            expectedResult, // Convert from 8 decimals to 18 and apply price
             "Should convert token with price when underlying equals denomination asset"
         );
     }
 
-    function test_convertToCorrectDecimals_ShouldScaleUpWhenTokenDecimalsGreater()
+    function test_convertToUnderlying_ShouldConvertUnderlyingToUnderlyingAs1To1()
         public
-        pure
+        view
     {
-        uint256 result = MoreVaultsLib._convertToCorrectDecimals(18, 8, 1e8);
-        assertEq(result, 1e18, "Should scale up by 10^10");
+        uint256 amount = 1e8; // 1 SOL with 8 decimals
+        uint256 result = MoreVaultsLib.convertToUnderlying(token1, amount);
+
+        assertEq(
+            result,
+            amount,
+            "Should convert underlying to underlying as 1 to 1"
+        );
     }
 
-    function test_convertToCorrectDecimals_ShouldScaleDownWhenTokenDecimalsLess()
-        public
-        pure
-    {
-        uint256 result = MoreVaultsLib._convertToCorrectDecimals(8, 18, 1e18);
-        assertEq(result, 1e8, "Should scale down by 10^10");
+    function test_verifyPriceIsUpToDate_ShouldRevertWhenPriceIsOld() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(MoreVaultsLib.OraclePriceIsOld.selector)
+        );
+        MoreVaultsLib.verifyPriceIsUpToDate(block.timestamp - 2 hours - 1);
+    }
+
+    function test_convertToUnderlying_WithZeroAmount() public {
+        // Mock registry and oracle
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(IMoreVaultsRegistry.oracle.selector),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.getDenominationAsset.selector
+            ),
+            abi.encode(denominationAsset)
+        );
+
+        uint256 result = MoreVaultsLib.convertToUnderlying(token1, 0);
+        assertEq(result, 0, "Should return 0 for zero amount");
     }
 }

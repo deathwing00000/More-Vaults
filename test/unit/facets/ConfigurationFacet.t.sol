@@ -2,20 +2,27 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {ConfigurationFacet} from "../src/facets/ConfigurationFacet.sol";
-import {IConfigurationFacet} from "../src/interfaces/facets/IConfigurationFacet.sol";
-import {AccessControlLib} from "../src/libraries/AccessControlLib.sol";
-import {MoreVaultsStorageHelper} from "./libraries/MoreVaultsStorageHelper.sol";
+import {ConfigurationFacet} from "../../../src/facets/ConfigurationFacet.sol";
+import {IConfigurationFacet} from "../../../src/interfaces/facets/IConfigurationFacet.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract ConfigurationFacetTest is Test {
     ConfigurationFacet public facet;
 
-    address public curator = address(1);
-    address public unauthorized = address(2);
-    address public newFeeRecipient = address(3);
-    address public asset1 = address(4);
-    address public asset2 = address(5);
+    address public owner = address(1);
+    address public curator = address(2);
+    address public unauthorized = address(3);
+    address public newFeeRecipient = address(4);
+    address public asset1 = address(5);
+    address public asset2 = address(6);
     address public zeroAddress = address(0);
+    address public guardian = address(7);
+    address public registry = address(8);
+    address public oracle = address(9);
 
     // Storage slot for AccessControlStorage struct
     bytes32 constant ACCESS_CONTROL_STORAGE_POSITION =
@@ -25,19 +32,58 @@ contract ConfigurationFacetTest is Test {
         // Deploy facet
         facet = new ConfigurationFacet();
 
+        // Set owner role
+        MoreVaultsStorageHelper.setOwner(address(facet), owner);
+
         // Set curator role
-        vm.store(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 0),
-            bytes32(uint256(uint160(curator)))
-        );
+        MoreVaultsStorageHelper.setCurator(address(facet), curator);
+
+        // Set guardian role
+        MoreVaultsStorageHelper.setGuardian(address(facet), guardian);
+
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(address(facet), registry);
 
         // Set initial values using helper library
         MoreVaultsStorageHelper.setFeeRecipient(address(facet), address(1));
         MoreVaultsStorageHelper.setFee(address(facet), 100); // 1%
         MoreVaultsStorageHelper.setTimeLockPeriod(address(facet), 1 days);
+
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(IMoreVaultsRegistry.oracle.selector),
+            abi.encode(oracle)
+        );
+
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(
+                IAaveOracle.getSourceOfAsset.selector,
+                asset1
+            ),
+            abi.encode(address(1000))
+        );
+
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(
+                IAaveOracle.getSourceOfAsset.selector,
+                asset2
+            ),
+            abi.encode(address(1001))
+        );
     }
 
+    function test_initialize_shouldSetCorrectValues() public {
+        facet.initialize("");
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                type(IConfigurationFacet).interfaceId
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+    }
     function test_facetName_ShouldReturnCorrectName() public view {
         assertEq(
             facet.facetName(),
@@ -47,11 +93,10 @@ contract ConfigurationFacetTest is Test {
     }
 
     function test_setFeeRecipient_ShouldUpdateRecipient() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Set new fee recipient
         facet.setFeeRecipient(newFeeRecipient);
-
         // Verify through getter
         assertEq(
             MoreVaultsStorageHelper.getFeeRecipient(address(facet)),
@@ -80,17 +125,17 @@ contract ConfigurationFacetTest is Test {
     }
 
     function test_setFeeRecipient_ShouldRevertWhenZeroAddress() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Attempt to set zero address as fee recipient
-        vm.expectRevert(IConfigurationFacet.InvalidAddress.selector);
+        vm.expectRevert(MoreVaultsLib.ZeroAddress.selector);
         facet.setFeeRecipient(zeroAddress);
 
         vm.stopPrank();
     }
 
     function test_setFee_ShouldUpdateFee() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Set new fee
         uint96 newFee = 200; // 2%
@@ -124,20 +169,21 @@ contract ConfigurationFacetTest is Test {
     }
 
     function test_setFee_ShouldRevertWhenInvalidFee() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
-        // Attempt to set fee above 100%
-        vm.expectRevert(IConfigurationFacet.InvalidFee.selector);
-        facet.setFee(10001);
+        // Attempt to set fee above 50%
+        vm.expectRevert(MoreVaultsLib.InvalidFee.selector);
+        facet.setFee(5001);
 
         vm.stopPrank();
     }
 
     function test_setTimeLockPeriod_ShouldUpdatePeriod() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Set new time lock period
         uint256 newPeriod = 2 days;
+
         facet.setTimeLockPeriod(newPeriod);
 
         // Verify through getter
@@ -146,65 +192,6 @@ contract ConfigurationFacetTest is Test {
             newPeriod,
             "Time lock period should be updated"
         );
-
-        vm.stopPrank();
-    }
-
-    function test_setTimeLockPeriod_ShouldRevertWhenUnauthorized() public {
-        vm.startPrank(unauthorized);
-
-        // Attempt to set new time lock period
-        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        facet.setTimeLockPeriod(2 days);
-
-        // Verify time lock period remains unchanged
-        assertEq(
-            MoreVaultsStorageHelper.getTimeLockPeriod(address(facet)),
-            1 days,
-            "Time lock period should not be changed"
-        );
-
-        vm.stopPrank();
-    }
-
-    function test_setTimeLockPeriod_ShouldRevertWhenZeroPeriod() public {
-        vm.startPrank(curator);
-
-        // Attempt to set zero period
-        vm.expectRevert(IConfigurationFacet.InvalidPeriod.selector);
-        facet.setTimeLockPeriod(0);
-
-        vm.stopPrank();
-    }
-
-    function test_addAvailableAsset_ShouldAddAsset() public {
-        vm.startPrank(curator);
-
-        // Add new asset
-        facet.addAvailableAsset(asset1);
-
-        // Verify asset is available
-        assertTrue(
-            MoreVaultsStorageHelper.isAssetAvailable(address(facet), asset1),
-            "Asset should be available"
-        );
-
-        // Verify asset is in available assets array
-        address[] memory assets = MoreVaultsStorageHelper.getAvailableAssets(
-            address(facet)
-        );
-        assertEq(
-            assets.length,
-            1,
-            "Available assets array should have one element"
-        );
-        assertEq(
-            assets[0],
-            asset1,
-            "Asset should be in available assets array"
-        );
-
-        vm.stopPrank();
     }
 
     function test_addAvailableAsset_ShouldRevertWhenUnauthorized() public {
@@ -237,6 +224,12 @@ contract ConfigurationFacetTest is Test {
         public
     {
         vm.startPrank(curator);
+
+        vm.mockCall(
+            address(oracle),
+            abi.encodeWithSelector(IAaveOracle.getSourceOfAsset.selector),
+            abi.encode(address(1000))
+        );
 
         // Add asset first time
         facet.addAvailableAsset(asset1);

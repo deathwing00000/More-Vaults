@@ -2,12 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {IVaultsFactory, VaultsFactory} from "../../src/factory/VaultsFactory.sol";
-import {DiamondCutFacet} from "../../src/facets/DiamondCutFacet.sol";
-import {IDiamondCut} from "../../src/interfaces/facets/IDiamondCut.sol";
-import {IMoreVaultsRegistry, IAaveOracle} from "../../src/interfaces/IMoreVaultsRegistry.sol";
-import {MockERC20} from "../mocks/MockERC20.sol";
-import {VaultFacet} from "../../src/facets/VaultFacet.sol";
+import {IVaultsFactory, VaultsFactory} from "../../../src/factory/VaultsFactory.sol";
+import {DiamondCutFacet} from "../../../src/facets/DiamondCutFacet.sol";
+import {IDiamondCut} from "../../../src/interfaces/facets/IDiamondCut.sol";
+import {IMoreVaultsRegistry, IAaveOracle} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {MockERC20} from "../../mocks/MockERC20.sol";
+import {VaultFacet} from "../../../src/facets/VaultFacet.sol";
 
 contract VaultsFactoryTest is Test {
     // Test addresses
@@ -18,7 +18,9 @@ contract VaultsFactoryTest is Test {
     address public curator = address(2);
     address public guardian = address(3);
     address public feeRecipient = address(4);
+    address public oracle = address(5);
     address public asset;
+    address public wrappedNative;
 
     // Test data
     string constant VAULT_NAME = "Test Vault";
@@ -29,6 +31,7 @@ contract VaultsFactoryTest is Test {
     function setUp() public {
         // Deploy mocks
         registry = address(1001);
+        wrappedNative = address(1002);
 
         DiamondCutFacet cutFacet = new DiamondCutFacet();
         diamondCutFacet = address(cutFacet);
@@ -38,10 +41,13 @@ contract VaultsFactoryTest is Test {
 
         // Deploy factory
         vm.prank(admin);
-        factory = new VaultsFactory(registry, diamondCutFacet);
+        factory = new VaultsFactory();
     }
 
-    function test_constructor_ShouldSetInitialValues() public view {
+    function test_initialize_ShouldSetInitialValues() public {
+        vm.prank(admin);
+        factory.initialize(registry, diamondCutFacet, wrappedNative);
+
         assertEq(
             address(VaultsFactory(factory).registry()),
             registry,
@@ -58,7 +64,21 @@ contract VaultsFactoryTest is Test {
         );
     }
 
+    function test_initialize_ShouldRevertIfZeroAddress() public {
+        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
+        factory.initialize(address(0), diamondCutFacet, wrappedNative);
+
+        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
+        factory.initialize(registry, address(0), wrappedNative);
+
+        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
+        factory.initialize(registry, diamondCutFacet, address(0));
+    }
+
     function test_setDiamondCutFacet_ShouldRevertWhenNotAdmin() public {
+        vm.prank(admin);
+        factory.initialize(registry, diamondCutFacet, wrappedNative);
+
         address newFacet = address(5);
         vm.prank(curator);
         vm.expectRevert();
@@ -67,11 +87,17 @@ contract VaultsFactoryTest is Test {
 
     function test_setDiamondCutFacet_ShouldRevertWithZeroAddress() public {
         vm.prank(admin);
+        factory.initialize(registry, diamondCutFacet, wrappedNative);
+
+        vm.prank(admin);
         vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
         VaultsFactory(factory).setDiamondCutFacet(address(0));
     }
 
     function test_setDiamondCutFacet_ShouldUpdateFacet() public {
+        vm.prank(admin);
+        factory.initialize(registry, diamondCutFacet, wrappedNative);
+
         address newFacet = address(5);
         vm.prank(admin);
         VaultsFactory(factory).setDiamondCutFacet(newFacet);
@@ -83,6 +109,9 @@ contract VaultsFactoryTest is Test {
     }
 
     function test_deployVault_ShouldDeployVaultWithFacets() public {
+        vm.prank(admin);
+        factory.initialize(registry, diamondCutFacet, wrappedNative);
+
         // Prepare facets
         VaultFacet vaultFacet = new VaultFacet();
         bytes4[] memory selectors = new bytes4[](1);
@@ -138,6 +167,21 @@ contract VaultsFactoryTest is Test {
             abi.encode(vaultFacet)
         );
 
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(IMoreVaultsRegistry.oracle.selector),
+            abi.encode(oracle)
+        );
+
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSelector(
+                IAaveOracle.getSourceOfAsset.selector,
+                asset
+            ),
+            abi.encode(address(1000))
+        );
+
         address vault = VaultsFactory(factory).deployVault(facets);
 
         assertTrue(
@@ -153,6 +197,11 @@ contract VaultsFactoryTest is Test {
         address[] memory vaults = VaultsFactory(factory).getDeployedVaults();
         assertEq(vaults.length, 1, "Should have one deployed vault");
         assertEq(vaults[0], vault, "Should store deployed vault address");
+        assertEq(
+            VaultsFactory(factory).isVault(vault),
+            true,
+            "Should be a factory vault"
+        );
     }
 
     function test_isVault_ShouldReturnFalseForNonFactoryVault() public view {

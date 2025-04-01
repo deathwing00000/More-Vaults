@@ -13,6 +13,11 @@ interface IMoreVaultsRegistry {
     error FacetNotAllowed(address facet);
     error SelectorAlreadyExists(address facet, bytes4 selector);
 
+    struct ProtocolFeeInfo {
+        address recipient;
+        uint96 fee;
+    }
+
     /**
      * @dev Emitted when new facet is added with its selectors
      * @param facet Address of added facet
@@ -34,6 +39,28 @@ interface IMoreVaultsRegistry {
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
 
     /**
+     * @dev Emitted when protocol fee info is updated
+     * @param vault Address of the vault
+     * @param recipient Address of the protocol fee recipient
+     * @param fee Protocol fee
+     */
+    event ProtocolFeeInfoUpdated(
+        address indexed vault,
+        address indexed recipient,
+        uint96 fee
+    );
+
+    /**
+     * @notice Initialize the registry
+     * @param _oracle Address of the oracle
+     * @param _usdStableTokenAddress Address of the USD stable token
+     */
+    function initialize(
+        address _oracle,
+        address _usdStableTokenAddress
+    ) external;
+
+    /**
      * @notice Add new facet with its selectors
      * @param facet Address of the facet contract
      * @param selectors Array of function selectors
@@ -53,6 +80,18 @@ interface IMoreVaultsRegistry {
     function updateOracle(address newOracle) external;
 
     /**
+     * @notice Set protocol fee info
+     * @param vault Address of the vault
+     * @param recipient Address of the protocol fee recipient
+     * @param fee Protocol fee
+     */
+    function setProtocolFeeInfo(
+        address vault,
+        address recipient,
+        uint96 fee
+    ) external;
+
+    /**
      * @notice Get all selectors for facet
      * @param facet Address of the facet contract
      * @return Array of selectors
@@ -66,6 +105,16 @@ interface IMoreVaultsRegistry {
      * @return Array of facet addresses
      */
     function getAllowedFacets() external view returns (address[] memory);
+
+    /**
+     * @notice Get protocol fee info
+     * @param vault Address of the vault
+     * @return address Address of the protocol fee recipient
+     * @return uint96 Protocol fee
+     */
+    function protocolFeeInfo(
+        address vault
+    ) external view returns (address, uint96);
 
     /**
      * @notice Get oracle address

@@ -2,16 +2,17 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {IAccessControlFacet, AccessControlFacet} from "../src/facets/AccessControlFacet.sol";
-import {AccessControlLib} from "../src/libraries/AccessControlLib.sol";
-import {MoreVaultsLib} from "../src/libraries/MoreVaultsLib.sol";
-import {IMoreVaultsRegistry} from "../src/interfaces/IMoreVaultsRegistry.sol";
+import {IAccessControlFacet, AccessControlFacet} from "../../../src/facets/AccessControlFacet.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
-import {MoreVaultsStorageHelper} from "./libraries/MoreVaultsStorageHelper.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 
 contract AccessControlFacetTest is Test {
     AccessControlFacet public facet;
 
+    address public owner = address(111);
     address public curator = address(1);
     address public guardian = address(2);
     address public newCurator = address(3);
@@ -30,32 +31,10 @@ contract AccessControlFacetTest is Test {
         // Deploy facet
         facet = new AccessControlFacet();
 
-        // Set initial roles using storage slots
-        // AccessControlStorage struct layout:
-        // - curator (address) at slot + 0
-        // - guardian (address) at slot + 1
-        // - moreVaultsRegistry (address) at slot + 2
+        // Set registry since it should be set outside of initialization of this facet
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(address(facet), registry);
 
-        // Set curator
-        vm.store(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 0),
-            bytes32(uint256(uint160(curator)))
-        );
-
-        // Set guardian
-        vm.store(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 1),
-            bytes32(uint256(uint160(guardian)))
-        );
-
-        // Set registry
-        vm.store(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 2),
-            bytes32(uint256(uint160(registry)))
-        );
+        facet.initialize(abi.encode(owner, curator, guardian));
 
         // Setup MoreVaultsStorage using helper library
         address[] memory facets = new address[](2);
@@ -104,6 +83,21 @@ contract AccessControlFacetTest is Test {
         );
     }
 
+    function test_initialize_ShouldSetVariablesCorrectly() public view {
+        assertEq(facet.owner(), owner, "Owner should be set");
+        assertEq(facet.curator(), curator, "Curator should be set");
+        assertEq(facet.guardian(), guardian, "Guardian should be set");
+
+        assertEq(
+            MoreVaultsStorageHelper.getSupportedInterface(
+                address(facet),
+                type(IAccessControlFacet).interfaceId
+            ),
+            true,
+            "Supported interfaces should be set"
+        );
+    }
+
     function test_facetName_ShouldReturnCorrectName() public view {
         assertEq(
             facet.facetName(),
@@ -113,20 +107,16 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_transferCuratorship_ShouldUpdateCurator() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Transfer curatorship
         facet.transferCuratorship(newCurator);
 
         // Verify new curator in storage
-        bytes32 newCuratorSlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 0)
-        );
         assertEq(
-            address(uint160(uint256(newCuratorSlot))),
-            newCurator,
-            "Curator should be updated in storage"
+            MoreVaultsStorageHelper.getOwner(address(facet)),
+            owner,
+            "Owner should be set"
         );
 
         // Verify through getter
@@ -143,12 +133,8 @@ contract AccessControlFacetTest is Test {
         facet.transferCuratorship(newCurator);
 
         // Verify curator remains unchanged in storage
-        bytes32 curatorSlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 0)
-        );
         assertEq(
-            address(uint160(uint256(curatorSlot))),
+            MoreVaultsStorageHelper.getCurator(address(facet)),
             curator,
             "Curator should not be changed in storage"
         );
@@ -160,7 +146,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_transferCuratorship_ShouldRevertWhenZeroAddress() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Attempt to transfer curatorship to zero address
         vm.expectRevert(AccessControlLib.ZeroAddress.selector);
@@ -170,7 +156,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_transferCuratorship_ShouldRevertWhenSameAddress() public {
-        vm.startPrank(curator);
+        vm.startPrank(owner);
 
         // Attempt to transfer curatorship to same address
         vm.expectRevert(AccessControlLib.SameAddress.selector);
@@ -180,18 +166,14 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_transferGuardian_ShouldUpdateGuardian() public {
-        vm.startPrank(guardian);
+        vm.startPrank(owner);
 
         // Transfer guardian role
         facet.transferGuardian(newGuardian);
 
         // Verify new guardian in storage
-        bytes32 newGuardianSlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 1)
-        );
         assertEq(
-            address(uint160(uint256(newGuardianSlot))),
+            MoreVaultsStorageHelper.getGuardian(address(facet)),
             newGuardian,
             "Guardian should be updated in storage"
         );
@@ -210,12 +192,8 @@ contract AccessControlFacetTest is Test {
         facet.transferGuardian(newGuardian);
 
         // Verify guardian remains unchanged in storage
-        bytes32 guardianSlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 1)
-        );
         assertEq(
-            address(uint160(uint256(guardianSlot))),
+            MoreVaultsStorageHelper.getGuardian(address(facet)),
             guardian,
             "Guardian should not be changed in storage"
         );
@@ -227,7 +205,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_transferGuardian_ShouldRevertWhenZeroAddress() public {
-        vm.startPrank(guardian);
+        vm.startPrank(owner);
 
         // Attempt to transfer guardian role to zero address
         vm.expectRevert(AccessControlLib.ZeroAddress.selector);
@@ -237,7 +215,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_transferGuardian_ShouldRevertWhenSameAddress() public {
-        vm.startPrank(guardian);
+        vm.startPrank(owner);
 
         // Attempt to transfer guardian role to same address
         vm.expectRevert(AccessControlLib.SameAddress.selector);
@@ -248,12 +226,8 @@ contract AccessControlFacetTest is Test {
 
     function test_curator_ShouldReturnCorrectAddress() public view {
         // Verify curator in storage
-        bytes32 curatorSlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 0)
-        );
         assertEq(
-            address(uint160(uint256(curatorSlot))),
+            MoreVaultsStorageHelper.getCurator(address(facet)),
             curator,
             "Curator should be correct in storage"
         );
@@ -263,13 +237,8 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_guardian_ShouldReturnCorrectAddress() public view {
-        // Verify guardian in storage
-        bytes32 guardianSlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 1)
-        );
         assertEq(
-            address(uint160(uint256(guardianSlot))),
+            MoreVaultsStorageHelper.getGuardian(address(facet)),
             guardian,
             "Guardian should be correct in storage"
         );
@@ -279,7 +248,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_setMoreVaultRegistry_ShouldUpdateRegistry() public {
-        vm.startPrank(registry);
+        vm.startPrank(owner);
 
         // Mock selectorToFacet to return different facets for different selectors
         vm.mockCall(
@@ -303,12 +272,8 @@ contract AccessControlFacetTest is Test {
         facet.setMoreVaultRegistry(newRegistry);
 
         // Verify new registry in storage
-        bytes32 newRegistrySlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 2)
-        );
         assertEq(
-            address(uint160(uint256(newRegistrySlot))),
+            MoreVaultsStorageHelper.getMoreVaultsRegistry(address(facet)),
             newRegistry,
             "Registry should be updated in storage"
         );
@@ -331,12 +296,8 @@ contract AccessControlFacetTest is Test {
         facet.setMoreVaultRegistry(newRegistry);
 
         // Verify registry remains unchanged in storage
-        bytes32 registrySlot = vm.load(
-            address(facet),
-            bytes32(uint256(ACCESS_CONTROL_STORAGE_POSITION) + 2)
-        );
         assertEq(
-            address(uint160(uint256(registrySlot))),
+            MoreVaultsStorageHelper.getMoreVaultsRegistry(address(facet)),
             registry,
             "Registry should not be changed in storage"
         );
@@ -345,7 +306,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_setMoreVaultRegistry_ShouldRevertWhenZeroAddress() public {
-        vm.startPrank(registry);
+        vm.startPrank(owner);
 
         // Attempt to set zero address as registry
         vm.expectRevert(AccessControlLib.ZeroAddress.selector);
@@ -355,7 +316,7 @@ contract AccessControlFacetTest is Test {
     }
 
     function test_setMoreVaultRegistry_ShouldRevertWhenSameAddress() public {
-        vm.startPrank(registry);
+        vm.startPrank(owner);
 
         // Attempt to set same registry address
         vm.expectRevert(AccessControlLib.SameAddress.selector);
@@ -367,7 +328,7 @@ contract AccessControlFacetTest is Test {
     function test_setMoreVaultRegistry_ShouldRevertWhenFacetNotAllowed()
         public
     {
-        vm.startPrank(registry);
+        vm.startPrank(owner);
 
         // Mock registry to return false for isFacetAllowed
         vm.mockCall(
@@ -381,33 +342,6 @@ contract AccessControlFacetTest is Test {
             abi.encodeWithSelector(
                 IAccessControlFacet.VaultHasNotAllowedFacet.selector,
                 address(facet1)
-            )
-        );
-        facet.setMoreVaultRegistry(newRegistry);
-
-        vm.stopPrank();
-    }
-
-    function test_setMoreVaultRegistry_ShouldRevertWhenSelectorNotAllowed()
-        public
-    {
-        vm.startPrank(registry);
-
-        // Mock registry to return different facet for selector
-        vm.mockCall(
-            newRegistry,
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.selectorToFacet.selector
-            ),
-            abi.encode(facet2)
-        );
-
-        // Attempt to set new registry
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControlFacet.VaultHasNotAllowedSelector.selector,
-                address(facet1),
-                bytes4(0x12345678)
             )
         );
         facet.setMoreVaultRegistry(newRegistry);

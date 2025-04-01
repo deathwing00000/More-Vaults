@@ -8,24 +8,16 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
      * @dev Custom errors
      */
     error InvalidAddress();
-    error InvalidFee();
     error InvalidPeriod();
     error AssetAlreadyAvailable();
     error AssetNotAvailable();
+    error TimeLockPeriodNotExpired();
+    error NothingSubmitted();
 
-    /**
-     * @dev Events for configuration changes
-     */
-    event FeeRecipientSet(
-        address indexed previousRecipient,
-        address indexed newRecipient
-    );
     event MoreVaultRegistrySet(
         address indexed previousRegistry,
         address indexed newRegistry
     );
-    event FeeSet(uint96 previousFee, uint96 newFee);
-    event TimeLockPeriodSet(uint256 previousPeriod, uint256 newPeriod);
     event AssetAdded(address indexed asset);
     event AssetRemoved(address indexed asset);
 
@@ -43,7 +35,7 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
 
     /**
      * @notice Sets time lock period
-     * @param period New time lock period
+     * @param period New time lock period (in seconds)
      */
     function setTimeLockPeriod(uint256 period) external;
 

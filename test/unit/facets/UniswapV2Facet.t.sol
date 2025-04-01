@@ -2,13 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {IUniswapV2Facet, UniswapV2Facet} from "../../src/facets/UniswapV2Facet.sol";
-import {MoreVaultsStorageHelper} from "../libraries/MoreVaultsStorageHelper.sol";
+import {IUniswapV2Facet, UniswapV2Facet} from "../../../src/facets/UniswapV2Facet.sol";
+import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IUniswapV2Router02, IUniswapV2Router01} from "@uniswap-v2/v2-periphery/interfaces/IUniswapV2Router02.sol";
-import {IUniswapV2Factory} from "../../src/interfaces/Uniswap/v2/IUniswapV2Factory.sol";
-import {IUniswapV2Pair} from "../../src/interfaces/Uniswap/v2/IUniswapV2Pair.sol";
-import {BaseFacetInitializer} from "../../src/facets/BaseFacetInitializer.sol";
+import {IUniswapV2Factory} from "../../../src/interfaces/Uniswap/v2/IUniswapV2Factory.sol";
+import {IUniswapV2Pair} from "../../../src/interfaces/Uniswap/v2/IUniswapV2Pair.sol";
+import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 
 contract UniswapV2FacetTest is Test {
     // Test addresses
@@ -25,6 +26,7 @@ contract UniswapV2FacetTest is Test {
     // Test amounts
     uint256 constant AMOUNT = 1e18;
     uint256 constant MIN_AMOUNT = 1e17;
+    uint256 constant MAX_AMOUNT = 1e18;
 
     function setUp() public {
         deadline = block.timestamp + 1 hours;
@@ -82,6 +84,126 @@ contract UniswapV2FacetTest is Test {
         UniswapV2Facet(facet).initialize(abi.encode(facet));
     }
 
+    function test_allNonViewFunctions_ShouldRevertWhenCalledByNonDiamond()
+        public
+    {
+        vm.startPrank(user);
+
+        address[] memory path = new address[](2);
+        path[0] = token1;
+        path[1] = token2;
+
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).addLiquidity(
+            router,
+            token1,
+            token2,
+            AMOUNT,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).addLiquidityETH(
+            router,
+            token1,
+            AMOUNT,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).removeLiquidity(
+            router,
+            token1,
+            token2,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).removeLiquidityETH(
+            router,
+            token1,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).removeLiquidityETHSupportingFeeOnTransferTokens(
+            router,
+            token1,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet)
+            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                router,
+                AMOUNT,
+                MIN_AMOUNT,
+                path,
+                deadline
+            );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet)
+            .swapExactETHForTokensSupportingFeeOnTransferTokens(
+                router,
+                AMOUNT,
+                MIN_AMOUNT,
+                path,
+                deadline
+            );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet)
+            .swapExactTokensForETHSupportingFeeOnTransferTokens(
+                router,
+                AMOUNT,
+                MIN_AMOUNT,
+                path,
+                deadline
+            );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).swapExactETHForTokens(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).swapExactTokensForETH(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).swapExactTokensForTokens(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).swapTokensForExactTokens(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.stopPrank();
+    }
+
     function test_addLiquidity_ShouldAddLPTokenToHeldTokens() public {
         // Mock approvals and addLiquidity
         vm.mockCall(
@@ -104,7 +226,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT, AMOUNT, AMOUNT)
@@ -121,7 +243,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -149,7 +270,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT, AMOUNT, AMOUNT)
@@ -165,7 +286,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -210,7 +330,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT, AMOUNT)
@@ -226,7 +346,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -271,7 +390,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT, AMOUNT)
@@ -286,7 +405,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -332,7 +450,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT, AMOUNT)
@@ -348,7 +466,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -394,7 +511,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT, AMOUNT)
@@ -409,7 +526,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -442,7 +558,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(new uint256[](2))
@@ -456,7 +572,44 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             path,
-            address(this),
+            deadline
+        );
+    }
+
+    function test_swapTokensForExactTokens_ShouldCallSwapTokensForExactTokens()
+        public
+    {
+        address[] memory path = new address[](2);
+        path[0] = token1;
+        path[1] = token2;
+
+        // Mock approvals and swapTokensForExactTokens
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20.approve.selector, router, MAX_AMOUNT),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            router,
+            abi.encodeWithSelector(
+                IUniswapV2Router01.swapTokensForExactTokens.selector,
+                MIN_AMOUNT,
+                MAX_AMOUNT,
+                path,
+                address(facet),
+                deadline
+            ),
+            abi.encode(new uint256[](2))
+        );
+
+        // Set up as curator
+        vm.prank(facet);
+
+        UniswapV2Facet(facet).swapTokensForExactTokens(
+            router,
+            MIN_AMOUNT,
+            MAX_AMOUNT,
+            path,
             deadline
         );
     }
@@ -475,7 +628,7 @@ contract UniswapV2FacetTest is Test {
                 IUniswapV2Router01.swapExactETHForTokens.selector,
                 MIN_AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(new uint256[](2))
@@ -489,7 +642,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             path,
-            address(this),
             deadline
         );
     }
@@ -514,7 +666,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(new uint256[](2))
@@ -528,7 +680,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             AMOUNT,
             path,
-            address(this),
             deadline
         );
     }
@@ -553,7 +704,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(new uint256[](2))
@@ -567,7 +718,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             path,
-            address(this),
             deadline
         );
     }
@@ -586,7 +736,7 @@ contract UniswapV2FacetTest is Test {
                 IUniswapV2Router01.swapETHForExactTokens.selector,
                 AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(new uint256[](2))
@@ -600,7 +750,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             AMOUNT,
             path,
-            address(this),
             deadline
         );
     }
@@ -640,7 +789,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 MIN_AMOUNT,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode(AMOUNT)
@@ -655,7 +804,6 @@ contract UniswapV2FacetTest is Test {
             AMOUNT,
             MIN_AMOUNT,
             MIN_AMOUNT,
-            address(this),
             deadline
         );
 
@@ -689,7 +837,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode()
@@ -704,7 +852,6 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
                 deadline
             );
     }
@@ -725,7 +872,7 @@ contract UniswapV2FacetTest is Test {
                     .selector,
                 MIN_AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode()
@@ -740,7 +887,6 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
                 deadline
             );
     }
@@ -767,7 +913,7 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
+                address(facet),
                 deadline
             ),
             abi.encode()
@@ -782,7 +928,6 @@ contract UniswapV2FacetTest is Test {
                 AMOUNT,
                 MIN_AMOUNT,
                 path,
-                address(this),
                 deadline
             );
     }

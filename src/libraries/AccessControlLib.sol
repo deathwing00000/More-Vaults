@@ -21,10 +21,32 @@ library AccessControlLib {
         keccak256("MoreVaults.accessControl.storage");
 
     struct AccessControlStorage {
+        address owner;
         address curator;
         address guardian;
         address moreVaultsRegistry;
     }
+
+    /**
+     * @dev Emitted when owner address is changed
+     */
+    event OwnerChanged(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Emitted when curator address is changed
+     */
+    event CuratorChanged(
+        address indexed previousCurator,
+        address indexed newCurator
+    );
+
+    /**
+     * @dev Emitted when guardian address is changed
+     */
+    event GuardianChanged(
+        address indexed previousGuardian,
+        address indexed newGuardian
+    );
 
     function accessControlStorage()
         internal
@@ -38,14 +60,12 @@ library AccessControlLib {
         }
     }
 
-    function validateRegistryOwner(address caller) internal view {
-        bytes32 DEFAULT_ADMIN_ROLE = 0x00;
-        if (
-            !IAccessControl(accessControlStorage().moreVaultsRegistry).hasRole(
-                DEFAULT_ADMIN_ROLE,
-                caller
-            )
-        ) {
+    /**
+     * @notice Validates if caller is owner
+     * @param caller Address to validate
+     */
+    function validateOwner(address caller) internal view {
+        if (caller != accessControlStorage().owner) {
             revert UnauthorizedAccess();
         }
     }
@@ -55,17 +75,23 @@ library AccessControlLib {
      * @param caller Address to validate
      */
     function validateCurator(address caller) internal view {
-        if (caller != accessControlStorage().curator) {
+        if (
+            caller != accessControlStorage().curator &&
+            accessControlStorage().owner != caller
+        ) {
             revert UnauthorizedAccess();
         }
     }
 
     /**
-     * @notice Validates if caller is guardian
+     * @notice Validates if caller is guardian or owner
      * @param caller Address to validate
      */
     function validateGuardian(address caller) internal view {
-        if (accessControlStorage().guardian != caller) {
+        if (
+            accessControlStorage().guardian != caller &&
+            accessControlStorage().owner != caller
+        ) {
             revert UnauthorizedAccess();
         }
     }
@@ -74,6 +100,27 @@ library AccessControlLib {
         if (caller != address(this)) {
             revert UnauthorizedAccess();
         }
+    }
+
+    /**
+     * @notice Sets new owner address
+     * @param _newOwner Address of new owner
+     */
+    function setVaultOwner(address _newOwner) internal {
+        if (_newOwner == address(0)) {
+            revert ZeroAddress();
+        }
+
+        AccessControlStorage storage acs = accessControlStorage();
+
+        if (_newOwner == acs.owner) {
+            revert SameAddress();
+        }
+
+        address previousOwner = acs.owner;
+        acs.owner = _newOwner;
+
+        emit OwnerChanged(previousOwner, _newOwner);
     }
 
     /**
@@ -91,7 +138,10 @@ library AccessControlLib {
             revert SameAddress();
         }
 
+        address previousCurator = acs.curator;
         acs.curator = _newCurator;
+
+        emit CuratorChanged(previousCurator, _newCurator);
     }
 
     /**
@@ -109,7 +159,32 @@ library AccessControlLib {
             revert SameAddress();
         }
 
+        address previousGuardian = acs.guardian;
         acs.guardian = _newGuardian;
+
+        emit GuardianChanged(previousGuardian, _newGuardian);
+    }
+
+    function setMoreVaultsRegistry(address _newRegistry) internal {
+        if (_newRegistry == address(0)) {
+            revert ZeroAddress();
+        }
+
+        AccessControlStorage storage acs = accessControlStorage();
+
+        if (_newRegistry == acs.moreVaultsRegistry) {
+            revert SameAddress();
+        }
+
+        acs.moreVaultsRegistry = _newRegistry;
+    }
+
+    /**
+     * @notice Gets current owner address
+     * @return Address of current owner
+     */
+    function vaultOwner() internal view returns (address) {
+        return accessControlStorage().owner;
     }
 
     /**

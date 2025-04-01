@@ -9,23 +9,19 @@ interface IMoreMarketsFacet is IGenericMoreVaultFacetInitializable {
 
     function facetName() external pure returns (string memory);
 
-    // function withdrawFromMoreMarketsFacet(uint proportion, address to) external;
-
     function accountingMoreMarketsFacet() external view returns (uint sum);
 
     function supply(
         address pool,
         address asset,
         uint256 amount,
-        address onBehalfOf,
         uint16 referralCode
     ) external;
 
     function withdraw(
         address pool,
         address asset,
-        uint256 amount,
-        address to
+        uint256 amount
     ) external returns (uint256 withdrawnAmount);
 
     function borrow(
@@ -41,8 +37,7 @@ interface IMoreMarketsFacet is IGenericMoreVaultFacetInitializable {
         address pool,
         address asset,
         uint256 amount,
-        uint256 interestRateMode,
-        address onBehalfOf
+        uint256 interestRateMode
     ) external returns (uint256 repaidAmount);
 
     function repayWithATokens(
@@ -94,8 +89,7 @@ interface IMoreMarketsFacet is IGenericMoreVaultFacetInitializable {
 
     function claimAllRewards(
         address rewardsController,
-        address[] calldata assets,
-        address to
+        address[] calldata assets
     )
         external
         returns (address[] memory rewardsList, uint256[] memory claimedAmounts);

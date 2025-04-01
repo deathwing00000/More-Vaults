@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Vm} from "forge-std/Test.sol";
 import {MoreVaultsLib} from "../../src/libraries/MoreVaultsLib.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 library MoreVaultsStorageHelper {
     Vm constant vm =
@@ -17,15 +18,24 @@ library MoreVaultsStorageHelper {
     uint256 constant ASSET_AVAILABLE = 5;
     uint256 constant AVAILABLE_ASSETS = 6;
     uint256 constant TOKENS_HELD = 7;
-    uint256 constant MORE_POOL_ADDRESSES_PROVIDER_REGISTRY = 8;
-    uint256 constant UNDERLYING_TOKEN = 9;
-    uint256 constant WRAPPED_NATIVE = 10;
-    uint256 constant FEE_RECIPIENT = 11;
-    uint256 constant LAST_TOTAL_ASSETS = 12;
-    uint256 constant FEE = 13;
-    uint256 constant ACTION_NONCE = 14;
-    uint256 constant PENDING_ACTION = 15;
-    uint256 constant TIME_LOCK_PERIOD = 16;
+    uint256 constant WRAPPED_NATIVE = 8;
+    uint256 constant FEE_RECIPIENT = 9;
+    uint256 constant FEE = 9;
+    uint256 constant LAST_TOTAL_ASSETS = 10;
+    uint256 constant ACTION_NONCE = 11;
+    uint256 constant PENDING_ACTION = 12;
+    uint256 constant TIME_LOCK_PERIOD = 13;
+
+    uint256 constant OWNER = 0;
+    uint256 constant CURATOR = 1;
+    uint256 constant GUARDIAN = 2;
+    uint256 constant MORE_VAULTS_REGISTRY = 3;
+
+    bytes32 constant ACS_POSITION =
+        keccak256("MoreVaults.accessControl.storage");
+
+    // function to exclude from coverage
+    function test() external {}
 
     function setStorageValue(
         address contractAddress,
@@ -368,24 +378,6 @@ library MoreVaultsStorageHelper {
         return tokens;
     }
 
-    function setMorePoolAddressesProviderRegistry(
-        address contractAddress,
-        address registry
-    ) internal {
-        setStorageAddress(
-            contractAddress,
-            MORE_POOL_ADDRESSES_PROVIDER_REGISTRY,
-            registry
-        );
-    }
-
-    function setUnderlyingToken(
-        address contractAddress,
-        address token
-    ) internal {
-        setStorageAddress(contractAddress, UNDERLYING_TOKEN, token);
-    }
-
     function setWrappedNative(
         address contractAddress,
         address wrapped
@@ -397,7 +389,23 @@ library MoreVaultsStorageHelper {
         address contractAddress,
         address recipient
     ) internal {
-        setStorageAddress(contractAddress, FEE_RECIPIENT, recipient);
+        bytes32 storedValue = getStorageValue(contractAddress, FEE);
+        bytes32 mask = bytes32(uint256(type(uint160).max));
+        setStorageValue(
+            contractAddress,
+            FEE_RECIPIENT,
+            (storedValue & ~mask) | bytes32(uint256(uint160(recipient)))
+        );
+    }
+
+    function setFee(address contractAddress, uint256 value) internal {
+        bytes32 storedValue = getStorageValue(contractAddress, FEE);
+        bytes32 mask = bytes32(uint256(type(uint96).max) << 160);
+        setStorageValue(
+            contractAddress,
+            FEE,
+            (storedValue & ~mask) | bytes32(uint256(uint96(value)) << 160)
+        );
     }
 
     function setLastTotalAssets(
@@ -405,10 +413,6 @@ library MoreVaultsStorageHelper {
         uint256 value
     ) internal {
         setStorageValue(contractAddress, LAST_TOTAL_ASSETS, bytes32(value));
-    }
-
-    function setFee(address contractAddress, uint256 value) internal {
-        setStorageValue(contractAddress, FEE, bytes32(value));
     }
 
     function setActionNonce(address contractAddress, uint256 value) internal {
@@ -462,11 +466,15 @@ library MoreVaultsStorageHelper {
     function getFeeRecipient(
         address contractAddress
     ) internal view returns (address) {
-        return getStorageAddress(contractAddress, FEE_RECIPIENT);
+        bytes32 storedValue = getStorageValue(contractAddress, FEE_RECIPIENT);
+        bytes32 mask = bytes32(uint256(type(uint160).max));
+        return address(uint160(uint256(storedValue & mask)));
     }
 
     function getFee(address contractAddress) internal view returns (uint96) {
-        return uint96(uint256(getStorageValue(contractAddress, FEE)));
+        bytes32 storedValue = getStorageValue(contractAddress, FEE);
+        bytes32 mask = bytes32(uint256(type(uint96).max) << 160);
+        return uint96(uint256((storedValue & mask) >> 160));
     }
 
     function getTimeLockPeriod(
@@ -509,23 +517,56 @@ library MoreVaultsStorageHelper {
         return assets;
     }
 
+    function setOwner(address contractAddress, address owner) internal {
+        vm.store(
+            contractAddress,
+            bytes32(uint256(ACS_POSITION) + OWNER),
+            bytes32(uint256(uint160(owner)))
+        );
+    }
+
+    function getOwner(address contractAddress) internal view returns (address) {
+        return
+            address(
+                uint160(
+                    uint256(
+                        vm.load(
+                            contractAddress,
+                            bytes32(uint256(ACS_POSITION) + OWNER)
+                        )
+                    )
+                )
+            );
+    }
+
     function setCurator(address contractAddress, address curator) internal {
-        bytes32 position = keccak256("MoreVaults.accessControl.storage");
-        vm.store(contractAddress, position, bytes32(uint256(uint160(curator))));
+        vm.store(
+            contractAddress,
+            bytes32(uint256(ACS_POSITION) + CURATOR),
+            bytes32(uint256(uint160(curator)))
+        );
     }
 
     function getCurator(
         address contractAddress
     ) internal view returns (address) {
-        bytes32 position = keccak256("MoreVaults.accessControl.storage");
-        return address(uint160(uint256(vm.load(contractAddress, position))));
+        return
+            address(
+                uint160(
+                    uint256(
+                        vm.load(
+                            contractAddress,
+                            bytes32(uint256(ACS_POSITION) + CURATOR)
+                        )
+                    )
+                )
+            );
     }
 
     function setGuardian(address contractAddress, address guardian) internal {
-        bytes32 position = keccak256("MoreVaults.accessControl.storage");
         vm.store(
             contractAddress,
-            bytes32(uint256(position) + 1),
+            bytes32(uint256(ACS_POSITION) + GUARDIAN),
             bytes32(uint256(uint160(guardian)))
         );
     }
@@ -533,12 +574,14 @@ library MoreVaultsStorageHelper {
     function getGuardian(
         address contractAddress
     ) internal view returns (address) {
-        bytes32 position = keccak256("MoreVaults.accessControl.storage");
         return
             address(
                 uint160(
                     uint256(
-                        vm.load(contractAddress, bytes32(uint256(position) + 1))
+                        vm.load(
+                            contractAddress,
+                            bytes32(uint256(ACS_POSITION) + GUARDIAN)
+                        )
                     )
                 )
             );
@@ -548,10 +591,9 @@ library MoreVaultsStorageHelper {
         address contractAddress,
         address registry
     ) internal {
-        bytes32 position = keccak256("MoreVaults.accessControl.storage");
         vm.store(
             contractAddress,
-            bytes32(uint256(position) + 2),
+            bytes32(uint256(ACS_POSITION) + MORE_VAULTS_REGISTRY),
             bytes32(uint256(uint160(registry)))
         );
     }
@@ -559,15 +601,36 @@ library MoreVaultsStorageHelper {
     function getMoreVaultsRegistry(
         address contractAddress
     ) internal view returns (address) {
-        bytes32 position = keccak256("MoreVaults.accessControl.storage");
         return
             address(
                 uint160(
                     uint256(
-                        vm.load(contractAddress, bytes32(uint256(position) + 2))
+                        vm.load(
+                            contractAddress,
+                            bytes32(
+                                uint256(ACS_POSITION) + MORE_VAULTS_REGISTRY
+                            )
+                        )
                     )
                 )
             );
+    }
+
+    function setVaultAsset(
+        address contractAddress,
+        address asset,
+        uint8 decimals
+    ) internal {
+        MoreVaultsLib.ERC4626Storage memory data = MoreVaultsLib.ERC4626Storage(
+            IERC20(asset),
+            decimals
+        );
+
+        vm.store(
+            contractAddress,
+            MoreVaultsLib.ERC4626StorageLocation,
+            bytes32(abi.encode(data))
+        );
     }
 
     function getFacetFunctionSelectors(
@@ -646,5 +709,35 @@ library MoreVaultsStorageHelper {
                     vm.load(contractAddress, bytes32(uint256(mappingSlot) + 1))
                 )
             );
+    }
+
+    function getFacetBySelector(
+        address contractAddress,
+        bytes4 selector
+    ) internal view returns (address) {
+        bytes32 mappingSlot = keccak256(
+            abi.encode(
+                bytes32(selector),
+                bytes32(
+                    uint256(MoreVaultsLib.MORE_VAULTS_STORAGE_POSITION) +
+                        SELECTOR_TO_FACET_AND_POSITION
+                )
+            )
+        );
+        return address(uint160(uint256(vm.load(contractAddress, mappingSlot))));
+    }
+
+    function getSupportedInterface(
+        address contractAddress,
+        bytes4 interfaceId
+    ) internal view returns (bool) {
+        return
+            uint256(
+                getMappingValue(
+                    contractAddress,
+                    SUPPORTED_INTERFACE,
+                    bytes32(interfaceId)
+                )
+            ) != 0;
     }
 }

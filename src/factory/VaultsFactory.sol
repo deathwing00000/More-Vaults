@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {MoreVaultsDiamond} from "../MoreVaultsDiamond.sol";
 import {DiamondCutFacet} from "../facets/DiamondCutFacet.sol";
 import {IDiamondCut} from "../interfaces/facets/IDiamondCut.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
 import {IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
+
 /**
  * @title VaultsFactory
  * @notice Factory contract for deploying new vault instances
  */
-contract VaultsFactory is IVaultsFactory, AccessControl {
+contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     /// @dev Registry contract address
-    IMoreVaultsRegistry public immutable registry;
+    IMoreVaultsRegistry public registry;
 
     /// @dev DiamondCutFacet address
     address public diamondCutFacet;
@@ -25,9 +26,21 @@ contract VaultsFactory is IVaultsFactory, AccessControl {
     /// @dev Array of all deployed vaults
     address[] public deployedVaults;
 
-    constructor(address _registry, address _diamondCutFacet) {
-        if (_registry == address(0)) revert ZeroAddress();
+    /// @dev Address of the wrapped native token
+    address public wrappedNative;
+
+    function initialize(
+        address _registry,
+        address _diamondCutFacet,
+        address _wrappedNative
+    ) external initializer {
+        if (
+            _registry == address(0) ||
+            _diamondCutFacet == address(0) ||
+            _wrappedNative == address(0)
+        ) revert ZeroAddress();
         _setDiamondCutFacet(_diamondCutFacet);
+        wrappedNative = _wrappedNative;
 
         registry = IMoreVaultsRegistry(_registry);
 
@@ -64,11 +77,16 @@ contract VaultsFactory is IVaultsFactory, AccessControl {
         }
         // Deploy new MoreVaultsDiamond (vault)
         vault = address(
-            new MoreVaultsDiamond(diamondCutFacet, address(registry), cuts)
+            new MoreVaultsDiamond(
+                diamondCutFacet,
+                address(registry),
+                wrappedNative,
+                cuts
+            )
         );
         isFactoryVault[vault] = true;
         deployedVaults.push(vault);
-        emit VaultDeployed(vault, address(registry), facets);
+        emit VaultDeployed(vault, address(registry), wrappedNative, facets);
     }
 
     /**

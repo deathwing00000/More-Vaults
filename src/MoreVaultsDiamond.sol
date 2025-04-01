@@ -10,9 +10,13 @@ import {AccessControlLib} from "./libraries/AccessControlLib.sol";
 import {IDiamondCut} from "./interfaces/facets/IDiamondCut.sol";
 
 contract MoreVaultsDiamond {
+    error NativeTokenNotAvailable();
+    error FunctionDoesNotExist();
+
     constructor(
         address _diamondCutFacet,
         address _registry,
+        address _wrappedNative,
         IDiamondCut.FacetCut[] memory _cuts
     ) payable {
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
@@ -24,12 +28,16 @@ contract MoreVaultsDiamond {
             functionSelectors: functionSelectors,
             initData: ""
         });
-        AccessControlLib.AccessControlStorage storage acs = AccessControlLib
-            .accessControlStorage();
-        acs.moreVaultsRegistry = _registry;
-        MoreVaultsLib.diamondCut(cut);
+        AccessControlLib.setMoreVaultsRegistry(_registry);
 
-        MoreVaultsLib.diamondCut(_cuts);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.wrappedNative = _wrappedNative;
+
+        MoreVaultsLib.diamondCut(cut);
+        if (_cuts.length > 0) {
+            MoreVaultsLib.diamondCut(_cuts);
+        }
     }
 
     // Find facet for function that is called and execute the
@@ -43,7 +51,9 @@ contract MoreVaultsDiamond {
         }
         // get facet from function selector
         address facet = ds.selectorToFacetAndPosition[msg.sig].facetAddress;
-        require(facet != address(0), "Diamond: Function does not exist");
+        if (facet == address(0)) {
+            revert FunctionDoesNotExist();
+        }
         // Execute external function from facet using delegatecall and return any value.
         assembly {
             // copy function selector and any arguments
@@ -63,5 +73,11 @@ contract MoreVaultsDiamond {
         }
     }
 
-    receive() external payable {}
+    receive() external payable {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        if (!ds.isAssetAvailable[ds.wrappedNative]) {
+            revert NativeTokenNotAvailable();
+        }
+    }
 }

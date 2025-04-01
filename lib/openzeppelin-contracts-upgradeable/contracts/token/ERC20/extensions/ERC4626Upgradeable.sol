@@ -10,7 +10,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Initializable} from "../../../proxy/utils/Initializable.sol";
-
+import "forge-std/console.sol";
 /**
  * @dev Implementation of the ERC-4626 "Tokenized Vault Standard" as defined in
  * https://eips.ethereum.org/EIPS/eip-4626[ERC-4626].
@@ -58,7 +58,8 @@ abstract contract ERC4626Upgradeable is Initializable, ERC20Upgradeable, IERC462
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC4626")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ERC4626StorageLocation = 0x0773e532dfede91f04b12a73d3d2acd361424f41f76b4fb79f090161e36b4e00;
+    bytes32 private constant ERC4626StorageLocation =
+        0x0773e532dfede91f04b12a73d3d2acd361424f41f76b4fb79f090161e36b4e00;
 
     function _getERC4626Storage() private pure returns (ERC4626Storage storage $) {
         assembly {
