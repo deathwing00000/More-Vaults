@@ -51,7 +51,7 @@ contract MoreVaultsLibTest is Test {
         public
         view
     {
-        MoreVaultsLib.validateAsset(token1);
+        MoreVaultsLib.validateAssetAvailable(token1);
     }
 
     function test_validateAsset_ShouldRevertWhenAssetIsNotAvailable() public {
@@ -62,7 +62,7 @@ contract MoreVaultsLibTest is Test {
                 invalidAsset
             )
         );
-        MoreVaultsLib.validateAsset(invalidAsset);
+        MoreVaultsLib.validateAssetAvailable(invalidAsset);
     }
 
     function test_removeTokenIfnecessary_ShouldRemoveTokenWhenBalanceIsLow()
@@ -187,10 +187,7 @@ contract MoreVaultsLibTest is Test {
 
         uint256 amount = 1e18; // 1 ETH
         uint256 result = MoreVaultsLib.convertToUnderlying(address(0), amount);
-        uint256 expectedResult = (amount.mulDiv(ETH_PRICE, 1e8)).mulDiv(
-            10000 - 100,
-            10000
-        );
+        uint256 expectedResult = (amount.mulDiv(ETH_PRICE, 1e8));
         assertEq(
             result,
             expectedResult, // Convert from 8 decimals to 18 decimals
@@ -266,10 +263,7 @@ contract MoreVaultsLibTest is Test {
 
         uint256 amount = 1e18; // 1 SOL
         uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
-        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8)).mulDiv(
-            10000 - 100,
-            10000
-        );
+        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8));
         assertEq(
             result,
             expectedResult, // Convert from 8 decimals to 18 decimals
@@ -355,10 +349,7 @@ contract MoreVaultsLibTest is Test {
         uint256 amount = 1e8; // 1 SOL with 8 decimals
         uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
 
-        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8)).mulDiv(
-            10000 - 100,
-            10000
-        );
+        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8));
         assertEq(
             result,
             expectedResult, // Convert from 8 decimals to 18 and apply price
@@ -380,11 +371,18 @@ contract MoreVaultsLibTest is Test {
         );
     }
 
-    function test_verifyPriceIsUpToDate_ShouldRevertWhenPriceIsOld() public {
+    function test_verifyPrice_ShouldRevertWhenPriceIsOld() public {
         vm.expectRevert(
             abi.encodeWithSelector(MoreVaultsLib.OraclePriceIsOld.selector)
         );
-        MoreVaultsLib.verifyPriceIsUpToDate(block.timestamp - 2 hours - 1);
+        MoreVaultsLib.verifyPrice(int256(0), block.timestamp - 3 hours - 1);
+    }
+
+    function test_verifyPrice_ShouldRevertWhenPriceIsNegative() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(MoreVaultsLib.OraclePriceIsNegative.selector)
+        );
+        MoreVaultsLib.verifyPrice(int256(-1), block.timestamp);
     }
 
     function test_convertToUnderlying_WithZeroAmount() public {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.28;
 
 import {IAggroKittySwapFacet} from "../interfaces/facets/IAggroKittySwapFacet.sol";
 import {IAggroKittyRouter} from "../interfaces/KittyPunch/IAggroKittyRouter.sol";
@@ -38,8 +38,10 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter.Trade calldata _trade
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(_trade.path[0]);
-        MoreVaultsLib.validateAsset(_trade.path[_trade.path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(_trade.path[0]);
+        MoreVaultsLib.validateAssetAvailable(
+            _trade.path[_trade.path.length - 1]
+        );
 
         IERC20(_trade.path[0]).approve(_router, _trade.amountIn);
 
@@ -51,8 +53,10 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter.Trade calldata _trade
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(address(0));
-        MoreVaultsLib.validateAsset(_trade.path[_trade.path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(address(0));
+        MoreVaultsLib.validateAssetAvailable(
+            _trade.path[_trade.path.length - 1]
+        );
 
         IAggroKittyRouter(_router).swapNoSplitFromNative{
             value: _trade.amountIn
@@ -64,8 +68,8 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter.Trade calldata _trade
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(_trade.path[0]);
-        MoreVaultsLib.validateAsset(address(0));
+        MoreVaultsLib.validateAssetAvailable(_trade.path[0]);
+        MoreVaultsLib.validateAssetAvailable(address(0));
 
         IERC20(_trade.path[0]).approve(_router, _trade.amountIn);
 

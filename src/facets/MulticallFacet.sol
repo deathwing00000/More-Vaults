@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
@@ -64,6 +64,8 @@ contract MulticallFacet is
     }
 
     function executeActions(uint256 actionsNonce) public override nonReentrant {
+        AccessControlLib.validateCurator(msg.sender);
+
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         MoreVaultsLib.PendingActions storage actions = ds.pendingActions[

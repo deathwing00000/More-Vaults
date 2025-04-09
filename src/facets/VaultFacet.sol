@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
@@ -65,6 +65,7 @@ contract VaultFacet is
         __ERC4626_init(IERC20(asset));
         __ERC20_init(name, symbol);
         MoreVaultsLib._addAvailableAsset(asset);
+        MoreVaultsLib._enableAssetToDeposit(asset);
     }
 
     function paused()
@@ -77,12 +78,12 @@ contract VaultFacet is
     }
 
     function pause() external {
-        AccessControlLib.validateCurator(msg.sender);
+        AccessControlLib.validateOwner(msg.sender);
         _pause();
     }
 
     function unpause() external {
-        AccessControlLib.validateCurator(msg.sender);
+        AccessControlLib.validateOwner(msg.sender);
         _unpause();
     }
 
@@ -262,7 +263,7 @@ contract VaultFacet is
 
         uint256 totalConvertedAmount;
         for (uint i; i < tokens.length; ) {
-            MoreVaultsLib.validateAsset(tokens[i]);
+            MoreVaultsLib.validateAssetDepositable(tokens[i]);
             totalConvertedAmount += MoreVaultsLib.convertToUnderlying(
                 tokens[i],
                 assets[i]

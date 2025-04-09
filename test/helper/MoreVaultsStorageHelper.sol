@@ -17,14 +17,15 @@ library MoreVaultsStorageHelper {
     uint256 constant SUPPORTED_INTERFACE = 4;
     uint256 constant ASSET_AVAILABLE = 5;
     uint256 constant AVAILABLE_ASSETS = 6;
-    uint256 constant TOKENS_HELD = 7;
-    uint256 constant WRAPPED_NATIVE = 8;
-    uint256 constant FEE_RECIPIENT = 9;
-    uint256 constant FEE = 9;
-    uint256 constant LAST_TOTAL_ASSETS = 10;
-    uint256 constant ACTION_NONCE = 11;
-    uint256 constant PENDING_ACTION = 12;
-    uint256 constant TIME_LOCK_PERIOD = 13;
+    uint256 constant ASSET_DEPOSITABLE = 7;
+    uint256 constant TOKENS_HELD = 8;
+    uint256 constant WRAPPED_NATIVE = 9;
+    uint256 constant FEE_RECIPIENT = 10;
+    uint256 constant FEE = 10;
+    uint256 constant LAST_TOTAL_ASSETS = 11;
+    uint256 constant ACTION_NONCE = 12;
+    uint256 constant PENDING_ACTION = 13;
+    uint256 constant TIME_LOCK_PERIOD = 14;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -296,6 +297,19 @@ library MoreVaultsStorageHelper {
         }
     }
 
+    function setDepositableAssets(
+        address contractAddress,
+        address asset,
+        bool depositable
+    ) internal {
+        setMappingValue(
+            contractAddress,
+            ASSET_DEPOSITABLE,
+            bytes32(uint256(uint160(asset))),
+            bytes32(uint256(depositable ? 1 : 0))
+        );
+    }
+
     function setTokensHeld(
         address contractAddress,
         bytes32 key,
@@ -492,6 +506,20 @@ library MoreVaultsStorageHelper {
                 getMappingValue(
                     contractAddress,
                     ASSET_AVAILABLE,
+                    bytes32(uint256(uint160(asset)))
+                )
+            ) != 0;
+    }
+
+    function isAssetDepositable(
+        address contractAddress,
+        address asset
+    ) internal view returns (bool) {
+        return
+            uint256(
+                getMappingValue(
+                    contractAddress,
+                    ASSET_DEPOSITABLE,
                     bytes32(uint256(uint160(asset)))
                 )
             ) != 0;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.28;
 
 import {IOrigamiInvestment} from "../Origami/IOrigamiInvestment.sol";
 import {IOrigamiLovTokenFlashAndBorrowManager} from "../Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";

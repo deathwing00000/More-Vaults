@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -21,7 +21,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
 
     bytes32 constant ORIGAMI_VAULT_TOKENS_ID =
         keccak256("ORIGAMI_VAULT_TOKENS_ID");
-    uint48 constant MAX_SLIPPAGE_BPS_FOR_ACCAUNTING = 1000;
+    uint48 constant MAX_SLIPPAGE_BPS_FOR_ACCOUNTING = 1000;
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -60,7 +60,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
             ) = IOrigamiInvestment(lovToken).exitQuote(
                     balance,
                     underlyingToken,
-                    MAX_SLIPPAGE_BPS_FOR_ACCAUNTING,
+                    MAX_SLIPPAGE_BPS_FOR_ACCOUNTING,
                     block.timestamp
                 );
 
@@ -80,7 +80,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     ) external returns (uint256 investmentAmount) {
         AccessControlLib.validateDiamond(msg.sender);
         address fromToken = quoteData.fromToken;
-        MoreVaultsLib.validateAsset(fromToken);
+        MoreVaultsLib.validateAssetAvailable(fromToken);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
@@ -96,7 +96,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         IOrigamiInvestment.InvestQuoteData calldata quoteData
     ) external returns (uint256 investmentAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(quoteData.fromToken);
+        MoreVaultsLib.validateAssetAvailable(quoteData.fromToken);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         investmentAmount = IOrigamiInvestment(lovToken).investWithNative{
@@ -110,7 +110,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) public returns (uint256 toTokenAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(quoteData.toToken);
+        MoreVaultsLib.validateAssetAvailable(quoteData.toToken);
 
         toTokenAmount = _exitTo(lovToken, quoteData, false);
     }
@@ -120,7 +120,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) public returns (uint256 toTokenAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(address(0));
+        MoreVaultsLib.validateAssetAvailable(address(0));
 
         toTokenAmount = _exitTo(lovToken, quoteData, true);
     }

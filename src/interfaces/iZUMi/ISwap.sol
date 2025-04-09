@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 /// @title Interface for SwapRouter
 interface ISwap {
@@ -10,6 +10,7 @@ interface ISwap {
         uint256 minAcquired;
         uint256 deadline;
     }
+
     /// @notice Swap given amount of input token, usually used in multi-hop case.
     function swapAmount(
         SwapAmountParams calldata params

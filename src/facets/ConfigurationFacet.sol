@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
@@ -54,7 +54,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Adds new available asset
+     * @notice Adds new available asset to manage
      * @param asset Asset address to add
      */
     function addAvailableAsset(address asset) external {
@@ -63,7 +63,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Batch adds new available assets
+     * @notice Batch adds new available assets to manage
      * @param assets Array of asset addresses to add
      */
     function addAvailableAssets(address[] calldata assets) external {
@@ -75,6 +75,33 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
                 ++i;
             }
         }
+    }
+
+    /**
+     * @notice Enables asset to deposit
+     * @param asset Asset address to enable
+     */
+    function enableAssetToDeposit(address asset) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib._enableAssetToDeposit(asset);
+    }
+
+    /**
+     * @notice Disables asset to deposit
+     * @param asset Asset address to disable
+     */
+    function disableAssetToDeposit(address asset) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib._disableAssetToDeposit(asset);
+    }
+
+    /**
+     * @notice Checks if asset is depositable
+     * @param asset Asset address to check
+     * @return true if asset is depositable
+     */
+    function isAssetDepositable(address asset) external view returns (bool) {
+        return MoreVaultsLib.moreVaultsStorage().isAssetDepositable[asset];
     }
 
     /**

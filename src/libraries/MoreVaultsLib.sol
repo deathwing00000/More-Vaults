@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {AccessControlLib} from "./AccessControlLib.sol";
 import {IDiamondCut} from "../interfaces/facets/IDiamondCut.sol";
@@ -28,6 +28,7 @@ library MoreVaultsLib {
     error NoSelectorsInFacetToCut();
     error FunctionAlreadyExists(address oldFacetAddress, bytes4 selector);
     error OraclePriceIsOld();
+    error OraclePriceIsNegative();
     error InvalidFee();
     error AssetAlreadyAvailable();
     error InvalidAddress();
@@ -82,6 +83,7 @@ library MoreVaultsLib {
         mapping(bytes4 => bool) supportedInterfaces;
         mapping(address => bool) isAssetAvailable;
         address[] availableAssets;
+        mapping(address => bool) isAssetDepositable;
         mapping(bytes32 => EnumerableSet.AddressSet) tokensHeld;
         address wrappedNative;
         address feeRecipient;
@@ -98,7 +100,9 @@ library MoreVaultsLib {
         address indexed previousRecipient,
         address indexed newRecipient
     );
-    event AssetAdded(address indexed asset);
+    event AssetToManageAdded(address indexed asset);
+    event AssetToDepositEnabled(address indexed asset);
+    event AssetToDepositDisabled(address indexed asset);
     event TimeLockPeriodSet(uint256 previousPeriod, uint256 newPeriod);
 
     function moreVaultsStorage()
@@ -123,10 +127,16 @@ library MoreVaultsLib {
         }
     }
 
-    function validateAsset(address asset) internal view {
+    function validateAssetAvailable(address asset) internal view {
         MoreVaultsStorage storage ds = moreVaultsStorage();
         if (asset == address(0)) asset = ds.wrappedNative;
         if (!ds.isAssetAvailable[asset]) revert UnsupportedAsset(asset);
+    }
+
+    function validateAssetDepositable(address asset) internal view {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        if (asset == address(0)) asset = ds.wrappedNative;
+        if (!ds.isAssetDepositable[asset]) revert UnsupportedAsset(asset);
     }
 
     function removeTokenIfnecessary(
@@ -183,8 +193,6 @@ library MoreVaultsLib {
             10 ** inputTokenOracleDecimals
         );
 
-        // apply some generic slippage 1%
-        convertedAmount = convertedAmount.mulDiv(10000 - 100, 10000);
         return convertedAmount;
     }
 
@@ -241,7 +249,41 @@ library MoreVaultsLib {
         ds.isAssetAvailable[asset] = true;
         ds.availableAssets.push(asset);
 
-        emit AssetAdded(asset);
+        emit AssetToManageAdded(asset);
+    }
+
+    function _enableAssetToDeposit(address asset) internal {
+        if (asset == address(0)) {
+            revert InvalidAddress();
+        }
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        if (!ds.isAssetAvailable[asset]) {
+            revert UnsupportedAsset(asset);
+        }
+        if (ds.isAssetDepositable[asset]) {
+            revert AssetAlreadyAvailable();
+        }
+        ds.isAssetDepositable[asset] = true;
+
+        emit AssetToDepositEnabled(asset);
+    }
+
+    function _disableAssetToDeposit(address asset) internal {
+        if (asset == address(0)) {
+            revert InvalidAddress();
+        }
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        if (!ds.isAssetDepositable[asset]) {
+            revert UnsupportedAsset(asset);
+        }
+
+        ds.isAssetDepositable[asset] = false;
+
+        emit AssetToDepositDisabled(asset);
     }
 
     // Internal function version of diamondCut
@@ -532,14 +574,17 @@ library MoreVaultsLib {
         IAggregatorV2V3Interface aggregator
     ) internal view returns (uint256) {
         (, int256 answer, , uint256 updatedAt, ) = aggregator.latestRoundData();
-        verifyPriceIsUpToDate(updatedAt);
+        verifyPrice(answer, updatedAt);
 
         return uint256(answer);
     }
 
-    function verifyPriceIsUpToDate(uint256 updatedAt) internal view {
-        if (updatedAt < block.timestamp - 2 hours) {
+    function verifyPrice(int256 answer, uint256 updatedAt) internal view {
+        if (updatedAt < block.timestamp - 3 hours) {
             revert OraclePriceIsOld();
+        }
+        if (answer < 0) {
+            revert OraclePriceIsNegative();
         }
     }
 }

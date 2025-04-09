@@ -27,6 +27,7 @@ contract VaultFacetTest is Test {
 
     // Test addresses
     address public facet;
+    address public owner = address(9999);
     address public curator = address(7);
     address public guardian = address(8);
     address public feeRecipient = address(9);
@@ -59,6 +60,7 @@ contract VaultFacetTest is Test {
         asset = address(mockAsset);
 
         MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, registry);
+        MoreVaultsStorageHelper.setOwner(facet, owner);
 
         // Initialize vault
         bytes memory initData = abi.encode(
@@ -244,6 +246,13 @@ contract VaultFacetTest is Test {
         amounts[0] = depositAmount;
         amounts[1] = depositAmount2;
         MoreVaultsStorageHelper.setAvailableAssets(facet, tokens);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            MoreVaultsStorageHelper.setDepositableAssets(
+                facet,
+                tokens[i],
+                true
+            );
+        }
 
         // Mock oracle call
         vm.mockCall(
@@ -281,8 +290,7 @@ contract VaultFacetTest is Test {
         VaultFacet(facet).deposit(tokens, amounts, user);
 
         // apply generic slippage 1% for conversion of non underlying asset
-        uint256 expectedShares = depositAmount +
-            depositAmount2.mulDiv(10000 - 100, 10000);
+        uint256 expectedShares = depositAmount + depositAmount2;
         assertEq(
             IERC20(facet).balanceOf(user),
             expectedShares,
@@ -515,32 +523,32 @@ contract VaultFacetTest is Test {
         );
     }
 
-    function test_pause_ShouldRevertWhenNotCurator() public {
+    function test_pause_ShouldRevertWhenNotOwner() public {
         vm.prank(user);
         vm.expectRevert();
         VaultFacet(facet).pause();
     }
 
     function test_pause_ShouldPauseVault() public {
-        vm.prank(curator);
+        vm.prank(owner);
         VaultFacet(facet).pause();
         assertTrue(VaultFacet(facet).paused(), "Should be paused");
     }
 
     function test_unpause_ShouldUnpauseVault() public {
         // First pause
-        vm.prank(curator);
+        vm.prank(owner);
         VaultFacet(facet).pause();
 
         // Then unpause
-        vm.prank(curator);
+        vm.prank(owner);
         VaultFacet(facet).unpause();
         assertFalse(VaultFacet(facet).paused(), "Should be unpaused");
     }
 
     function test_deposit_ShouldRevertWhenPaused() public {
         // Pause vault
-        vm.prank(curator);
+        vm.prank(owner);
         VaultFacet(facet).pause();
 
         // Try to deposit
@@ -568,7 +576,7 @@ contract VaultFacetTest is Test {
         MoreVaultsStorageHelper.setAvailableAssets(facet, tokens);
 
         // Pause vault
-        vm.prank(curator);
+        vm.prank(owner);
         VaultFacet(facet).pause();
 
         // Try to deposit
@@ -577,7 +585,7 @@ contract VaultFacetTest is Test {
         VaultFacet(facet).deposit(tokens, amounts, user);
     }
 
-    function test_deposit_ShouldRevertWhenDepositWithMultipleAssetsAndArrayLengthsDontMatch()
+    function test_deposit_ShouldRevertWhenDepositWithMultipleAssetsAndArrayLengthsDoesntMatch()
         public
     {
         MockERC20 mockAsset2 = new MockERC20("Test Asset 2", "TA2");
@@ -615,6 +623,44 @@ contract VaultFacetTest is Test {
             )
         );
         VaultFacet(facet).deposit(tokens, corruptedAmounts, user);
+    }
+
+    function test_deposit_ShouldRevertWhenDepositWithMultipleAssetsAndAssetIsNotDepositable()
+        public
+    {
+        MockERC20 mockAsset2 = new MockERC20("Test Asset 2", "TA2");
+        address asset2 = address(mockAsset2);
+        uint256 depositAmount = 100 ether;
+        uint256 depositAmount2 = 200 ether;
+
+        MockERC20(asset2).mint(user, depositAmount2);
+        vm.prank(user);
+        IERC20(asset2).approve(facet, type(uint256).max);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = asset;
+        tokens[1] = asset2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = depositAmount;
+        amounts[1] = depositAmount2;
+        MoreVaultsStorageHelper.setAvailableAssets(facet, tokens);
+        MoreVaultsStorageHelper.setDepositableAssets(facet, asset2, false);
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+
+        // Try to deposit
+        vm.prank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IVaultFacet.UnsupportedAsset.selector,
+                asset2
+            )
+        );
+        VaultFacet(facet).deposit(tokens, amounts, user);
     }
 
     function test_accrueInterest_ShouldDistributeFeesWithProtocolFee() public {

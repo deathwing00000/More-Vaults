@@ -194,6 +194,35 @@ contract ConfigurationFacetTest is Test {
         );
     }
 
+    function test_addAvailableAsset_ShouldAddAsset() public {
+        vm.startPrank(curator);
+
+        // Add assets
+        facet.addAvailableAsset(asset1);
+
+        // Verify assets are available
+        assertTrue(
+            MoreVaultsStorageHelper.isAssetAvailable(address(facet), asset1),
+            "Asset1 should be available"
+        );
+
+        // Verify assets are in available assets array
+        address[] memory availableAssets = MoreVaultsStorageHelper
+            .getAvailableAssets(address(facet));
+        assertEq(
+            availableAssets.length,
+            1,
+            "Available assets array should have two elements"
+        );
+        assertEq(
+            availableAssets[0],
+            asset1,
+            "Asset1 should be in available assets array"
+        );
+
+        vm.stopPrank();
+    }
+
     function test_addAvailableAsset_ShouldRevertWhenUnauthorized() public {
         vm.startPrank(unauthorized);
 
@@ -324,6 +353,160 @@ contract ConfigurationFacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_enableAssetToDeposit_ShouldRevertWhenUnauthorized() public {
+        vm.startPrank(unauthorized);
+
+        // Attempt to add new asset
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        facet.enableAssetToDeposit(asset1);
+
+        // Verify asset is not available
+        assertFalse(
+            MoreVaultsStorageHelper.isAssetDepositable(address(facet), asset1),
+            "Asset should not be enabled to deposit"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_enableAssetToDeposit_ShouldRevertWhenZeroAddress() public {
+        vm.startPrank(curator);
+
+        // Attempt to add zero address as asset
+        vm.expectRevert(IConfigurationFacet.InvalidAddress.selector);
+        facet.enableAssetToDeposit(zeroAddress);
+
+        vm.stopPrank();
+    }
+
+    function test_enableAssetToDeposit_ShouldRevertWhenAssetAlreadyAvailable()
+        public
+    {
+        vm.startPrank(curator);
+
+        // Add asset
+        facet.addAvailableAsset(asset1);
+
+        // Enable asset first time
+        facet.enableAssetToDeposit(asset1);
+
+        // Attempt to add same asset again
+        vm.expectRevert(IConfigurationFacet.AssetAlreadyAvailable.selector);
+        facet.enableAssetToDeposit(asset1);
+
+        vm.stopPrank();
+    }
+
+    function test_enableAssetToDeposit_ShouldRevertIfAssetIsNotAvailableForManage()
+        public
+    {
+        vm.startPrank(curator);
+
+        // Attempt to add same asset again
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedAsset.selector,
+                asset1
+            )
+        );
+        facet.enableAssetToDeposit(asset1);
+
+        vm.stopPrank();
+    }
+
+    function test_enableAssetToDeposit_ShouldEnableAsset() public {
+        vm.startPrank(curator);
+
+        // Add asset
+        facet.addAvailableAsset(asset1);
+
+        // Enable asset to deposit
+        facet.enableAssetToDeposit(asset1);
+
+        // Verify assets are available
+        assertTrue(
+            MoreVaultsStorageHelper.isAssetDepositable(address(facet), asset1),
+            "Asset1 should be enabled to deposit"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_disableAssetToDeposit_ShouldRevertWhenUnauthorized() public {
+        vm.startPrank(unauthorized);
+
+        // Attempt to disable asset
+        MoreVaultsStorageHelper.setDepositableAssets(
+            address(facet),
+            asset1,
+            true
+        );
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        facet.disableAssetToDeposit(asset1);
+
+        // Verify asset still enabled to deposit
+        assertTrue(
+            MoreVaultsStorageHelper.isAssetDepositable(address(facet), asset1),
+            "Asset should be enabled to deposit"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_disableAssetToDeposit_ShouldRevertWhenZeroAddress() public {
+        vm.startPrank(curator);
+
+        MoreVaultsStorageHelper.setDepositableAssets(
+            address(facet),
+            asset1,
+            true
+        );
+        vm.expectRevert(IConfigurationFacet.InvalidAddress.selector);
+        facet.disableAssetToDeposit(zeroAddress);
+
+        vm.stopPrank();
+    }
+
+    function test_disableAssetToDeposit_ShouldRevertWhenAssetAlreadyDisabled()
+        public
+    {
+        vm.startPrank(curator);
+
+        // Attempt to add same asset again
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedAsset.selector,
+                asset1
+            )
+        );
+        facet.disableAssetToDeposit(asset1);
+
+        vm.stopPrank();
+    }
+
+    function test_disableAssetToDeposit_ShouldDisableAsset() public {
+        vm.startPrank(curator);
+
+        // Add asset
+        facet.addAvailableAsset(asset1);
+        // Enable asset first time
+        facet.enableAssetToDeposit(asset1);
+        assertTrue(
+            MoreVaultsStorageHelper.isAssetDepositable(address(facet), asset1),
+            "Asset1 should be enabled to deposit"
+        );
+
+        facet.disableAssetToDeposit(asset1);
+
+        // Verify assets are available
+        assertFalse(
+            MoreVaultsStorageHelper.isAssetDepositable(address(facet), asset1),
+            "Asset1 should be disabled to deposit"
+        );
+
+        vm.stopPrank();
+    }
+
     function test_isAssetAvailable_ShouldReturnCorrectValue() public {
         vm.startPrank(curator);
 
@@ -337,6 +520,28 @@ contract ConfigurationFacetTest is Test {
         assertFalse(
             facet.isAssetAvailable(asset2),
             "Asset should not be available"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_isAssetDepositable_ShouldReturnCorrectValue() public {
+        vm.startPrank(curator);
+
+        // Add asset
+        facet.addAvailableAsset(asset1);
+        facet.enableAssetToDeposit(asset1);
+
+        // Verify asset is available
+        assertTrue(
+            facet.isAssetDepositable(asset1),
+            "Asset should be available to deposit"
+        );
+
+        // Verify non-existent asset is not available
+        assertFalse(
+            facet.isAssetDepositable(asset2),
+            "Asset should not be available to deposit"
         );
 
         vm.stopPrank();

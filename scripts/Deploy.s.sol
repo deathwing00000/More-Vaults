@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.28;
 
 import {Script} from "forge-std/Script.sol";
 import {VaultsRegistry} from "../src/registry/VaultsRegistry.sol";
@@ -19,6 +19,7 @@ import {IAggroKittySwapFacet, AggroKittySwapFacet} from "../src/facets/AggroKitt
 import {DeployConfig} from "./config/DeployConfig.s.sol";
 import {console} from "forge-std/console.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 // forge script script/Deploy.s.sol:DeployScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org --broadcast -vv --verify --slow --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
 
@@ -114,7 +115,20 @@ contract DeployScript is Script {
         console.log("Facets deployed");
 
         // Deploy registry
-        registry = new VaultsRegistry(config.aaveOracle(), config.usdce());
+        address registryImplementation = address(new VaultsRegistry());
+        registry = VaultsRegistry(
+            address(
+                new TransparentUpgradeableProxy(
+                    registryImplementation,
+                    msg.sender,
+                    abi.encodeWithSelector(
+                        VaultsRegistry.initialize.selector,
+                        config.aaveOracle(),
+                        config.usdce()
+                    )
+                )
+            )
+        );
         console.log("Registry deployed at:", address(registry));
 
         // Save registry address
@@ -149,11 +163,20 @@ contract DeployScript is Script {
         console.log("Facets added to registry");
 
         // Deploy factory
-        factory = new VaultsFactory();
-        factory.initialize(
-            address(registry),
-            address(diamondCut),
-            config.wrappedNative()
+        address factoryImplementation = address(new VaultsFactory());
+        factory = VaultsFactory(
+            address(
+                new TransparentUpgradeableProxy(
+                    factoryImplementation,
+                    msg.sender,
+                    abi.encodeWithSelector(
+                        VaultsFactory.initialize.selector,
+                        address(registry),
+                        address(diamondCut),
+                        config.wrappedNative()
+                    )
+                )
+            )
         );
         console.log("Factory deployed at:", address(factory));
 

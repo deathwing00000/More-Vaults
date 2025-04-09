@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IUniswapV2Router02} from "@uniswap-v2/v2-periphery/interfaces/IUniswapV2Router02.sol";
@@ -47,6 +47,10 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         ];
         for (uint i = 0; i < tokensHeld.length(); ) {
             address lpToken = tokensHeld.at(i);
+            // if the lp token is available asset, then it should be already accounted
+            if (ds.isAssetAvailable[lpToken]) {
+                continue;
+            }
             uint totalSupply = IERC20(lpToken).totalSupply();
             uint balance = IERC20(lpToken).balanceOf(address(this));
             (uint token0, uint token1, ) = IUniswapV2Pair(lpToken)
@@ -80,8 +84,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(tokenA);
-        MoreVaultsLib.validateAsset(tokenB);
+        MoreVaultsLib.validateAssetAvailable(tokenA);
+        MoreVaultsLib.validateAssetAvailable(tokenB);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
@@ -116,7 +120,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountToken, uint amountETH, uint liquidity) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(token);
+        MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         IERC20(token).approve(router, amountTokenDesired);
@@ -147,8 +151,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountA, uint amountB) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(tokenA);
-        MoreVaultsLib.validateAsset(tokenB);
+        MoreVaultsLib.validateAssetAvailable(tokenA);
+        MoreVaultsLib.validateAssetAvailable(tokenB);
         (amountA, amountB) = _removeLiquidity(
             router,
             tokenA,
@@ -169,7 +173,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountToken, uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(token);
+        MoreVaultsLib.validateAssetAvailable(token);
         (amountToken, amountETH) = _removeLiquidityETH(
             router,
             token,
@@ -188,8 +192,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[0]);
-        MoreVaultsLib.validateAsset(path[path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(path[0]);
+        MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
         IERC20(path[0]).approve(router, amountIn);
         return
@@ -210,8 +214,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[0]);
-        MoreVaultsLib.validateAsset(path[path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(path[0]);
+        MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
         IERC20(path[0]).approve(router, amountInMax);
         return
@@ -232,7 +236,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
         return
             IUniswapV2Router02(router).swapExactETHForTokens{value: amountIn}(
                 amountOutMin,
@@ -250,7 +254,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[0]);
+        MoreVaultsLib.validateAssetAvailable(path[0]);
 
         IERC20(path[0]).approve(router, amountInMax);
         return
@@ -271,7 +275,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[0]);
+        MoreVaultsLib.validateAssetAvailable(path[0]);
         IERC20(path[0]).approve(router, amountIn);
         return
             IUniswapV2Router02(router).swapExactTokensForETH(
@@ -291,7 +295,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
         return
             IUniswapV2Router02(router).swapETHForExactTokens{
                 value: amountInMax
@@ -307,7 +311,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(token);
+        MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
@@ -339,8 +343,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[0]);
-        MoreVaultsLib.validateAsset(path[path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(path[0]);
+        MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
         IERC20(path[0]).approve(router, amountIn);
         IUniswapV2Router02(router)
@@ -361,7 +365,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[path.length - 1]);
+        MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
         IUniswapV2Router02(router)
             .swapExactETHForTokensSupportingFeeOnTransferTokens{
@@ -377,7 +381,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-        MoreVaultsLib.validateAsset(path[0]);
+        MoreVaultsLib.validateAssetAvailable(path[0]);
 
         IERC20(path[0]).approve(router, amountIn);
         IUniswapV2Router02(router)

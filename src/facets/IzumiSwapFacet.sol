@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -62,8 +62,8 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
-        MoreVaultsLib.validateAsset(inputToken);
-        MoreVaultsLib.validateAsset(outputToken);
+        MoreVaultsLib.validateAssetAvailable(inputToken);
+        MoreVaultsLib.validateAssetAvailable(outputToken);
 
         IERC20(inputToken).approve(swapContract, params.amount);
         (cost, acquire) = ISwap(swapContract).swapAmount(params);
@@ -88,8 +88,8 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
-        MoreVaultsLib.validateAsset(inputToken);
-        MoreVaultsLib.validateAsset(outputToken);
+        MoreVaultsLib.validateAssetAvailable(inputToken);
+        MoreVaultsLib.validateAssetAvailable(outputToken);
 
         IERC20(inputToken).approve(swapContract, params.maxPayed);
         (cost, acquire) = ISwap(swapContract).swapDesire(params);
@@ -110,12 +110,11 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
     /**
      * @notice Extracts output token address from the swap path
      * @param path The swap path containing token addresses
-     * @return inputToken The address of the output token
-     * @dev Takes last 20 bytes of the path as output token address
+     * @return outputToken The address of the output token
      */
     function _getOutputTokenAddress(
         bytes memory path
-    ) internal pure returns (address inputToken) {
+    ) internal pure returns (address outputToken) {
         return address(bytes20(path.slice(path.length - 20, path.length)));
     }
 }

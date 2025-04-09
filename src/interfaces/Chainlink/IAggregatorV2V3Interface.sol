@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 // solhint-disable-next-line interface-starts-with-i
 interface IAggregatorV2V3Interface {
