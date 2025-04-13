@@ -252,7 +252,7 @@ contract DeployScript is Script {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](7);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](11);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -273,6 +273,18 @@ contract DeployScript is Script {
             .selector;
         functionSelectorsConfigurationFacet[6] = ConfigurationFacet
             .getAvailableAssets
+            .selector;
+        functionSelectorsConfigurationFacet[7] = ConfigurationFacet
+            .fee
+            .selector;
+        functionSelectorsConfigurationFacet[8] = ConfigurationFacet
+            .depositCapacity
+            .selector;
+        functionSelectorsConfigurationFacet[9] = ConfigurationFacet
+            .timeLockPeriod
+            .selector;
+        functionSelectorsConfigurationFacet[10] = ConfigurationFacet
+            .feeRecipient
             .selector;
 
         // selectors for multicall
@@ -332,7 +344,8 @@ contract DeployScript is Script {
             "MORE",
             config.wrappedNative(),
             config.feeRecipient(),
-            100
+            100,
+            1000000 ether
         );
 
         // selectors for uniswap v2

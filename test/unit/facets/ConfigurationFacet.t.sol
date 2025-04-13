@@ -194,6 +194,31 @@ contract ConfigurationFacetTest is Test {
         );
     }
 
+    function test_setDepositCapacity_ShouldUpdateDepositCapacity() public {
+        vm.startPrank(owner);
+
+        // Set new deposit capacity
+        uint256 newCapacity = 1000000 ether;
+        facet.setDepositCapacity(newCapacity);
+
+        assertEq(
+            MoreVaultsStorageHelper.getDepositCapacity(address(facet)),
+            newCapacity,
+            "Deposit capacity should be updated"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_setDepositCapacity_ShouldRevertWhenUnauthorized() public {
+        vm.startPrank(unauthorized);
+
+        // Set new deposit capacity
+        uint256 newCapacity = 1000000 ether;
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        facet.setDepositCapacity(newCapacity);
+    }
+
     function test_addAvailableAsset_ShouldAddAsset() public {
         vm.startPrank(curator);
 

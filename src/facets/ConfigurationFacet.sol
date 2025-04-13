@@ -45,6 +45,15 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
+     * @notice Sets deposit capacity
+     * @param capacity New deposit capacity
+     */
+    function setDepositCapacity(uint256 capacity) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib._setDepositCapacity(capacity);
+    }
+
+    /**
      * @notice Sets time lock period
      * @param period New time lock period
      */
@@ -119,5 +128,21 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
      */
     function getAvailableAssets() external view returns (address[] memory) {
         return MoreVaultsLib.moreVaultsStorage().availableAssets;
+    }
+
+    function fee() external view returns (uint96) {
+        return MoreVaultsLib.moreVaultsStorage().fee;
+    }
+
+    function feeRecipient() external view returns (address) {
+        return MoreVaultsLib.moreVaultsStorage().feeRecipient;
+    }
+
+    function depositCapacity() external view returns (uint256) {
+        return MoreVaultsLib.moreVaultsStorage().depositCapacity;
+    }
+
+    function timeLockPeriod() external view returns (uint256) {
+        return MoreVaultsLib.moreVaultsStorage().timeLockPeriod;
     }
 }

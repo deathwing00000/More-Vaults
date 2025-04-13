@@ -22,10 +22,11 @@ library MoreVaultsStorageHelper {
     uint256 constant WRAPPED_NATIVE = 9;
     uint256 constant FEE_RECIPIENT = 10;
     uint256 constant FEE = 10;
-    uint256 constant LAST_TOTAL_ASSETS = 11;
-    uint256 constant ACTION_NONCE = 12;
-    uint256 constant PENDING_ACTION = 13;
-    uint256 constant TIME_LOCK_PERIOD = 14;
+    uint256 constant DEPOSIT_CAPACITY = 11;
+    uint256 constant LAST_TOTAL_ASSETS = 12;
+    uint256 constant ACTION_NONCE = 13;
+    uint256 constant PENDING_ACTION = 14;
+    uint256 constant TIME_LOCK_PERIOD = 15;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -422,6 +423,13 @@ library MoreVaultsStorageHelper {
         );
     }
 
+    function setDepositCapacity(
+        address contractAddress,
+        uint256 value
+    ) internal {
+        setStorageValue(contractAddress, DEPOSIT_CAPACITY, bytes32(value));
+    }
+
     function setLastTotalAssets(
         address contractAddress,
         uint256 value
@@ -543,6 +551,12 @@ library MoreVaultsStorageHelper {
             }
         }
         return assets;
+    }
+
+    function getDepositCapacity(
+        address contractAddress
+    ) internal view returns (uint256) {
+        return uint256(getStorageValue(contractAddress, DEPOSIT_CAPACITY));
     }
 
     function setOwner(address contractAddress, address owner) internal {

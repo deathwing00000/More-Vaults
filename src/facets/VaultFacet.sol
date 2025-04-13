@@ -44,8 +44,12 @@ contract VaultFacet is
             string memory symbol,
             address asset,
             address feeRecipient,
-            uint96 fee
-        ) = abi.decode(data, (string, string, address, address, uint96));
+            uint96 fee,
+            uint256 depositCapacity
+        ) = abi.decode(
+                data,
+                (string, string, address, address, uint96, uint256)
+            );
         if (
             asset == address(0) ||
             feeRecipient == address(0) ||
@@ -62,6 +66,7 @@ contract VaultFacet is
 
         MoreVaultsLib._setFeeRecipient(feeRecipient);
         MoreVaultsLib._setFee(fee);
+        MoreVaultsLib._setDepositCapacity(depositCapacity);
         __ERC4626_init(IERC20(asset));
         __ERC20_init(name, symbol);
         MoreVaultsLib._addAvailableAsset(asset);
@@ -136,6 +141,40 @@ contract VaultFacet is
         }
     }
 
+    // @dev override maxDeposit to check if the deposit capacity is exceeded
+    // Warning: the returned value can be slightly higher since accrued fee are not included.
+    function maxDeposit(
+        address // receiver
+    ) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        uint256 assetsInVault = totalAssets();
+        if (assetsInVault > ds.depositCapacity) {
+            return 0;
+        } else {
+            return ds.depositCapacity - assetsInVault;
+        }
+    }
+
+    // @dev override maxMint to check if the deposit capacity is exceeded
+    // Warning: the returned value can be slightly higher since accrued fee are not included.
+    function maxMint(
+        address // receiver
+    ) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        uint256 assetsInVault = totalAssets();
+        if (assetsInVault > ds.depositCapacity) {
+            return 0;
+        } else {
+            return
+                _convertToShares(
+                    ds.depositCapacity - assetsInVault,
+                    Math.Rounding.Floor
+                );
+        }
+    }
+
     function deposit(
         uint256 assets,
         address receiver
@@ -150,6 +189,7 @@ contract VaultFacet is
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        _validateCapacity(receiver, newTotalAssets, assets);
 
         ds.lastTotalAssets = newTotalAssets;
 
@@ -185,6 +225,7 @@ contract VaultFacet is
             newTotalAssets,
             Math.Rounding.Floor
         );
+        _validateCapacity(receiver, newTotalAssets, assets);
         _deposit(_msgSender(), receiver, assets, shares);
     }
 
@@ -272,6 +313,8 @@ contract VaultFacet is
                 ++i;
             }
         }
+
+        _validateCapacity(receiver, newTotalAssets, totalConvertedAmount);
 
         shares = _convertToSharesWithTotals(
             totalConvertedAmount,
@@ -403,6 +446,26 @@ contract VaultFacet is
                 newTotalAssets - feeAssets,
                 Math.Rounding.Floor
             );
+        }
+    }
+
+    function _validateCapacity(
+        address receiver,
+        uint256 newTotalAssets,
+        uint256 newAssets
+    ) internal view {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        uint256 depositCapacity = ds.depositCapacity;
+        if (depositCapacity == 0) {
+            return;
+        }
+        if (newTotalAssets + newAssets > depositCapacity) {
+            uint256 maxToDeposit;
+            if (newTotalAssets < depositCapacity) {
+                maxToDeposit = depositCapacity - newTotalAssets;
+            }
+            revert ERC4626ExceededMaxDeposit(receiver, newAssets, maxToDeposit);
         }
     }
 }

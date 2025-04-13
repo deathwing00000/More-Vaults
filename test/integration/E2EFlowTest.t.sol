@@ -267,7 +267,7 @@ contract E2EFlowTest is Test {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](7);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](11);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -288,6 +288,18 @@ contract E2EFlowTest is Test {
             .selector;
         functionSelectorsConfigurationFacet[6] = ConfigurationFacet
             .getAvailableAssets
+            .selector;
+        functionSelectorsConfigurationFacet[7] = ConfigurationFacet
+            .fee
+            .selector;
+        functionSelectorsConfigurationFacet[8] = ConfigurationFacet
+            .depositCapacity
+            .selector;
+        functionSelectorsConfigurationFacet[9] = ConfigurationFacet
+            .timeLockPeriod
+            .selector;
+        functionSelectorsConfigurationFacet[10] = ConfigurationFacet
+            .feeRecipient
             .selector;
 
         // selectors for multicall
@@ -348,7 +360,8 @@ contract E2EFlowTest is Test {
             VAULT_SYMBOL,
             WFLOW,
             FEE_RECIPIENT,
-            100
+            100,
+            1000000 ether
         );
 
         // selectors for uniswap v2

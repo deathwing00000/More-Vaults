@@ -18,6 +18,7 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
 import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -41,7 +42,7 @@ contract VaultFacetTest is Test {
     uint96 constant FEE_BASIS_POINT = 10000;
     uint96 constant FEE = 1000; // 10%
     uint256 constant TIME_LOCK_PERIOD = 1 days;
-
+    uint256 constant DEPOSIT_CAPACITY = 1000000 ether;
     address public aaveOracleProvider = address(1001);
     address public oracle = address(1002);
 
@@ -68,7 +69,8 @@ contract VaultFacetTest is Test {
             VAULT_SYMBOL,
             asset,
             feeRecipient,
-            FEE
+            FEE,
+            DEPOSIT_CAPACITY
         );
 
         vm.mockCall(
@@ -124,6 +126,11 @@ contract VaultFacetTest is Test {
             MoreVaultsStorageHelper.getFee(facet),
             FEE,
             "Should set correct fee"
+        );
+        assertEq(
+            MoreVaultsStorageHelper.getDepositCapacity(facet),
+            DEPOSIT_CAPACITY,
+            "Should set correct deposit capacity"
         );
         assertEq(
             MoreVaultsStorageHelper.isAssetAvailable(facet, asset),
@@ -358,6 +365,53 @@ contract VaultFacetTest is Test {
         );
     }
 
+    function test_mint_ShouldRevertWhenExceededDepositCapacity() public {
+        uint256 mintAmount = 1000001 ether;
+
+        // Mock oracle call
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("oracle()"),
+            abi.encode(aaveOracleProvider)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getDenominationAsset()"),
+            abi.encode(asset)
+        );
+        vm.mockCall(
+            aaveOracleProvider,
+            abi.encodeWithSignature("getSourceOfAsset(address)"),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("latestRoundData()"),
+            abi.encode(0, 1 ether, block.timestamp, block.timestamp, 0)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("decimals()"),
+            abi.encode(8)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+
+        vm.prank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                user,
+                1000001 ether,
+                1000000 ether
+            )
+        );
+        uint256 assets = VaultFacet(facet).mint(mintAmount, user);
+    }
+
     function test_withdraw_ShouldBurnShares() public {
         // Mock oracle call
         vm.mockCall(
@@ -555,6 +609,130 @@ contract VaultFacetTest is Test {
         vm.prank(user);
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
         VaultFacet(facet).deposit(100 ether, user);
+    }
+
+    function test_deposit_ShouldRevertWhenExceededDepositCapacity() public {
+        // Mock oracle call
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("oracle()"),
+            abi.encode(aaveOracleProvider)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getDenominationAsset()"),
+            abi.encode(asset)
+        );
+        vm.mockCall(
+            aaveOracleProvider,
+            abi.encodeWithSignature("getSourceOfAsset(address)"),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("latestRoundData()"),
+            abi.encode(0, 1 ether, block.timestamp, block.timestamp, 0)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("decimals()"),
+            abi.encode(8)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+
+        deal(asset, user, 1000001 ether);
+        vm.prank(user);
+        IERC20(asset).approve(facet, type(uint256).max);
+
+        // Try to deposit
+        vm.prank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                user,
+                1000001 ether,
+                1000000 ether
+            )
+        );
+        VaultFacet(facet).deposit(1000001 ether, user);
+    }
+
+    function test_deposit_ShouldRevertWhenExceededDepositCapacityMultipleAssets()
+        public
+    {
+        MockERC20 mockAsset2 = new MockERC20("Test Asset 2", "TA2");
+        address asset2 = address(mockAsset2);
+        uint256 depositAmount = 500000 ether;
+        uint256 depositAmount2 = 500001 ether;
+
+        MockERC20(asset2).mint(user, depositAmount2);
+        vm.prank(user);
+        IERC20(asset2).approve(facet, type(uint256).max);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = asset;
+        tokens[1] = asset2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = depositAmount;
+        amounts[1] = depositAmount2;
+        MoreVaultsStorageHelper.setAvailableAssets(facet, tokens);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            MoreVaultsStorageHelper.setDepositableAssets(
+                facet,
+                tokens[i],
+                true
+            );
+        }
+
+        // Mock oracle call
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("oracle()"),
+            abi.encode(aaveOracleProvider)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getDenominationAsset()"),
+            abi.encode(asset)
+        );
+        vm.mockCall(
+            aaveOracleProvider,
+            abi.encodeWithSignature("getSourceOfAsset(address)"),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("latestRoundData()"),
+            abi.encode(0, 1 * 10 ** 8, block.timestamp, block.timestamp, 0)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("decimals()"),
+            abi.encode(8)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+
+        deal(asset, user, 1000001 ether);
+
+        // Try to deposit
+        vm.prank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                user,
+                1000001 ether,
+                1000000 ether
+            )
+        );
+        VaultFacet(facet).deposit(tokens, amounts, user);
     }
 
     function test_deposit_ShouldRevertWhenPausedWithMultipleAssets() public {

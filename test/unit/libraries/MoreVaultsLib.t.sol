@@ -403,4 +403,14 @@ contract MoreVaultsLibTest is Test {
         uint256 result = MoreVaultsLib.convertToUnderlying(token1, 0);
         assertEq(result, 0, "Should return 0 for zero amount");
     }
+
+    function test_setDepositCapacity_ShouldSetDepositCapacity() public {
+        uint256 newCapacity = 1000000 ether;
+        MoreVaultsLib._setDepositCapacity(newCapacity);
+        assertEq(
+            MoreVaultsStorageHelper.getDepositCapacity(address(this)),
+            newCapacity,
+            "Should set deposit capacity correctly"
+        );
+    }
 }

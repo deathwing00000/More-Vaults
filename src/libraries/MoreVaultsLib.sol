@@ -88,6 +88,7 @@ library MoreVaultsLib {
         address wrappedNative;
         address feeRecipient;
         uint96 fee;
+        uint256 depositCapacity;
         uint256 lastTotalAssets;
         uint256 actionNonce;
         mapping(uint256 => PendingActions) pendingActions;
@@ -104,6 +105,7 @@ library MoreVaultsLib {
     event AssetToDepositEnabled(address indexed asset);
     event AssetToDepositDisabled(address indexed asset);
     event TimeLockPeriodSet(uint256 previousPeriod, uint256 newPeriod);
+    event DepositCapacitySet(uint256 previousCapacity, uint256 newCapacity);
 
     function moreVaultsStorage()
         internal
@@ -215,6 +217,14 @@ library MoreVaultsLib {
         ds.fee = fee;
 
         emit FeeSet(previousFee, fee);
+    }
+
+    function _setDepositCapacity(uint256 capacity) internal {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        uint256 previousCapacity = ds.depositCapacity;
+        ds.depositCapacity = capacity;
+
+        emit DepositCapacitySet(previousCapacity, capacity);
     }
 
     function _setTimeLockPeriod(uint256 period) internal {

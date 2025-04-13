@@ -40,6 +40,12 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
     function setTimeLockPeriod(uint256 period) external;
 
     /**
+     * @notice Sets deposit capacity
+     * @param capacity New deposit capacity
+     */
+    function setDepositCapacity(uint256 capacity) external;
+
+    /**
      * @notice Adds new available asset
      * @param asset Asset address to add
      */
@@ -63,4 +69,28 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
      * @return Array of available asset addresses
      */
     function getAvailableAssets() external view returns (address[] memory);
+
+    /**
+     * @notice Gets fee amount
+     * @return Fee amount
+     */
+    function fee() external view returns (uint96);
+
+    /**
+     * @notice Gets fee recipient address
+     * @return Fee recipient address
+     */
+    function feeRecipient() external view returns (address);
+
+    /**
+     * @notice Gets deposit capacity
+     * @return Deposit capacity
+     */
+    function depositCapacity() external view returns (uint256);
+
+    /**
+     * @notice Gets time lock period
+     * @return Time lock period
+     */
+    function timeLockPeriod() external view returns (uint256);
 }
