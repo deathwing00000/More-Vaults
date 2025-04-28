@@ -24,6 +24,7 @@ contract DeployConfig {
     address public treasury;
 
     // Tokens
+    address public assetToDeposit;
     address public wrappedNative;
     address public usdce;
     address public aaveOracle;
@@ -38,6 +39,7 @@ contract DeployConfig {
         address _guardian,
         address _feeRecipient,
         address _treasury,
+        address _assetToDeposit,
         address _wrappedNative,
         address _usdce,
         address _aaveOracle,
@@ -51,6 +53,7 @@ contract DeployConfig {
         feeRecipient = _feeRecipient;
         treasury = _treasury;
         wrappedNative = _wrappedNative;
+        assetToDeposit = _assetToDeposit;
         usdce = _usdce;
         aaveOracle = _aaveOracle;
         fee = _fee;
@@ -201,7 +204,7 @@ contract DeployConfig {
         bytes memory initDataVaultFacet = abi.encode(
             "More Vault",
             "MORE",
-            wrappedNative,
+            assetToDeposit,
             feeRecipient,
             fee,
             depositCapacity

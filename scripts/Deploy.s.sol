@@ -54,6 +54,7 @@ contract DeployScript is Script {
             vm.envAddress("FEE_RECIPIENT"),
             vm.envAddress("TREASURY"),
             vm.envAddress("WRAPPED_NATIVE"),
+            vm.envAddress("ASSET_TO_DEPOSIT"),
             vm.envAddress("USDCE"),
             vm.envAddress("AAVE_ORACLE"),
             uint96(vm.envUint("FEE")),
