@@ -262,8 +262,7 @@ contract E2EFlowTest is Test {
         bytes memory initDataAccessControlFacet = abi.encode(
             OWNER,
             CURATOR,
-            GUARDIAN,
-            address(registry)
+            GUARDIAN
         );
 
         // selectors for configuration

@@ -149,6 +149,9 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         uint256 assetsInVault = totalAssets();
+        if (ds.depositCapacity == 0) {
+            return type(uint256).max;
+        }
         if (assetsInVault > ds.depositCapacity) {
             return 0;
         } else {
@@ -164,6 +167,9 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         uint256 assetsInVault = totalAssets();
+        if (ds.depositCapacity == 0) {
+            return type(uint256).max;
+        }
         if (assetsInVault > ds.depositCapacity) {
             return 0;
         } else {

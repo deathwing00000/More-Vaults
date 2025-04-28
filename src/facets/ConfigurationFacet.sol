@@ -37,11 +37,11 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
 
     /**
      * @notice Sets fee amount
-     * @param fee New fee amount
+     * @param _fee New fee amount
      */
-    function setFee(uint96 fee) external {
+    function setFee(uint96 _fee) external {
         AccessControlLib.validateOwner(msg.sender);
-        MoreVaultsLib._setFee(fee);
+        MoreVaultsLib._setFee(_fee);
     }
 
     /**
