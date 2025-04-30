@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IOrigamiInvestment} from "../interfaces/Origami/IOrigamiInvestment.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
@@ -17,7 +16,6 @@ error UnsupportedLovToken(address);
 
 contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     using EnumerableSet for EnumerableSet.AddressSet;
-    using Math for uint256;
 
     bytes32 constant ORIGAMI_VAULT_TOKENS_ID =
         keccak256("ORIGAMI_VAULT_TOKENS_ID");

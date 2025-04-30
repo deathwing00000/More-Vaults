@@ -93,6 +93,7 @@ library MoreVaultsLib {
         uint256 actionNonce;
         mapping(uint256 => PendingActions) pendingActions;
         uint256 timeLockPeriod;
+        mapping(bytes32 => EnumerableSet.AddressSet) stakingAddresses;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);

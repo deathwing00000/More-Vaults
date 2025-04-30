@@ -6,10 +6,8 @@ import {IPoolAddressesProviderRegistry} from "@aave-v3-core/contracts/interfaces
 import {IPoolAddressesProvider} from "@aave-v3-core/contracts/interfaces/IPoolAddressesProvider.sol";
 import {ICreditDelegationToken} from "@aave-v3-core/contracts/interfaces/ICreditDelegationToken.sol";
 import {IPool, DataTypes} from "@aave-v3-core/contracts/interfaces/IPool.sol";
-import {ReserveConfiguration} from "@aave-v3-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IAaveV3RewardsController} from "../interfaces/Aave/v3/IAaveV3RewardsController.sol";
 import {IATokenExtended} from "../interfaces/Aave/v3/IATokenExtended.sol";
@@ -19,8 +17,6 @@ import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
 contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     using EnumerableSet for EnumerableSet.AddressSet;
-    using Math for uint256;
-    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
     bytes32 constant MTOKENS_ID = keccak256("MTOKENS_ID");
     bytes32 constant MORE_DEBT_TOKENS_ID = keccak256("MORE_DEBT_TOKENS_ID");

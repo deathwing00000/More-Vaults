@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IGenericMoreVaultFacet} from "../interfaces/facets/IGenericMoreVaultFacet.sol";
 import {ERC4626Upgradeable, SafeERC20} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
@@ -20,7 +19,6 @@ contract VaultFacet is
     IVaultFacet,
     BaseFacetInitializer
 {
-    using EnumerableSet for EnumerableSet.AddressSet;
     using Math for uint256;
 
     function INITIALIZABLE_STORAGE_SLOT()

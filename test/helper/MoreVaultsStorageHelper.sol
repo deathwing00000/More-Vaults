@@ -27,6 +27,7 @@ library MoreVaultsStorageHelper {
     uint256 constant ACTION_NONCE = 13;
     uint256 constant PENDING_ACTION = 14;
     uint256 constant TIME_LOCK_PERIOD = 15;
+    uint256 constant STAKING_ADDRESSES = 16;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -260,6 +261,30 @@ library MoreVaultsStorageHelper {
         }
     }
 
+    function getFacetsForAccounting(
+        address contractAddress
+    ) internal view returns (address[] memory) {
+        uint256 length = getArrayLength(contractAddress, FACETS_FOR_ACCOUNTING);
+        address[] memory facets = new address[](length);
+        for (uint256 i = 0; i < length; ) {
+            facets[i] = address(
+                uint160(
+                    uint256(
+                        getArrayElement(
+                            contractAddress,
+                            FACETS_FOR_ACCOUNTING,
+                            i
+                        )
+                    )
+                )
+            );
+            unchecked {
+                ++i;
+            }
+        }
+        return facets;
+    }
+
     function setSupportedInterface(
         address contractAddress,
         bytes4 interfaceId,
@@ -391,6 +416,43 @@ library MoreVaultsStorageHelper {
         }
 
         return tokens;
+    }
+
+    function getStakingsEntered(
+        address contractAddress,
+        bytes32 key
+    ) internal view returns (address[] memory) {
+        bytes32 mappingSlot = keccak256(
+            abi.encode(
+                key,
+                bytes32(
+                    uint256(MoreVaultsLib.MORE_VAULTS_STORAGE_POSITION) +
+                        STAKING_ADDRESSES
+                )
+            )
+        );
+
+        uint256 length = uint256(vm.load(contractAddress, mappingSlot));
+        address[] memory stakings = new address[](length);
+
+        bytes32 valuesSlot = keccak256(abi.encode(mappingSlot));
+        for (uint256 i = 0; i < length; ) {
+            stakings[i] = address(
+                uint160(
+                    uint256(
+                        vm.load(
+                            contractAddress,
+                            bytes32(uint256(valuesSlot) + i)
+                        )
+                    )
+                )
+            );
+            unchecked {
+                ++i;
+            }
+        }
+
+        return stakings;
     }
 
     function setWrappedNative(

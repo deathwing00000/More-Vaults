@@ -3,10 +3,7 @@ pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
-import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 import {ICurveFacet} from "../interfaces/facets/ICurveFacet.sol";
 import {ICurveRouter} from "../interfaces/Curve/ICurveRouter.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
@@ -15,10 +12,6 @@ import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
  * @notice Facet for handling token exchanges through Curve protocol
  */
 contract CurveFacet is ICurveFacet, BaseFacetInitializer {
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using Math for uint256;
-    using Bytes for bytes;
-
     function INITIALIZABLE_STORAGE_SLOT()
         internal
         pure
