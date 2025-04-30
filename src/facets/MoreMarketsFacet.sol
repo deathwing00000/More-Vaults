@@ -86,6 +86,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         }
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function supply(
         address pool,
         address asset,
@@ -103,6 +106,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         ds.tokensHeld[MTOKENS_ID].add(mToken);
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function withdraw(
         address pool,
         address asset,
@@ -114,6 +120,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         return _withdraw(pool, asset, amount, address(this));
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function borrow(
         address pool,
         address asset,
@@ -150,6 +159,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         }
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function repay(
         address pool,
         address asset,
@@ -187,6 +199,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         );
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function repayWithATokens(
         address pool,
         address asset,
@@ -224,6 +239,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         );
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function swapBorrowRateMode(
         address pool,
         address asset,
@@ -253,6 +271,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         }
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function rebalanceStableBorrowRate(
         address pool,
         address asset,
@@ -265,6 +286,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         IPool(pool).rebalanceStableBorrowRate(asset, user);
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function setUserUseReserveAsCollateral(
         address pool,
         address asset,
@@ -276,6 +300,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         IPool(pool).setUserUseReserveAsCollateral(asset, useAsCollateral);
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function flashLoan(
         address pool,
         address receiverAddress,
@@ -325,6 +352,9 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         }
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function flashLoanSimple(
         address pool,
         address receiverAddress,
@@ -346,12 +376,18 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         );
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function setUserEMode(address pool, uint8 categoryId) external {
         AccessControlLib.validateDiamond(msg.sender);
 
         IPool(pool).setUserEMode(categoryId);
     }
 
+    /**
+     * @inheritdoc IMoreMarketsFacet
+     */
     function claimAllRewards(
         address rewardsController,
         address[] calldata assets

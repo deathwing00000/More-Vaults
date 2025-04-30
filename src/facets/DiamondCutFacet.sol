@@ -26,9 +26,9 @@ contract DiamondCutFacet is BaseFacetInitializer, IDiamondCut {
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
     }
 
-    /// @notice Add/replace/remove any number of functions and optionally execute
-    ///         a function with delegatecall
-    /// @param _diamondCut Contains the facet addresses and function selectors
+    /**
+     * @inheritdoc IDiamondCut
+     */
     function diamondCut(
         IDiamondCut.FacetCut[] calldata _diamondCut
     ) external override {

@@ -14,23 +14,33 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
     error TimeLockPeriodNotExpired();
     error NothingSubmitted();
 
+    /**
+     * @dev Events
+     */
+    /// @notice Emitted when the MoreVaults registry is set
     event MoreVaultRegistrySet(
         address indexed previousRegistry,
         address indexed newRegistry
     );
+    /// @notice Emitted when a new asset is added
     event AssetAdded(address indexed asset);
+    /// @notice Emitted when an asset is removed
     event AssetRemoved(address indexed asset);
 
     /**
      * @notice Sets fee recipient address
      * @param recipient New fee recipient address
      */
+    /// @notice Sets the fee recipient address
+    /// @param recipient The new fee recipient address
     function setFeeRecipient(address recipient) external;
 
     /**
      * @notice Sets fee amount
      * @param fee New fee amount (in basis points, max 10000 = 100%)
      */
+    /// @notice Sets the fee amount
+    /// @param fee The new fee amount (in basis points, max 10000 = 100%)
     function setFee(uint96 fee) external;
 
     /**
@@ -58,11 +68,30 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
     function addAvailableAssets(address[] calldata assets) external;
 
     /**
+     * @notice Enables asset to deposit
+     * @param asset Asset address to enable
+     */
+    function enableAssetToDeposit(address asset) external;
+
+    /**
+     * @notice Disables asset to deposit
+     * @param asset Asset address to disable
+     */
+    function disableAssetToDeposit(address asset) external;
+
+    /**
      * @notice Checks if asset is available
      * @param asset Asset address to check
      * @return true if asset is available
      */
     function isAssetAvailable(address asset) external view returns (bool);
+
+    /**
+     * @notice Checks if asset is depositable
+     * @param asset Asset address to check
+     * @return true if asset is depositable
+     */
+    function isAssetDepositable(address asset) external view returns (bool);
 
     /**
      * @notice Gets list of all available assets

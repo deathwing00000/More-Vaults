@@ -22,6 +22,12 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
     function setMoreVaultRegistry(address newRegistry) external;
 
     /**
+     * @notice Transfers owner role to a new address
+     * @param _newOwner Address of the new owner
+     */
+    function transferOwner(address _newOwner) external;
+
+    /**
      * @notice Transfers curator role to a new address
      * @param _newCurator Address of the new curator
      */
@@ -34,6 +40,12 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
     function transferGuardian(address _newGuardian) external;
 
     /**
+     * @notice Returns the current owner address
+     * @return Address of the current owner
+     */
+    function owner() external view returns (address);
+
+    /**
      * @notice Returns the current curator address
      * @return Address of the current curator
      */
@@ -44,4 +56,10 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
      * @return Address of the current guardian
      */
     function guardian() external view returns (address);
+
+    /**
+     * @notice Returns the current more vault registry address
+     * @return Address of the current more vault registry
+     */
+    function moreVaultsRegistry() external view returns (address);
 }

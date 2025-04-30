@@ -73,6 +73,9 @@ contract VaultFacet is
         MoreVaultsLib._enableAssetToDeposit(asset);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function paused()
         public
         view
@@ -82,16 +85,25 @@ contract VaultFacet is
         return super.paused();
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function pause() external {
         AccessControlLib.validateOwner(msg.sender);
         _pause();
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function unpause() external {
         AccessControlLib.validateOwner(msg.sender);
         _unpause();
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function totalAssets()
         public
         view
@@ -141,8 +153,10 @@ contract VaultFacet is
         }
     }
 
-    // @dev override maxDeposit to check if the deposit capacity is exceeded
-    // Warning: the returned value can be slightly higher since accrued fee are not included.
+    /**
+     * @notice override maxDeposit to check if the deposit capacity is exceeded
+     * @dev Warning: the returned value can be slightly higher since accrued fee are not included.
+     */
     function maxDeposit(
         address // receiver
     ) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
@@ -159,8 +173,10 @@ contract VaultFacet is
         }
     }
 
-    // @dev override maxMint to check if the deposit capacity is exceeded
-    // Warning: the returned value can be slightly higher since accrued fee are not included.
+    /**
+     * @notice override maxMint to check if the deposit capacity is exceeded
+     * @dev Warning: the returned value can be slightly higher since accrued fee are not included.
+     */
     function maxMint(
         address // receiver
     ) public view override(ERC4626Upgradeable, IERC4626) returns (uint256) {
@@ -181,6 +197,9 @@ contract VaultFacet is
         }
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function deposit(
         uint256 assets,
         address receiver
@@ -208,6 +227,9 @@ contract VaultFacet is
         _deposit(_msgSender(), receiver, assets, shares);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function mint(
         uint256 shares,
         address receiver
@@ -235,6 +257,9 @@ contract VaultFacet is
         _deposit(_msgSender(), receiver, assets, shares);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function withdraw(
         uint256 assets,
         address receiver,
@@ -264,6 +289,9 @@ contract VaultFacet is
         _withdraw(_msgSender(), receiver, owner, assets, shares);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function redeem(
         uint256 shares,
         address receiver,
@@ -293,6 +321,9 @@ contract VaultFacet is
         _withdraw(_msgSender(), receiver, owner, assets, shares);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function deposit(
         address[] calldata tokens,
         uint256[] calldata assets,

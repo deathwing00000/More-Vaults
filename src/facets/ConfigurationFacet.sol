@@ -27,8 +27,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Sets fee recipient address
-     * @param recipient New fee recipient address
+     * @inheritdoc IConfigurationFacet
      */
     function setFeeRecipient(address recipient) external {
         AccessControlLib.validateOwner(msg.sender);
@@ -36,8 +35,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Sets fee amount
-     * @param _fee New fee amount
+     * @inheritdoc IConfigurationFacet
      */
     function setFee(uint96 _fee) external {
         AccessControlLib.validateOwner(msg.sender);
@@ -45,8 +43,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Sets deposit capacity
-     * @param capacity New deposit capacity
+     * @inheritdoc IConfigurationFacet
      */
     function setDepositCapacity(uint256 capacity) external {
         AccessControlLib.validateCurator(msg.sender);
@@ -54,8 +51,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Sets time lock period
-     * @param period New time lock period
+     * @inheritdoc IConfigurationFacet
      */
     function setTimeLockPeriod(uint256 period) external {
         AccessControlLib.validateOwner(msg.sender);
@@ -63,8 +59,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Adds new available asset to manage
-     * @param asset Asset address to add
+     * @inheritdoc IConfigurationFacet
      */
     function addAvailableAsset(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
@@ -72,8 +67,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Batch adds new available assets to manage
-     * @param assets Array of asset addresses to add
+     * @inheritdoc IConfigurationFacet
      */
     function addAvailableAssets(address[] calldata assets) external {
         AccessControlLib.validateCurator(msg.sender);
@@ -87,8 +81,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Enables asset to deposit
-     * @param asset Asset address to enable
+     * @inheritdoc IConfigurationFacet
      */
     function enableAssetToDeposit(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
@@ -96,8 +89,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Disables asset to deposit
-     * @param asset Asset address to disable
+     * @inheritdoc IConfigurationFacet
      */
     function disableAssetToDeposit(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
@@ -105,43 +97,50 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     }
 
     /**
-     * @notice Checks if asset is depositable
-     * @param asset Asset address to check
-     * @return true if asset is depositable
+     * @inheritdoc IConfigurationFacet
      */
     function isAssetDepositable(address asset) external view returns (bool) {
         return MoreVaultsLib.moreVaultsStorage().isAssetDepositable[asset];
     }
 
     /**
-     * @notice Checks if asset is available
-     * @param asset Asset address to check
-     * @return true if asset is available
+     * @inheritdoc IConfigurationFacet
      */
     function isAssetAvailable(address asset) external view returns (bool) {
         return MoreVaultsLib.moreVaultsStorage().isAssetAvailable[asset];
     }
 
     /**
-     * @notice Gets list of all available assets
-     * @return Array of available asset addresses
+     * @inheritdoc IConfigurationFacet
      */
     function getAvailableAssets() external view returns (address[] memory) {
         return MoreVaultsLib.moreVaultsStorage().availableAssets;
     }
 
+    /**
+     * @inheritdoc IConfigurationFacet
+     */
     function fee() external view returns (uint96) {
         return MoreVaultsLib.moreVaultsStorage().fee;
     }
 
+    /**
+     * @inheritdoc IConfigurationFacet
+     */
     function feeRecipient() external view returns (address) {
         return MoreVaultsLib.moreVaultsStorage().feeRecipient;
     }
 
+    /**
+     * @inheritdoc IConfigurationFacet
+     */
     function depositCapacity() external view returns (uint256) {
         return MoreVaultsLib.moreVaultsStorage().depositCapacity;
     }
 
+    /**
+     * @inheritdoc IConfigurationFacet
+     */
     function timeLockPeriod() external view returns (uint256) {
         return MoreVaultsLib.moreVaultsStorage().timeLockPeriod;
     }

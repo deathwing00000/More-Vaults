@@ -29,6 +29,9 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
         revert AllFacetsAllowedByDefault();
     }
 
+    /**
+     * @notice This function is disabled in PermissionlessVaultsRegistry as protocol fee cannot be set
+     */
     function setProtocolFeeInfo(
         address,
         address,
@@ -37,6 +40,9 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
         revert FeeCannotBeSet();
     }
 
+    /**
+     * @notice This function is disabled in PermissionlessVaultsRegistry as protocol fee cannot be set
+     */
     function protocolFeeInfo(
         address
     ) external pure override returns (address, uint96) {

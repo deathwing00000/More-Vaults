@@ -44,13 +44,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
     }
 
     /**
-     * @notice Performs a swap with a specified input amount
-     * @param swapContract Address of the iZUMi swap contract
-     * @param params Swap parameters including path and amount
-     * @return cost Amount of input tokens spent
-     * @return acquire Amount of output tokens received
-     * @dev Only curator can call this function
-     * @dev Validates both input and output tokens
+     * @inheritdoc IIzumiSwapFacet
      */
     function swapAmount(
         address swapContract,
@@ -70,13 +64,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
     }
 
     /**
-     * @notice Performs a swap with a desired output amount
-     * @param swapContract Address of the iZUMi swap contract
-     * @param params Swap parameters including path and desired output amount
-     * @return cost Amount of input tokens spent
-     * @return acquire Amount of output tokens received
-     * @dev Only curator can call this function
-     * @dev Validates both input and output tokens
+     * @inheritdoc IIzumiSwapFacet
      */
     function swapDesire(
         address swapContract,

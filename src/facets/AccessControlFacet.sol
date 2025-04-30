@@ -37,6 +37,9 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
         ds.supportedInterfaces[type(IAccessControlFacet).interfaceId] = true; // AccessControlFacet
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function setMoreVaultRegistry(address newRegistry) external {
         AccessControlLib.validateOwner(msg.sender);
         if (newRegistry == address(0)) {
@@ -74,33 +77,54 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
         emit MoreVaultRegistrySet(previousRegistry, newRegistry);
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function transferOwner(address _newOwner) external {
         AccessControlLib.validateOwner(msg.sender);
         AccessControlLib.setVaultOwner(_newOwner);
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function transferCuratorship(address _newCurator) external {
         AccessControlLib.validateOwner(msg.sender);
         AccessControlLib.setVaultCurator(_newCurator);
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function transferGuardian(address _newGuardian) external {
         AccessControlLib.validateOwner(msg.sender);
         AccessControlLib.setVaultGuardian(_newGuardian);
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function owner() external view returns (address) {
         return AccessControlLib.vaultOwner();
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function curator() external view returns (address) {
         return AccessControlLib.vaultCurator();
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function guardian() external view returns (address) {
         return AccessControlLib.vaultGuardian();
     }
 
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
     function moreVaultsRegistry() external view returns (address) {
         return AccessControlLib.vaultRegistry();
     }

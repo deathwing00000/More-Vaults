@@ -89,6 +89,12 @@ contract VaultsRegistry is BaseVaultsRegistry {
         emit FacetRemoved(facet);
     }
 
+    /**
+     * @notice Set protocol fee info
+     * @param vault The address of the vault
+     * @param recipient The address of the recipient
+     * @param fee The fee
+     */
     function setProtocolFeeInfo(
         address vault,
         address recipient,
@@ -105,6 +111,12 @@ contract VaultsRegistry is BaseVaultsRegistry {
         emit ProtocolFeeInfoUpdated(vault, recipient, fee);
     }
 
+    /**
+     * @notice Get protocol fee info
+     * @param vault The address of the vault
+     * @return recipient The address of the recipient
+     * @return fee The fee
+     */
     function protocolFeeInfo(
         address vault
     ) external view override returns (address, uint96) {

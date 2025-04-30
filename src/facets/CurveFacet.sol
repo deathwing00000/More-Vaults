@@ -43,13 +43,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     }
 
     /**
-     * @notice Performs up to 5 swaps in a single transaction.
-     * @param _route Array of [initial token, pool or zap, token, pool or zap, token, ...]
-     * @param _swap_params Multidimensional array of [i, j, swap_type, pool_type, n_coins] where
-     * @param _amount The amount of input token (`_route[0]`) to be sent.
-     * @param _min_dy The minimum amount received after the final swap.
-     * @param _pools Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
-     * @param _receiver Address to transfer the final output token to.
+     * @inheritdoc ICurveFacet
      */
     function exchange(
         address curveRouter,

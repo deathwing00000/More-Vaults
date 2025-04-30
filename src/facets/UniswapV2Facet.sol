@@ -73,6 +73,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         }
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function addLiquidity(
         address router,
         address tokenA,
@@ -110,6 +113,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function addLiquidityETH(
         address router,
         address token,
@@ -141,6 +147,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function removeLiquidity(
         address router,
         address tokenA,
@@ -164,6 +173,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function removeLiquidityETH(
         address router,
         address token,
@@ -184,6 +196,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapExactTokensForTokens(
         address router,
         uint amountIn,
@@ -206,6 +221,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapTokensForExactTokens(
         address router,
         uint amountOut,
@@ -228,6 +246,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapExactETHForTokens(
         address router,
         uint256 amountIn,
@@ -246,6 +267,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapTokensForExactETH(
         address router,
         uint amountOut,
@@ -267,6 +291,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapExactTokensForETH(
         address router,
         uint amountIn,
@@ -287,6 +314,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapETHForExactTokens(
         address router,
         uint256 amountInMax,
@@ -302,6 +332,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             }(amountOut, path, address(this), deadline);
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function removeLiquidityETHSupportingFeeOnTransferTokens(
         address router,
         address token,
@@ -335,6 +368,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(
         address router,
         uint amountIn,
@@ -357,6 +393,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             );
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapExactETHForTokensSupportingFeeOnTransferTokens(
         address router,
         uint256 amountIn,
@@ -373,6 +412,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         }(amountOutMin, path, address(this), deadline);
     }
 
+    /**
+     * @inheritdoc IUniswapV2Facet
+     */
     function swapExactTokensForETHSupportingFeeOnTransferTokens(
         address router,
         uint amountIn,

@@ -33,6 +33,9 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         ds.supportedInterfaces[type(IAggroKittySwapFacet).interfaceId] = true; // AggroKittySwapFacet
     }
 
+    /**
+     * @inheritdoc IAggroKittySwapFacet
+     */
     function swapNoSplit(
         address _router,
         IAggroKittyRouter.Trade calldata _trade
@@ -48,6 +51,9 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter(_router).swapNoSplit(_trade, address(this));
     }
 
+    /**
+     * @inheritdoc IAggroKittySwapFacet
+     */
     function swapNoSplitFromNative(
         address _router,
         IAggroKittyRouter.Trade calldata _trade
@@ -63,6 +69,9 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         }(_trade, address(this));
     }
 
+    /**
+     * @inheritdoc IAggroKittySwapFacet
+     */
     function swapNoSplitToNative(
         address _router,
         IAggroKittyRouter.Trade calldata _trade

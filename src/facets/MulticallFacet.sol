@@ -38,6 +38,9 @@ contract MulticallFacet is
         MoreVaultsLib._setTimeLockPeriod(timeLockPeriod);
     }
 
+    /**
+     * @inheritdoc IMulticallFacet
+     */
     function submitActions(
         bytes[] calldata actionsData
     ) external override returns (uint256 nonce) {
@@ -63,6 +66,9 @@ contract MulticallFacet is
         }
     }
 
+    /**
+     * @inheritdoc IMulticallFacet
+     */
     function executeActions(uint256 actionsNonce) public override nonReentrant {
         AccessControlLib.validateCurator(msg.sender);
 
@@ -86,6 +92,9 @@ contract MulticallFacet is
         emit ActionsExecuted(msg.sender, actionsNonce);
     }
 
+    /**
+     * @inheritdoc IMulticallFacet
+     */
     function vetoActions(uint256 actionsNonce) external override {
         AccessControlLib.validateGuardian(msg.sender);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -99,6 +108,9 @@ contract MulticallFacet is
         emit ActionsVetoed(msg.sender, actionsNonce);
     }
 
+    /**
+     * @inheritdoc IMulticallFacet
+     */
     function getPendingActions(
         uint256 actionsNonce
     )
@@ -113,6 +125,9 @@ contract MulticallFacet is
         return (actions.actionsData, actions.pendingUntil);
     }
 
+    /**
+     * @inheritdoc IMulticallFacet
+     */
     function getCurrentNonce() external view override returns (uint256) {
         return MoreVaultsLib.moreVaultsStorage().actionNonce;
     }

@@ -74,6 +74,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         }
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function investWithToken(
         address lovToken,
         IOrigamiInvestment.InvestQuoteData calldata quoteData
@@ -91,6 +94,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         ds.tokensHeld[ORIGAMI_VAULT_TOKENS_ID].add(lovToken);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function investWithNative(
         address lovToken,
         IOrigamiInvestment.InvestQuoteData calldata quoteData
@@ -105,6 +111,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         ds.tokensHeld[ORIGAMI_VAULT_TOKENS_ID].add(lovToken);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function exitToToken(
         address lovToken,
         IOrigamiInvestment.ExitQuoteData calldata quoteData
@@ -115,6 +124,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         toTokenAmount = _exitTo(lovToken, quoteData, false);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function exitToNative(
         address lovToken,
         IOrigamiInvestment.ExitQuoteData calldata quoteData
@@ -125,6 +137,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         toTokenAmount = _exitTo(lovToken, quoteData, true);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function rebalanceUp(
         address manager,
         uint256 flashLoanAmount,
@@ -148,6 +163,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         IOrigamiLovTokenFlashAndBorrowManager(manager).rebalanceUp(params);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function forceRebalanceUp(
         address manager,
         uint256 flashLoanAmount,
@@ -171,6 +189,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         IOrigamiLovTokenFlashAndBorrowManager(manager).forceRebalanceUp(params);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function rebalanceDown(
         address manager,
         uint256 flashLoanAmount,
@@ -192,6 +213,9 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         IOrigamiLovTokenFlashAndBorrowManager(manager).rebalanceDown(params);
     }
 
+    /**
+     * @inheritdoc IOrigamiFacet
+     */
     function forceRebalanceDown(
         address manager,
         uint256 flashLoanAmount,

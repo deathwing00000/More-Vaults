@@ -47,6 +47,10 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
+    /**
+     * @notice Set the diamond cut facet address, that manages addition and removal of facets
+     * @param _diamondCutFacet The address of the diamond cut facet
+     */
     function setDiamondCutFacet(
         address _diamondCutFacet
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
