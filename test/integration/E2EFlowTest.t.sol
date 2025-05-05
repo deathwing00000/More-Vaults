@@ -28,6 +28,9 @@ import {IAggroKittySwapFacet, AggroKittySwapFacet} from "../../src/facets/AggroK
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {ICurveFacet, CurveFacet} from "../../src/facets/CurveFacet.sol";
+import {IUniswapV3Facet, UniswapV3Facet} from "../../src/facets/UniswapV3Facet.sol";
+import {IMultiRewardsFacet, MultiRewardsFacet} from "../../src/facets/MultiRewardsFacet.sol";
 import {console} from "forge-std/console.sol";
 
 contract E2EFlowTest is Test {
@@ -85,6 +88,9 @@ contract E2EFlowTest is Test {
     MoreMarketsFacet moreMarkets;
     IzumiSwapFacet izumiSwap;
     AggroKittySwapFacet aggroKittySwap;
+    CurveFacet curve;
+    UniswapV3Facet uniswapV3;
+    MultiRewardsFacet multiRewards;
 
     // Mock tokens
     IERC20 usdce;
@@ -119,6 +125,9 @@ contract E2EFlowTest is Test {
         moreMarkets = new MoreMarketsFacet();
         izumiSwap = new IzumiSwapFacet();
         aggroKittySwap = new AggroKittySwapFacet();
+        curve = new CurveFacet();
+        uniswapV3 = new UniswapV3Facet();
+        multiRewards = new MultiRewardsFacet();
 
         // Deploy registry
         registry = new VaultsRegistry();
@@ -501,7 +510,47 @@ contract E2EFlowTest is Test {
             .swapNoSplitToNative
             .selector;
 
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](10);
+        // selectors for curve
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](1);
+        functionSelectorsCurveFacet[0] = ICurveFacet.exchange.selector;
+
+        // selectors for UniswapV3
+        bytes4[] memory functionSelectorsUniswapV3Facet = new bytes4[](4);
+        functionSelectorsUniswapV3Facet[0] = IUniswapV3Facet
+            .exactInput
+            .selector;
+        functionSelectorsUniswapV3Facet[1] = IUniswapV3Facet
+            .exactInputSingle
+            .selector;
+        functionSelectorsUniswapV3Facet[2] = IUniswapV3Facet
+            .exactOutput
+            .selector;
+        functionSelectorsUniswapV3Facet[3] = IUniswapV3Facet
+            .exactOutputSingle
+            .selector;
+
+        // selectors for MultiRewardsFacet
+        bytes4[] memory functionSelectorsMultiRewardsFacet = new bytes4[](5);
+        functionSelectorsMultiRewardsFacet[0] = IMultiRewardsFacet
+            .accountingMultiRewardsFacet
+            .selector;
+        functionSelectorsMultiRewardsFacet[1] = IMultiRewardsFacet
+            .stake
+            .selector;
+        functionSelectorsMultiRewardsFacet[2] = IMultiRewardsFacet
+            .withdraw
+            .selector;
+        functionSelectorsMultiRewardsFacet[3] = IMultiRewardsFacet
+            .getReward
+            .selector;
+        functionSelectorsMultiRewardsFacet[4] = IMultiRewardsFacet
+            .exit
+            .selector;
+        bytes memory initDataMultiRewardsFacet = abi.encode(
+            address(multiRewards)
+        );
+
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](13);
         cuts[0] = IDiamondCut.FacetCut({
             facetAddress: address(diamondLoupe),
             action: IDiamondCut.FacetCutAction.Add,
@@ -554,13 +603,31 @@ contract E2EFlowTest is Test {
             facetAddress: address(izumiSwap),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsIzumiSwapFacet,
-            initData: initDataIzumiSwapFacet
+            initData: ""
         });
         cuts[9] = IDiamondCut.FacetCut({
             facetAddress: address(aggroKittySwap),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsAggroKittySwapFacet,
             initData: ""
+        });
+        cuts[10] = IDiamondCut.FacetCut({
+            facetAddress: address(curve),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsCurveFacet,
+            initData: ""
+        });
+        cuts[11] = IDiamondCut.FacetCut({
+            facetAddress: address(uniswapV3),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsUniswapV3Facet,
+            initData: ""
+        });
+        cuts[12] = IDiamondCut.FacetCut({
+            facetAddress: address(multiRewards),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsMultiRewardsFacet,
+            initData: initDataMultiRewardsFacet
         });
 
         return cuts;
