@@ -22,8 +22,14 @@ import {console} from "forge-std/console.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {CurveFacet} from "../src/facets/CurveFacet.sol";
+import {IUniswapV3Facet, UniswapV3Facet} from "../src/facets/UniswapV3Facet.sol";
+import {IMultiRewardsFacet, MultiRewardsFacet} from "../src/facets/MultiRewardsFacet.sol";
 
-// forge script scripts/Deploy.s.sol:DeployScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org --broadcast -vv --verify --slow --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
+// testnet deployment script
+// forge script scripts/Deploy.s.sol:DeployScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org -vv --slow --broadcast --verify --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
+
+// mainnet deployment script
+// forge script scripts/Deploy.s.sol:DeployScript --chain-id 747 --rpc-url https://mainnet.evm.nodes.onflow.org -vv --slow --broadcast --verify --verifier blockscout --verifier-url 'https://evm.flowscan.io/api/'
 
 contract DeployScript is Script {
     DeployConfig config;
@@ -42,21 +48,26 @@ contract DeployScript is Script {
     IzumiSwapFacet izumiSwap;
     AggroKittySwapFacet aggroKittySwap;
     CurveFacet curve;
+    UniswapV3Facet uniswapV3;
+    MultiRewardsFacet multiRewards;
 
     function test_skip() public pure {}
 
     function setUp() public {
-        // Load config from environment variables
-        config = new DeployConfig(
+        config = new DeployConfig();
+
+        config.initParamsForProtocolDeployment(
+            vm.envAddress("WRAPPED_NATIVE"),
+            vm.envAddress("USD_STABLE_TOKEN_ADDRESS"),
+            vm.envAddress("AAVE_ORACLE")
+        );
+
+        config.initParamsForVaultCreation(
             vm.envAddress("OWNER"),
             vm.envAddress("CURATOR"),
             vm.envAddress("GUARDIAN"),
             vm.envAddress("FEE_RECIPIENT"),
-            vm.envAddress("TREASURY"),
-            vm.envAddress("WRAPPED_NATIVE"),
             vm.envAddress("ASSET_TO_DEPOSIT"),
-            vm.envAddress("USDCE"),
-            vm.envAddress("AAVE_ORACLE"),
             uint96(vm.envUint("FEE")),
             vm.envUint("DEPOSIT_CAPACITY"),
             vm.envUint("TIME_LOCK_PERIOD")
@@ -80,8 +91,10 @@ contract DeployScript is Script {
         izumiSwap = new IzumiSwapFacet();
         aggroKittySwap = new AggroKittySwapFacet();
         curve = new CurveFacet();
+        uniswapV3 = new UniswapV3Facet();
+        multiRewards = new MultiRewardsFacet();
 
-        // Save addresses to .env file
+        // Save addresses to .env.deployments file
         string memory addresses = string(
             abi.encodePacked(
                 "DIAMOND_CUT_FACET=",
@@ -119,6 +132,65 @@ contract DeployScript is Script {
                 "\n",
                 "CURVE_FACET=",
                 vm.toString(address(curve)),
+                "\n",
+                "UNISWAP_V3_FACET=",
+                vm.toString(address(uniswapV3)),
+                "\n",
+                "MULTI_REWARDS_FACET=",
+                vm.toString(address(multiRewards)),
+                "\n"
+            )
+        );
+        vm.writeFile(".env.deployments", addresses);
+
+        // Save addresses to .env file
+        addresses = string(
+            abi.encodePacked(
+                vm.readFile(".env"),
+                "\n",
+                "# DEPLOYED PROTOCOL ADDRESSES",
+                "\n",
+                "DIAMOND_CUT_FACET=",
+                vm.toString(address(diamondCut)),
+                "\n",
+                "DIAMOND_LOUPE_FACET=",
+                vm.toString(address(diamondLoupe)),
+                "\n",
+                "ACCESS_CONTROL_FACET=",
+                vm.toString(address(accessControl)),
+                "\n",
+                "CONFIGURATION_FACET=",
+                vm.toString(address(configuration)),
+                "\n",
+                "VAULT_FACET=",
+                vm.toString(address(vault)),
+                "\n",
+                "MULTICALL_FACET=",
+                vm.toString(address(multicall)),
+                "\n",
+                "UNISWAP_V2_FACET=",
+                vm.toString(address(uniswapV2)),
+                "\n",
+                "IZUMI_SWAP_FACET=",
+                vm.toString(address(izumiSwap)),
+                "\n",
+                "ORIGAMI_FACET=",
+                vm.toString(address(origami)),
+                "\n",
+                "MORE_MARKETS_FACET=",
+                vm.toString(address(moreMarkets)),
+                "\n",
+                "AGGRO_KITTY_SWAP_FACET=",
+                vm.toString(address(aggroKittySwap)),
+                "\n",
+                "CURVE_FACET=",
+                vm.toString(address(curve)),
+                "\n",
+                "UNISWAP_V3_FACET=",
+                vm.toString(address(uniswapV3)),
+                "\n",
+                "MULTI_REWARDS_FACET=",
+                vm.toString(address(multiRewards)),
                 "\n"
             )
         );
@@ -155,6 +227,17 @@ contract DeployScript is Script {
                 )
             )
         );
+        vm.writeFile(
+            ".env",
+            string(
+                abi.encodePacked(
+                    vm.readFile(".env"),
+                    "VAULT_REGISTRY=",
+                    vm.toString(address(registry)),
+                    "\n"
+                )
+            )
+        );
 
         // Add diamond cut facet to registry
         bytes4[] memory functionSelectorsDiamondCutFacet = new bytes4[](1);
@@ -176,7 +259,9 @@ contract DeployScript is Script {
             address(moreMarkets),
             address(izumiSwap),
             address(aggroKittySwap),
-            address(curve)
+            address(curve),
+            address(uniswapV3),
+            address(multiRewards)
         );
         for (uint i = 0; i < cuts.length; ) {
             registry.addFacet(cuts[i].facetAddress, cuts[i].functionSelectors);
@@ -216,6 +301,17 @@ contract DeployScript is Script {
                 )
             )
         );
+        vm.writeFile(
+            ".env",
+            string(
+                abi.encodePacked(
+                    vm.readFile(".env"),
+                    "VAULTS_FACTORY=",
+                    vm.toString(address(factory)),
+                    "\n"
+                )
+            )
+        );
 
         // Deploy vault
         address vaultAddress = factory.deployVault(cuts);
@@ -227,6 +323,17 @@ contract DeployScript is Script {
             string(
                 abi.encodePacked(
                     vm.readFile(".env.deployments"),
+                    "VAULT_ADDRESS=",
+                    vm.toString(vaultAddress),
+                    "\n"
+                )
+            )
+        );
+        vm.writeFile(
+            ".env",
+            string(
+                abi.encodePacked(
+                    vm.readFile(".env"),
                     "VAULT_ADDRESS=",
                     vm.toString(vaultAddress),
                     "\n"

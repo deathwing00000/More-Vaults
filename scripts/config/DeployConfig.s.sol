@@ -14,6 +14,8 @@ import {IIzumiSwapFacet, IzumiSwapFacet} from "../../src/facets/IzumiSwapFacet.s
 import {IAggroKittySwapFacet, AggroKittySwapFacet} from "../../src/facets/AggroKittySwapFacet.sol";
 import {ICurveFacet, CurveFacet} from "../../src/facets/CurveFacet.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {IUniswapV3Facet, UniswapV3Facet} from "../../src/facets/UniswapV3Facet.sol";
+import {IMultiRewardsFacet, MultiRewardsFacet} from "../../src/facets/MultiRewardsFacet.sol";
 
 contract DeployConfig {
     // Roles
@@ -21,7 +23,6 @@ contract DeployConfig {
     address public curator;
     address public guardian;
     address public feeRecipient;
-    address public treasury;
 
     // Tokens
     address public assetToDeposit;
@@ -33,29 +34,31 @@ contract DeployConfig {
     uint256 public depositCapacity;
     uint256 public timeLockPeriod;
 
-    constructor(
+    function initParamsForProtocolDeployment(
+        address _wrappedNative,
+        address _usdce,
+        address _aaveOracle
+    ) external {
+        wrappedNative = _wrappedNative;
+        usdce = _usdce;
+        aaveOracle = _aaveOracle;
+    }
+
+    function initParamsForVaultCreation(
         address _owner,
         address _curator,
         address _guardian,
         address _feeRecipient,
-        address _treasury,
         address _assetToDeposit,
-        address _wrappedNative,
-        address _usdce,
-        address _aaveOracle,
         uint96 _fee,
         uint256 _depositCapacity,
         uint256 _timeLockPeriod
-    ) {
+    ) external {
         owner = _owner;
         curator = _curator;
         guardian = _guardian;
         feeRecipient = _feeRecipient;
-        treasury = _treasury;
-        wrappedNative = _wrappedNative;
         assetToDeposit = _assetToDeposit;
-        usdce = _usdce;
-        aaveOracle = _aaveOracle;
         fee = _fee;
         depositCapacity = _depositCapacity;
         timeLockPeriod = _timeLockPeriod;
@@ -72,7 +75,9 @@ contract DeployConfig {
         address moreMarkets,
         address izumiSwap,
         address aggroKittySwap,
-        address curve
+        address curve,
+        address uniswapV3,
+        address multiRewards
     ) external view returns (IDiamondCut.FacetCut[] memory) {
         /// DEFAULT FACETS
 
@@ -352,7 +357,42 @@ contract DeployConfig {
         bytes4[] memory functionSelectorsCurveFacet = new bytes4[](1);
         functionSelectorsCurveFacet[0] = ICurveFacet.exchange.selector;
 
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](11);
+        // selectors for UniswapV3
+        bytes4[] memory functionSelectorsUniswapV3Facet = new bytes4[](4);
+        functionSelectorsUniswapV3Facet[0] = IUniswapV3Facet
+            .exactInput
+            .selector;
+        functionSelectorsUniswapV3Facet[1] = IUniswapV3Facet
+            .exactInputSingle
+            .selector;
+        functionSelectorsUniswapV3Facet[2] = IUniswapV3Facet
+            .exactOutput
+            .selector;
+        functionSelectorsUniswapV3Facet[3] = IUniswapV3Facet
+            .exactOutputSingle
+            .selector;
+
+        bytes4[] memory functionSelectorsMultiRewardsFacet = new bytes4[](5);
+        functionSelectorsMultiRewardsFacet[0] = IMultiRewardsFacet
+            .accountingMultiRewardsFacet
+            .selector;
+        functionSelectorsMultiRewardsFacet[1] = IMultiRewardsFacet
+            .stake
+            .selector;
+        functionSelectorsMultiRewardsFacet[2] = IMultiRewardsFacet
+            .withdraw
+            .selector;
+        functionSelectorsMultiRewardsFacet[3] = IMultiRewardsFacet
+            .getReward
+            .selector;
+        functionSelectorsMultiRewardsFacet[4] = IMultiRewardsFacet
+            .exit
+            .selector;
+        bytes memory initDataMultiRewardsFacet = abi.encode(
+            address(multiRewards)
+        );
+
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](13);
         cuts[0] = IDiamondCut.FacetCut({
             facetAddress: address(diamondLoupe),
             action: IDiamondCut.FacetCutAction.Add,
@@ -418,6 +458,18 @@ contract DeployConfig {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsCurveFacet,
             initData: ""
+        });
+        cuts[11] = IDiamondCut.FacetCut({
+            facetAddress: address(uniswapV3),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsUniswapV3Facet,
+            initData: ""
+        });
+        cuts[12] = IDiamondCut.FacetCut({
+            facetAddress: address(multiRewards),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsMultiRewardsFacet,
+            initData: initDataMultiRewardsFacet
         });
 
         return cuts;

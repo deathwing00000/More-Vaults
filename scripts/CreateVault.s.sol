@@ -21,7 +21,11 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {console} from "forge-std/console.sol";
 
-// forge script scripts/CreateVault.s.sol:CreateVaultScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org --broadcast -vv --verify --slow --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
+// testnet deployment script
+// forge script scripts/CreateVault.s.sol:CreateVaultScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org -vv --slow --broadcast --verify --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
+
+// mainnet deployment script
+// forge script scripts/CreateVault.s.sol:CreateVaultScript --chain-id 747 --rpc-url https://mainnet.evm.nodes.onflow.org -vv --slow --broadcast --verify --verifier blockscout --verifier-url 'https://evm.flowscan.io/api/'
 
 contract CreateVaultScript is Script {
     DeployConfig config;
@@ -39,21 +43,21 @@ contract CreateVaultScript is Script {
     address aggroKittySwap;
     address curve;
     address vaultFacet;
+    address uniswapV3;
+    address multiRewards;
 
     function test_skip() public pure {}
 
     function setUp() public {
         // Load config from environment variables
-        config = new DeployConfig(
+        config = new DeployConfig();
+
+        config.initParamsForVaultCreation(
             vm.envAddress("OWNER"),
             vm.envAddress("CURATOR"),
             vm.envAddress("GUARDIAN"),
             vm.envAddress("FEE_RECIPIENT"),
-            vm.envAddress("TREASURY"),
-            vm.envAddress("WRAPPED_NATIVE"),
             vm.envAddress("ASSET_TO_DEPOSIT"),
-            vm.envAddress("USDCE"),
-            vm.envAddress("AAVE_ORACLE"),
             uint96(vm.envUint("FEE")),
             vm.envUint("DEPOSIT_CAPACITY"),
             vm.envUint("TIME_LOCK_PERIOD")
@@ -70,6 +74,8 @@ contract CreateVaultScript is Script {
         izumiSwap = vm.envAddress("IZUMI_SWAP_FACET");
         aggroKittySwap = vm.envAddress("AGGRO_KITTY_SWAP_FACET");
         curve = vm.envAddress("CURVE_FACET");
+        uniswapV3 = vm.envAddress("UNISWAP_V3_FACET");
+        multiRewards = vm.envAddress("MULTI_REWARDS_FACET");
     }
 
     function run() public {
@@ -89,7 +95,9 @@ contract CreateVaultScript is Script {
             address(moreMarkets),
             address(izumiSwap),
             address(aggroKittySwap),
-            address(curve)
+            address(curve),
+            address(uniswapV3),
+            address(multiRewards)
         );
 
         // Deploy vault
