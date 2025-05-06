@@ -66,6 +66,7 @@ contract MultiRewardsFacetTest is Test {
 
         address[] memory rewardTokens = new address[](1);
         rewardTokens[0] = rewardToken;
+
         // Mock calls
         vm.mockCall(
             staking,
@@ -96,6 +97,10 @@ contract MultiRewardsFacetTest is Test {
         );
         assertEq(stakings.length, 1, "Should have one staking");
         assertEq(stakings[0], staking, "Should have correct stakings");
+        assertEq(
+            MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
+            amount
+        );
 
         vm.stopPrank();
     }
@@ -141,18 +146,32 @@ contract MultiRewardsFacetTest is Test {
         vm.stopPrank();
     }
 
-    function test_stake_ShouldPerformWithdraw() public {
+    function test_withdraw_ShouldPerformWithdraw() public {
         vm.startPrank(address(facet));
 
         uint256 amount = 1e18;
 
         vm.mockCall(
             staking,
+            abi.encodeWithSelector(IMultiRewards.stakingToken.selector),
+            abi.encode(lpToken)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.balanceOf.selector),
+            abi.encode(0)
+        );
+        vm.mockCall(
+            staking,
             abi.encodeWithSelector(IMultiRewards.withdraw.selector, amount),
             abi.encode()
         );
 
+        MoreVaultsStorageHelper.setStaked(address(facet), lpToken, amount);
+
         facet.withdraw(staking, amount);
+
+        assertEq(MoreVaultsStorageHelper.getStaked(address(facet), lpToken), 0);
 
         vm.stopPrank();
     }
@@ -303,231 +322,4 @@ contract MultiRewardsFacetTest is Test {
 
         vm.stopPrank();
     }
-
-    // function test_submitActions_ShouldExecuteActionsIfTimeLockPeriodIsZero()
-    //     public
-    // {
-    //     vm.startPrank(curator);
-
-    //     MoreVaultsStorageHelper.setTimeLockPeriod(address(facet), 0);
-
-    //     // Mock function calls
-    //     vm.mockCall(
-    //         address(facet),
-    //         abi.encodeWithSignature("mockFunction1()"),
-    //         abi.encode()
-    //     );
-    //     vm.mockCall(
-    //         address(facet),
-    //         abi.encodeWithSignature("mockFunction2()"),
-    //         abi.encode()
-    //     );
-
-    //     vm.expectEmit();
-    //     emit IMulticallFacet.ActionsSubmitted(
-    //         curator,
-    //         currentNonce,
-    //         block.timestamp,
-    //         actionsData
-    //     );
-    //     vm.expectEmit();
-    //     emit IMulticallFacet.ActionsExecuted(curator, currentNonce);
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     // Verify pending actions
-    //     (bytes[] memory storedActions, uint256 pendingUntil) = facet
-    //         .getPendingActions(nonce);
-    //     assertEq(storedActions.length, 0, "Actions length should be deleted");
-    //     assertEq(pendingUntil, 0, "Pending until should be deleted");
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_submitActions_ShouldRevertWhenUnauthorized() public {
-    //     vm.startPrank(unauthorized);
-
-    //     // Attempt to submit actions
-    //     vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-    //     facet.submitActions(actionsData);
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_submitActions_ShouldRevertWhenEmptyActions() public {
-    //     vm.startPrank(curator);
-
-    //     // Attempt to submit empty actions
-    //     bytes[] memory emptyActions = new bytes[](0);
-    //     vm.expectRevert(IMulticallFacet.EmptyActions.selector);
-    //     facet.submitActions(emptyActions);
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_executeActions_ShouldExecuteActions() public {
-    //     vm.startPrank(curator);
-
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     // Mock function calls
-    //     vm.mockCall(
-    //         address(facet),
-    //         abi.encodeWithSignature("mockFunction1()"),
-    //         abi.encode()
-    //     );
-    //     vm.mockCall(
-    //         address(facet),
-    //         abi.encodeWithSignature("mockFunction2()"),
-    //         abi.encode()
-    //     );
-
-    //     // Fast forward time
-    //     vm.warp(block.timestamp + timeLockPeriod + 1);
-
-    //     // Execute actions
-    //     facet.executeActions(nonce);
-
-    //     // Verify actions were deleted
-    //     (bytes[] memory storedActions, uint256 pendingUntil) = facet
-    //         .getPendingActions(nonce);
-    //     assertEq(storedActions.length, 0, "Actions should be deleted");
-    //     assertEq(pendingUntil, 0, "Pending until should be zero");
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_executeActions_ShouldRevertWhenActionsStillPending() public {
-    //     vm.startPrank(curator);
-
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     // Attempt to execute actions before time lock period
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(
-    //             IMulticallFacet.ActionsStillPending.selector,
-    //             nonce
-    //         )
-    //     );
-    //     facet.executeActions(nonce);
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_executeActions_ShouldRevertWhenNoSuchActions() public {
-    //     vm.startPrank(curator);
-
-    //     // Attempt to execute non-existent actions
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(IMulticallFacet.NoSuchActions.selector, 999)
-    //     );
-    //     facet.executeActions(999);
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_executeActions_ShouldRevertWhenMulticallFailed() public {
-    //     vm.startPrank(curator);
-
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     // Fast forward time
-    //     vm.warp(block.timestamp + timeLockPeriod + 1);
-
-    //     // Attempt to execute actions
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(
-    //             bytes4(keccak256("MulticallFailed(uint256,bytes)")),
-    //             0,
-    //             ""
-    //         )
-    //     );
-    //     facet.executeActions(nonce);
-    //     vm.stopPrank();
-    // }
-
-    // function test_vetoActions_ShouldVetoActions() public {
-    //     vm.startPrank(curator);
-
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     vm.stopPrank();
-    //     vm.startPrank(guardian);
-
-    //     // Veto actions
-    //     facet.vetoActions(nonce);
-
-    //     // Verify actions were deleted
-    //     (bytes[] memory storedActions, uint256 pendingUntil) = facet
-    //         .getPendingActions(nonce);
-    //     assertEq(storedActions.length, 0, "Actions should be deleted");
-    //     assertEq(pendingUntil, 0, "Pending until should be zero");
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_vetoActions_ShouldRevertWhenUnauthorized() public {
-    //     vm.startPrank(curator);
-
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     vm.stopPrank();
-    //     vm.startPrank(unauthorized);
-
-    //     // Attempt to veto actions
-    //     vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-    //     facet.vetoActions(nonce);
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_vetoActions_ShouldRevertWhenNoSuchActions() public {
-    //     vm.startPrank(guardian);
-
-    //     // Attempt to veto non-existent actions
-    //     vm.expectRevert(
-    //         abi.encodeWithSelector(IMulticallFacet.NoSuchActions.selector, 999)
-    //     );
-    //     facet.vetoActions(999);
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_getPendingActions_ShouldReturnCorrectData() public {
-    //     vm.startPrank(curator);
-
-    //     // Submit actions
-    //     uint256 nonce = facet.submitActions(actionsData);
-
-    //     // Get pending actions
-    //     (bytes[] memory storedActions, uint256 pendingUntil) = facet
-    //         .getPendingActions(nonce);
-
-    //     // Verify data
-    //     assertEq(
-    //         storedActions.length,
-    //         actionsData.length,
-    //         "Actions length should match"
-    //     );
-    //     assertEq(
-    //         pendingUntil,
-    //         block.timestamp + timeLockPeriod,
-    //         "Pending until should be correct"
-    //     );
-
-    //     vm.stopPrank();
-    // }
-
-    // function test_getCurrentNonce_ShouldReturnCorrectNonce() public view {
-    //     assertEq(
-    //         facet.getCurrentNonce(),
-    //         currentNonce,
-    //         "Current nonce should match"
-    //     );
-    // }
 }

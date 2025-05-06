@@ -52,7 +52,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 continue;
             }
             uint totalSupply = IERC20(lpToken).totalSupply();
-            uint balance = IERC20(lpToken).balanceOf(address(this));
+            uint balance = IERC20(lpToken).balanceOf(address(this)) +
+                ds.staked[lpToken];
             (uint token0, uint token1, ) = IUniswapV2Pair(lpToken)
                 .getReserves();
 

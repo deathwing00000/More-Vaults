@@ -11,6 +11,8 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     /// @param asset Address of the unsupported asset
     error UnsupportedAsset(address asset);
 
+    function accountingCurveFacet() external view returns (uint256);
+
     /// @notice Performs up to 5 swaps in a single transaction.
     /// @param curveRouter Address of the Curve router contract
     /// @param _route Array of [initial token, pool or zap, token, pool or zap, token, ...]
@@ -18,7 +20,6 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     /// @param _amount The amount of input token (`_route[0]`) to be sent.
     /// @param _min_dy The minimum amount received after the final swap.
     /// @param _pools Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
-    /// @param _receiver Address to transfer the final output token to.
     /// @return Received amount of the final output token.
     function exchange(
         address curveRouter,
@@ -26,7 +27,6 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
         uint256[5][5] calldata _swap_params,
         uint256 _amount,
         uint256 _min_dy,
-        address[5] calldata _pools,
-        address _receiver
+        address[5] calldata _pools
     ) external payable returns (uint256);
 }

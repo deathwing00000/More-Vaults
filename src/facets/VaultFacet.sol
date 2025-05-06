@@ -117,7 +117,7 @@ contract VaultFacet is
             address asset = ds.availableAssets[i];
             _totalAssets += MoreVaultsLib.convertToUnderlying(
                 asset,
-                IERC20(asset).balanceOf(address(this))
+                IERC20(asset).balanceOf(address(this)) + ds.staked[asset]
             );
             if (wrappedNative == asset) {
                 _totalAssets += MoreVaultsLib.convertToUnderlying(

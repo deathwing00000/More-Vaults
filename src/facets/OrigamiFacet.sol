@@ -50,7 +50,11 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         ];
         for (uint i = 0; i < lovTokensHeld.length(); ) {
             address lovToken = lovTokensHeld.at(i);
-            uint balance = IERC20(lovToken).balanceOf(address(this));
+            if (ds.isAssetAvailable[lovToken]) {
+                continue;
+            }
+            uint balance = IERC20(lovToken).balanceOf(address(this)) +
+                ds.staked[lovToken];
             address underlyingToken = IOrigamiInvestment(lovToken).baseToken();
             (
                 IOrigamiInvestment.ExitQuoteData memory quoteData,

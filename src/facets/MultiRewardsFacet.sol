@@ -84,12 +84,14 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
                 ++i;
             }
         }
-        _staking.stakingToken().approve(staking, amount);
+        IERC20 stakingToken = _staking.stakingToken();
+        stakingToken.approve(staking, amount);
         _staking.stake(amount);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].add(staking);
+        ds.staked[address(stakingToken)] += amount;
     }
 
     /**
@@ -98,6 +100,15 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
     function withdraw(address staking, uint256 amount) public {
         AccessControlLib.validateDiamond(msg.sender);
         IMultiRewards(staking).withdraw(amount);
+
+        IERC20 stakingToken = IMultiRewards(staking).stakingToken();
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.removeTokenIfnecessary(
+            ds.tokensHeld[MULTI_REWARDS_STAKINGS_ID],
+            staking
+        );
+        ds.staked[address(stakingToken)] -= amount;
     }
 
     /**

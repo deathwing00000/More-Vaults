@@ -67,7 +67,7 @@ contract DeployScript is Script {
             vm.envAddress("CURATOR"),
             vm.envAddress("GUARDIAN"),
             vm.envAddress("FEE_RECIPIENT"),
-            vm.envAddress("ASSET_TO_DEPOSIT"),
+            vm.envAddress("UNDERLYING_ASSET"),
             uint96(vm.envUint("FEE")),
             vm.envUint("DEPOSIT_CAPACITY"),
             vm.envUint("TIME_LOCK_PERIOD")

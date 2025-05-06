@@ -28,6 +28,7 @@ library MoreVaultsStorageHelper {
     uint256 constant PENDING_ACTION = 14;
     uint256 constant TIME_LOCK_PERIOD = 15;
     uint256 constant STAKING_ADDRESSES = 16;
+    uint256 constant STAKED = 17;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -737,6 +738,19 @@ library MoreVaultsStorageHelper {
         );
     }
 
+    function setStaked(
+        address contractAddress,
+        address stakedToken,
+        uint256 amount
+    ) internal {
+        setMappingValue(
+            contractAddress,
+            STAKED,
+            bytes32(uint256(uint160(stakedToken))),
+            bytes32(amount)
+        );
+    }
+
     function getFacetFunctionSelectors(
         address contractAddress,
         address facet
@@ -843,5 +857,19 @@ library MoreVaultsStorageHelper {
                     bytes32(interfaceId)
                 )
             ) != 0;
+    }
+
+    function getStaked(
+        address contractAddress,
+        address tokenAddress
+    ) internal view returns (uint256) {
+        return
+            uint256(
+                getMappingValue(
+                    contractAddress,
+                    STAKED,
+                    bytes32(uint256(uint160(tokenAddress)))
+                )
+            );
     }
 }

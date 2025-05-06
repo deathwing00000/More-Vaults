@@ -55,7 +55,8 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
 
         for (uint i = 0; i < mTokensHeld.length(); ) {
             address mToken = mTokensHeld.at(i);
-            uint balance = IERC20(mToken).balanceOf(address(this));
+            uint balance = IERC20(mToken).balanceOf(address(this)) +
+                ds.staked[mToken];
             address underlyingOfMToken = IATokenExtended(mToken)
                 .UNDERLYING_ASSET_ADDRESS();
             sum += MoreVaultsLib.convertToUnderlying(

@@ -354,8 +354,12 @@ contract DeployConfig {
             .selector;
 
         // selectors for curve
-        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](1);
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](2);
         functionSelectorsCurveFacet[0] = ICurveFacet.exchange.selector;
+        functionSelectorsCurveFacet[1] = ICurveFacet
+            .accountingCurveFacet
+            .selector;
+        bytes memory initDataCurveFacet = abi.encode(address(curve));
 
         // selectors for UniswapV3
         bytes4[] memory functionSelectorsUniswapV3Facet = new bytes4[](4);
@@ -457,7 +461,7 @@ contract DeployConfig {
             facetAddress: address(curve),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsCurveFacet,
-            initData: ""
+            initData: initDataCurveFacet
         });
         cuts[11] = IDiamondCut.FacetCut({
             facetAddress: address(uniswapV3),
