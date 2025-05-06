@@ -92,7 +92,7 @@ contract DeployConfig {
         functionSelectorsLoupeFacet[4] = IERC165.supportsInterface.selector;
 
         // selectors for access control
-        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](6);
+        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](8);
         functionSelectorsAccessControlFacet[0] = AccessControlFacet
             .setMoreVaultRegistry
             .selector;
@@ -100,15 +100,21 @@ contract DeployConfig {
             .transferCuratorship
             .selector;
         functionSelectorsAccessControlFacet[2] = AccessControlFacet
-            .transferGuardian
+            .transferOwner
             .selector;
         functionSelectorsAccessControlFacet[3] = AccessControlFacet
-            .curator
+            .transferGuardian
             .selector;
         functionSelectorsAccessControlFacet[4] = AccessControlFacet
-            .guardian
+            .owner
             .selector;
         functionSelectorsAccessControlFacet[5] = AccessControlFacet
+            .curator
+            .selector;
+        functionSelectorsAccessControlFacet[6] = AccessControlFacet
+            .guardian
+            .selector;
+        functionSelectorsAccessControlFacet[7] = AccessControlFacet
             .moreVaultsRegistry
             .selector;
 
@@ -119,7 +125,7 @@ contract DeployConfig {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](11);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](15);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -130,27 +136,39 @@ contract DeployConfig {
             .setTimeLockPeriod
             .selector;
         functionSelectorsConfigurationFacet[3] = ConfigurationFacet
-            .addAvailableAsset
+            .setDepositCapacity
             .selector;
         functionSelectorsConfigurationFacet[4] = ConfigurationFacet
-            .addAvailableAssets
+            .addAvailableAsset
             .selector;
         functionSelectorsConfigurationFacet[5] = ConfigurationFacet
-            .isAssetAvailable
+            .addAvailableAssets
             .selector;
         functionSelectorsConfigurationFacet[6] = ConfigurationFacet
-            .getAvailableAssets
+            .enableAssetToDeposit
             .selector;
         functionSelectorsConfigurationFacet[7] = ConfigurationFacet
-            .fee
+            .disableAssetToDeposit
             .selector;
         functionSelectorsConfigurationFacet[8] = ConfigurationFacet
-            .depositCapacity
+            .isAssetAvailable
             .selector;
         functionSelectorsConfigurationFacet[9] = ConfigurationFacet
-            .timeLockPeriod
+            .isAssetDepositable
             .selector;
         functionSelectorsConfigurationFacet[10] = ConfigurationFacet
+            .getAvailableAssets
+            .selector;
+        functionSelectorsConfigurationFacet[11] = ConfigurationFacet
+            .fee
+            .selector;
+        functionSelectorsConfigurationFacet[12] = ConfigurationFacet
+            .depositCapacity
+            .selector;
+        functionSelectorsConfigurationFacet[13] = ConfigurationFacet
+            .timeLockPeriod
+            .selector;
+        functionSelectorsConfigurationFacet[14] = ConfigurationFacet
             .feeRecipient
             .selector;
 
@@ -218,7 +236,7 @@ contract DeployConfig {
         /// OPTIONAL FACETS
 
         // selectors for uniswap v2
-        bytes4[] memory functionSelectorsUniswapV2Facet = new bytes4[](14);
+        bytes4[] memory functionSelectorsUniswapV2Facet = new bytes4[](15);
         functionSelectorsUniswapV2Facet[0] = IUniswapV2Facet
             .accountingUniswapV2Facet
             .selector;
@@ -260,6 +278,9 @@ contract DeployConfig {
             .selector;
         functionSelectorsUniswapV2Facet[13] = IUniswapV2Facet
             .swapExactETHForTokensSupportingFeeOnTransferTokens
+            .selector;
+        functionSelectorsUniswapV2Facet[14] = IUniswapV2Facet
+            .swapExactTokensForETHSupportingFeeOnTransferTokens
             .selector;
 
         bytes memory initDataUniswapV2Facet = abi.encode(address(uniswapV2));
@@ -354,9 +375,10 @@ contract DeployConfig {
             .selector;
 
         // selectors for curve
-        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](2);
-        functionSelectorsCurveFacet[0] = ICurveFacet.exchange.selector;
-        functionSelectorsCurveFacet[1] = ICurveFacet
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](3);
+        functionSelectorsCurveFacet[0] = ICurveFacet.exchangeNg.selector;
+        functionSelectorsCurveFacet[1] = ICurveFacet.exchange.selector;
+        functionSelectorsCurveFacet[2] = ICurveFacet
             .accountingCurveFacet
             .selector;
         bytes memory initDataCurveFacet = abi.encode(address(curve));

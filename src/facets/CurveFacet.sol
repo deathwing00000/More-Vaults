@@ -77,6 +77,30 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     /**
      * @inheritdoc ICurveFacet
      */
+    function exchangeNg(
+        address curveRouter,
+        address[11] calldata _route,
+        uint256[5][5] calldata _swap_params,
+        uint256 _amount,
+        uint256 _min_dy
+    ) external payable returns (uint256) {
+        AccessControlLib.validateDiamond(msg.sender);
+        address[5] memory _pools;
+        return
+            _exchange(
+                curveRouter,
+                _route,
+                _swap_params,
+                _amount,
+                _min_dy,
+                _pools,
+                true
+            );
+    }
+
+    /**
+     * @inheritdoc ICurveFacet
+     */
     function exchange(
         address curveRouter,
         address[11] calldata _route,
@@ -86,6 +110,27 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         address[5] calldata _pools
     ) external payable returns (uint256) {
         AccessControlLib.validateDiamond(msg.sender);
+        return
+            _exchange(
+                curveRouter,
+                _route,
+                _swap_params,
+                _amount,
+                _min_dy,
+                _pools,
+                false
+            );
+    }
+
+    function _exchange(
+        address curveRouter,
+        address[11] calldata _route,
+        uint256[5][5] calldata _swap_params,
+        uint256 _amount,
+        uint256 _min_dy,
+        address[5] memory _pools,
+        bool isNgRouterOnly
+    ) internal returns (uint256) {
         address inputToken = _route[0];
         (
             uint256 index,
@@ -106,14 +151,25 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             );
         }
         IERC20(inputToken).approve(curveRouter, _amount);
-        uint256 receivedAmount = ICurveRouter(curveRouter).exchange(
-            _route,
-            _swap_params,
-            _amount,
-            _min_dy,
-            _pools,
-            address(this)
-        );
+        uint256 receivedAmount;
+        if (isNgRouterOnly) {
+            receivedAmount = ICurveRouter(curveRouter).exchange(
+                _route,
+                _swap_params,
+                _amount,
+                _min_dy,
+                address(this)
+            );
+        } else {
+            receivedAmount = ICurveRouter(curveRouter).exchange(
+                _route,
+                _swap_params,
+                _amount,
+                _min_dy,
+                _pools,
+                address(this)
+            );
+        }
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();

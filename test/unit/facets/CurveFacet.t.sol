@@ -93,13 +93,11 @@ contract CurveFacetTest is Test {
         );
     }
 
-    function test_exchange_ShouldPerformExchange() public {
+    function test_exchangeNg_ShouldPerformExchange() public {
         vm.startPrank(address(facet));
 
         uint256 amount = 1e18;
         uint256 minAmount = 0.9e18;
-
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -111,7 +109,259 @@ contract CurveFacetTest is Test {
         vm.mockCall(
             router,
             abi.encodeWithSelector(
-                ICurveRouter.exchange.selector,
+                bytes4(
+                    keccak256(
+                        "exchange(address[11],uint256[5][5],uint256,uint256,address)"
+                    )
+                ),
+                route,
+                swap_params,
+                amount,
+                minAmount,
+                address(facet)
+            ),
+            abi.encode(amount)
+        );
+
+        uint256 received = facet.exchangeNg(
+            router,
+            route,
+            swap_params,
+            amount,
+            minAmount
+        );
+
+        assertEq(received, amount);
+
+        vm.stopPrank();
+    }
+
+    function test_exchangeNg_ShouldRevertIfOutputTokenNotAvailable() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        address unsupportedToken = address(123456);
+        route[2] = unsupportedToken;
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedAsset.selector,
+                unsupportedToken
+            )
+        );
+        facet.exchangeNg(router, route, swap_params, amount, minAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_exchangeNg_ShouldRevertIfInputTokenNotAvailable() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        address unsupportedToken = address(123456);
+        route[0] = unsupportedToken;
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedAsset.selector,
+                unsupportedToken
+            )
+        );
+        facet.exchangeNg(router, route, swap_params, amount, minAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_exchangeNg_ShouldRevertIfAddingLiquidityAndInThatPoolFirstCoinNotAvaialable()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        address unsupportedToken = address(123456);
+        route[2] = pool;
+        swap_params[0][2] = 4;
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20.approve.selector, router, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(ICurveViews.coins.selector, 0),
+            abi.encode(unsupportedToken)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedAsset.selector,
+                unsupportedToken
+            )
+        );
+        facet.exchangeNg(router, route, swap_params, amount, minAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_exchangeNg_ShouldAddTokenToArrayIfLiquidityAdded() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+
+        route[2] = pool;
+        swap_params[0][2] = 4; // add liquidity
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20.approve.selector, router, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            router,
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256(
+                        "exchange(address[11],uint256[5][5],uint256,uint256,address)"
+                    )
+                ),
+                route,
+                swap_params,
+                amount,
+                minAmount,
+                address(facet)
+            ),
+            abi.encode(amount)
+        );
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(ICurveViews.coins.selector, 0),
+            abi.encode(token1)
+        );
+
+        uint256 received = facet.exchangeNg(
+            router,
+            route,
+            swap_params,
+            amount,
+            minAmount
+        );
+
+        // Verify LP token was added to held tokens
+        address[] memory lpTokens = MoreVaultsStorageHelper.getTokensHeld(
+            address(facet),
+            keccak256("CURVE_LP_TOKENS_ID")
+        );
+        assertEq(received, amount);
+        assertEq(lpTokens.length, 1, "Should have one LP token");
+        assertEq(lpTokens[0], pool, "Should have correct LP token");
+
+        vm.stopPrank();
+    }
+
+    function test_exchangeNg_ShouldRemoveTokenFromArrayOnLiquidityRemoval()
+        public
+    {
+        address[] memory lpToken = new address[](1);
+        lpToken[0] = pool;
+        MoreVaultsStorageHelper.setTokensHeld(
+            address(facet),
+            keccak256("CURVE_LP_TOKENS_ID"),
+            lpToken
+        );
+
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+
+        route[0] = pool;
+        swap_params[0][2] = 6; // add liquidity
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(IERC20.approve.selector, router, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            router,
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256(
+                        "exchange(address[11],uint256[5][5],uint256,uint256,address)"
+                    )
+                ),
+                route,
+                swap_params,
+                amount,
+                minAmount,
+                address(facet)
+            ),
+            abi.encode(amount)
+        );
+
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(0)
+        );
+
+        uint256 received = facet.exchangeNg(
+            router,
+            route,
+            swap_params,
+            amount,
+            minAmount
+        );
+
+        // Verify LP token was added to held tokens
+        address[] memory lpTokens = MoreVaultsStorageHelper.getTokensHeld(
+            address(facet),
+            keccak256("CURVE_LP_TOKENS_ID")
+        );
+        assertEq(received, amount);
+        assertEq(lpTokens.length, 0, "Should have zero LP token");
+
+        vm.stopPrank();
+    }
+
+    function test_exchange_ShouldPerformExchange() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20.approve.selector, router, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            router,
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256(
+                        "exchange(address[11],uint256[5][5],uint256,uint256,address[5],address)"
+                    )
+                ),
                 route,
                 swap_params,
                 amount,
@@ -144,7 +394,7 @@ contract CurveFacetTest is Test {
         address unsupportedToken = address(123456);
         route[2] = unsupportedToken;
 
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -167,7 +417,7 @@ contract CurveFacetTest is Test {
         address unsupportedToken = address(123456);
         route[0] = unsupportedToken;
 
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -193,7 +443,7 @@ contract CurveFacetTest is Test {
         route[2] = pool;
         swap_params[0][2] = 4;
 
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -228,7 +478,7 @@ contract CurveFacetTest is Test {
         route[2] = pool;
         swap_params[0][2] = 4; // add liquidity
 
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -240,7 +490,11 @@ contract CurveFacetTest is Test {
         vm.mockCall(
             router,
             abi.encodeWithSelector(
-                ICurveRouter.exchange.selector,
+                bytes4(
+                    keccak256(
+                        "exchange(address[11],uint256[5][5],uint256,uint256,address[5],address)"
+                    )
+                ),
                 route,
                 swap_params,
                 amount,
@@ -288,6 +542,8 @@ contract CurveFacetTest is Test {
             lpToken
         );
 
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
+
         vm.startPrank(address(facet));
 
         uint256 amount = 1e18;
@@ -295,8 +551,6 @@ contract CurveFacetTest is Test {
 
         route[0] = pool;
         swap_params[0][2] = 6; // add liquidity
-
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -308,7 +562,11 @@ contract CurveFacetTest is Test {
         vm.mockCall(
             router,
             abi.encodeWithSelector(
-                ICurveRouter.exchange.selector,
+                bytes4(
+                    keccak256(
+                        "exchange(address[11],uint256[5][5],uint256,uint256,address[5],address)"
+                    )
+                ),
                 route,
                 swap_params,
                 amount,

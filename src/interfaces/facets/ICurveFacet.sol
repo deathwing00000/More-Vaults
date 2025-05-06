@@ -29,4 +29,19 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
         uint256 _min_dy,
         address[5] calldata _pools
     ) external payable returns (uint256);
+
+    /// @notice Performs up to 5 swaps in a single transaction. Works only with NG pools.
+    /// @param curveRouter Address of the Curve router contract
+    /// @param _route Array of [initial token, pool or zap, token, pool or zap, token, ...]
+    /// @param _swap_params Multidimensional array of [i, j, swap_type, pool_type, n_coins] where
+    /// @param _amount The amount of input token (`_route[0]`) to be sent.
+    /// @param _min_dy The minimum amount received after the final swap.
+    /// @return Received amount of the final output token.
+    function exchangeNg(
+        address curveRouter,
+        address[11] calldata _route,
+        uint256[5][5] calldata _swap_params,
+        uint256 _amount,
+        uint256 _min_dy
+    ) external payable returns (uint256);
 }
