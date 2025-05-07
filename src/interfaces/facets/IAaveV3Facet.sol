@@ -3,13 +3,13 @@ pragma solidity 0.8.28;
 
 import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
-interface IMoreMarketsFacet is IGenericMoreVaultFacetInitializable {
+interface IAaveV3Facet is IGenericMoreVaultFacetInitializable {
     error UnsupportedAsset(address);
     error UnsupportedPool(address);
 
     function facetName() external pure returns (string memory);
 
-    function accountingMoreMarketsFacet() external view returns (uint sum);
+    function accountingAaveV3Facet() external view returns (uint sum);
 
     /**
      * @notice Supplies an asset to a pool

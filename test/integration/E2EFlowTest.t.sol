@@ -12,8 +12,8 @@ import {IConfigurationFacet, ConfigurationFacet} from "../../src/facets/Configur
 import {IMulticallFacet, MulticallFacet} from "../../src/facets/MulticallFacet.sol";
 import {IVaultFacet, VaultFacet} from "../../src/facets/VaultFacet.sol";
 import {IUniswapV2Facet, UniswapV2Facet} from "../../src/facets/UniswapV2Facet.sol";
-import {IOrigamiFacet, OrigamiFacet} from "../../src/facets/OrigamiFacet.sol";
-import {IPool, IMoreMarketsFacet, MoreMarketsFacet} from "../../src/facets/MoreMarketsFacet.sol";
+import {IMORELeverageFacet, MORELeverageFacet} from "../../src/facets/MORELeverageFacet.sol";
+import {IPool, IAaveV3Facet, AaveV3Facet} from "../../src/facets/AaveV3Facet.sol";
 import {IIzumiSwapFacet, IzumiSwapFacet} from "../../src/facets/IzumiSwapFacet.sol";
 import {MoreVaultsStorageHelper} from "../helper/MoreVaultsStorageHelper.sol";
 import {AccessControlLib} from "../../src/libraries/AccessControlLib.sol";
@@ -85,8 +85,8 @@ contract E2EFlowTest is Test {
     MulticallFacet multicall;
     VaultFacet vault;
     UniswapV2Facet uniswapV2;
-    OrigamiFacet origami;
-    MoreMarketsFacet moreMarkets;
+    MORELeverageFacet origami;
+    AaveV3Facet moreMarkets;
     IzumiSwapFacet izumiSwap;
     AggroKittySwapFacet aggroKittySwap;
     CurveFacet curve;
@@ -123,8 +123,8 @@ contract E2EFlowTest is Test {
         multicall = new MulticallFacet();
         vault = new VaultFacet();
         uniswapV2 = new UniswapV2Facet();
-        origami = new OrigamiFacet();
-        moreMarkets = new MoreMarketsFacet();
+        origami = new MORELeverageFacet();
+        moreMarkets = new AaveV3Facet();
         izumiSwap = new IzumiSwapFacet();
         aggroKittySwap = new AggroKittySwapFacet();
         curve = new CurveFacet();
@@ -209,7 +209,7 @@ contract E2EFlowTest is Test {
         vm.startPrank(CURATOR);
         bytes[] memory actions = new bytes[](1);
         actions[0] = abi.encodeWithSelector(
-            IMoreMarketsFacet.supply.selector,
+            IAaveV3Facet.supply.selector,
             MORE_MARKETS_POOL,
             address(WFLOW),
             DEPOSIT_AMOUNT,
@@ -444,72 +444,68 @@ contract E2EFlowTest is Test {
         bytes memory initDataUniswapV2Facet = abi.encode(address(uniswapV2));
 
         // selectors for origami
-        bytes4[] memory functionSelectorsOrigamiFacet = new bytes4[](9);
-        functionSelectorsOrigamiFacet[0] = IOrigamiFacet
-            .accountingOrigamiFacet
+        bytes4[] memory functionSelectorsMORELeverageFacet = new bytes4[](9);
+        functionSelectorsMORELeverageFacet[0] = IMORELeverageFacet
+            .accountingMORELeverageFacet
             .selector;
-        functionSelectorsOrigamiFacet[1] = IOrigamiFacet
+        functionSelectorsMORELeverageFacet[1] = IMORELeverageFacet
             .investWithToken
             .selector;
-        functionSelectorsOrigamiFacet[2] = IOrigamiFacet
+        functionSelectorsMORELeverageFacet[2] = IMORELeverageFacet
             .investWithNative
             .selector;
-        functionSelectorsOrigamiFacet[3] = IOrigamiFacet.exitToToken.selector;
-        functionSelectorsOrigamiFacet[4] = IOrigamiFacet.exitToNative.selector;
-        functionSelectorsOrigamiFacet[5] = IOrigamiFacet.rebalanceUp.selector;
-        functionSelectorsOrigamiFacet[6] = IOrigamiFacet
+        functionSelectorsMORELeverageFacet[3] = IMORELeverageFacet
+            .exitToToken
+            .selector;
+        functionSelectorsMORELeverageFacet[4] = IMORELeverageFacet
+            .exitToNative
+            .selector;
+        functionSelectorsMORELeverageFacet[5] = IMORELeverageFacet
+            .rebalanceUp
+            .selector;
+        functionSelectorsMORELeverageFacet[6] = IMORELeverageFacet
             .forceRebalanceUp
             .selector;
-        functionSelectorsOrigamiFacet[7] = IOrigamiFacet.rebalanceDown.selector;
-        functionSelectorsOrigamiFacet[8] = IOrigamiFacet
+        functionSelectorsMORELeverageFacet[7] = IMORELeverageFacet
+            .rebalanceDown
+            .selector;
+        functionSelectorsMORELeverageFacet[8] = IMORELeverageFacet
             .forceRebalanceDown
             .selector;
 
-        bytes memory initDataOrigamiFacet = abi.encode(address(origami));
+        bytes memory initDataMORELeverageFacet = abi.encode(address(origami));
 
         // selectors for more markets
-        bytes4[] memory functionSelectorsMoreMarketsFacet = new bytes4[](13);
-        functionSelectorsMoreMarketsFacet[0] = IMoreMarketsFacet
-            .accountingMoreMarketsFacet
+        bytes4[] memory functionSelectorsAaveV3Facet = new bytes4[](13);
+        functionSelectorsAaveV3Facet[0] = IAaveV3Facet
+            .accountingAaveV3Facet
             .selector;
-        functionSelectorsMoreMarketsFacet[1] = IMoreMarketsFacet
-            .supply
-            .selector;
-        functionSelectorsMoreMarketsFacet[2] = IMoreMarketsFacet
-            .withdraw
-            .selector;
-        functionSelectorsMoreMarketsFacet[3] = IMoreMarketsFacet
-            .borrow
-            .selector;
-        functionSelectorsMoreMarketsFacet[4] = IMoreMarketsFacet.repay.selector;
-        functionSelectorsMoreMarketsFacet[5] = IMoreMarketsFacet
+        functionSelectorsAaveV3Facet[1] = IAaveV3Facet.supply.selector;
+        functionSelectorsAaveV3Facet[2] = IAaveV3Facet.withdraw.selector;
+        functionSelectorsAaveV3Facet[3] = IAaveV3Facet.borrow.selector;
+        functionSelectorsAaveV3Facet[4] = IAaveV3Facet.repay.selector;
+        functionSelectorsAaveV3Facet[5] = IAaveV3Facet
             .repayWithATokens
             .selector;
-        functionSelectorsMoreMarketsFacet[6] = IMoreMarketsFacet
+        functionSelectorsAaveV3Facet[6] = IAaveV3Facet
             .swapBorrowRateMode
             .selector;
-        functionSelectorsMoreMarketsFacet[7] = IMoreMarketsFacet
+        functionSelectorsAaveV3Facet[7] = IAaveV3Facet
             .rebalanceStableBorrowRate
             .selector;
-        functionSelectorsMoreMarketsFacet[8] = IMoreMarketsFacet
+        functionSelectorsAaveV3Facet[8] = IAaveV3Facet
             .setUserUseReserveAsCollateral
             .selector;
-        functionSelectorsMoreMarketsFacet[9] = IMoreMarketsFacet
-            .flashLoan
-            .selector;
-        functionSelectorsMoreMarketsFacet[10] = IMoreMarketsFacet
+        functionSelectorsAaveV3Facet[9] = IAaveV3Facet.flashLoan.selector;
+        functionSelectorsAaveV3Facet[10] = IAaveV3Facet
             .flashLoanSimple
             .selector;
-        functionSelectorsMoreMarketsFacet[11] = IMoreMarketsFacet
-            .setUserEMode
-            .selector;
-        functionSelectorsMoreMarketsFacet[12] = IMoreMarketsFacet
+        functionSelectorsAaveV3Facet[11] = IAaveV3Facet.setUserEMode.selector;
+        functionSelectorsAaveV3Facet[12] = IAaveV3Facet
             .claimAllRewards
             .selector;
 
-        bytes memory initDataMoreMarketsFacet = abi.encode(
-            address(moreMarkets)
-        );
+        bytes memory initDataAaveV3Facet = abi.encode(address(moreMarkets));
 
         // selectors for izumi swap
         bytes4[] memory functionSelectorsIzumiSwapFacet = new bytes4[](2);
@@ -643,14 +639,14 @@ contract E2EFlowTest is Test {
         cuts[6] = IDiamondCut.FacetCut({
             facetAddress: address(origami),
             action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectorsOrigamiFacet,
-            initData: initDataOrigamiFacet
+            functionSelectors: functionSelectorsMORELeverageFacet,
+            initData: initDataMORELeverageFacet
         });
         cuts[7] = IDiamondCut.FacetCut({
             facetAddress: address(moreMarkets),
             action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectorsMoreMarketsFacet,
-            initData: initDataMoreMarketsFacet
+            functionSelectors: functionSelectorsAaveV3Facet,
+            initData: initDataAaveV3Facet
         });
         cuts[8] = IDiamondCut.FacetCut({
             facetAddress: address(izumiSwap),

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {OrigamiFacet} from "../../../src/facets/OrigamiFacet.sol";
+import {MORELeverageFacet} from "../../../src/facets/MORELeverageFacet.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IOrigamiInvestment} from "../../../src/interfaces/Origami/IOrigamiInvestment.sol";
@@ -10,7 +10,7 @@ import {IOrigamiLovTokenFlashAndBorrowManager} from "../../../src/interfaces/Ori
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 
-contract OrigamiFacetTest is Test {
+contract MORELeverageFacetTest is Test {
     // Test addresses
     address public facet = address(100);
     address public lovToken = address(2);
@@ -35,7 +35,7 @@ contract OrigamiFacetTest is Test {
         deadline = block.timestamp + 1 hours;
 
         // Deploy facet
-        OrigamiFacet facetContract = new OrigamiFacet();
+        MORELeverageFacet facetContract = new MORELeverageFacet();
         facet = address(facetContract);
 
         // Set initial values in storage
@@ -50,21 +50,21 @@ contract OrigamiFacetTest is Test {
     }
 
     function test_facetName_ShouldReturnCorrectName() public view {
-        assertEq(OrigamiFacet(facet).facetName(), "OrigamiFacet");
+        assertEq(MORELeverageFacet(facet).facetName(), "MORELeverageFacet");
     }
 
     function test_initialize_ShouldSetFacetAddress() public {
-        OrigamiFacet(facet).initialize(abi.encode(facet));
+        MORELeverageFacet(facet).initialize(abi.encode(facet));
         MoreVaultsStorageHelper.getStorageValue(facet, 0); // Verify storage was updated
     }
 
     function test_initialize_ShouldRevertWhenAlreadyInitialized() public {
         // First initialization
-        OrigamiFacet(facet).initialize(abi.encode(facet));
+        MORELeverageFacet(facet).initialize(abi.encode(facet));
 
         // Try to initialize again
         vm.expectRevert(BaseFacetInitializer.AlreadyInitialized.selector);
-        OrigamiFacet(facet).initialize(abi.encode(facet));
+        MORELeverageFacet(facet).initialize(abi.encode(facet));
     }
 
     function test_allNonViewFunctions_ShouldRevertWhenCalledByNonDiamond()
@@ -93,13 +93,13 @@ contract OrigamiFacetTest is Test {
             });
 
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        OrigamiFacet(facet).investWithToken(lovToken, investQuoteData);
+        MORELeverageFacet(facet).investWithToken(lovToken, investQuoteData);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        OrigamiFacet(facet).investWithNative(lovToken, investQuoteData);
+        MORELeverageFacet(facet).investWithNative(lovToken, investQuoteData);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        OrigamiFacet(facet).exitToToken(lovToken, exitQuoteData);
+        MORELeverageFacet(facet).exitToToken(lovToken, exitQuoteData);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        OrigamiFacet(facet).exitToNative(lovToken, exitQuoteData);
+        MORELeverageFacet(facet).exitToNative(lovToken, exitQuoteData);
 
         vm.stopPrank();
     }
@@ -134,7 +134,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).investWithToken(lovToken, investQuoteData);
+        MORELeverageFacet(facet).investWithToken(lovToken, investQuoteData);
 
         // Verify lovToken was added to held tokens
         address[] memory lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -171,7 +171,7 @@ contract OrigamiFacetTest is Test {
         vm.prank(facet);
 
         vm.deal(facet, AMOUNT);
-        OrigamiFacet(facet).investWithNative(lovToken, investQuoteData);
+        MORELeverageFacet(facet).investWithNative(lovToken, investQuoteData);
 
         // Verify lovToken was added to held tokens
         address[] memory lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -224,7 +224,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToToken(lovToken, exitQuoteData);
+        MORELeverageFacet(facet).exitToToken(lovToken, exitQuoteData);
 
         // Verify lovToken was removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -276,7 +276,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToNative(lovToken, exitQuoteData);
+        MORELeverageFacet(facet).exitToNative(lovToken, exitQuoteData);
 
         // Verify lovToken was removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -329,7 +329,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToToken(lovToken, exitQuoteData);
+        MORELeverageFacet(facet).exitToToken(lovToken, exitQuoteData);
 
         // Verify lovToken was not removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -383,7 +383,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).exitToNative(lovToken, exitQuoteData);
+        MORELeverageFacet(facet).exitToNative(lovToken, exitQuoteData);
 
         // Verify lovToken was not removed from held tokens
         lovTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -417,7 +417,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).rebalanceUp(
+        MORELeverageFacet(facet).rebalanceUp(
             manager,
             FLASH_LOAN_AMOUNT,
             COLLATERAL_TO_WITHDRAW,
@@ -451,7 +451,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).forceRebalanceUp(
+        MORELeverageFacet(facet).forceRebalanceUp(
             manager,
             FLASH_LOAN_AMOUNT,
             COLLATERAL_TO_WITHDRAW,
@@ -484,7 +484,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).rebalanceDown(
+        MORELeverageFacet(facet).rebalanceDown(
             manager,
             FLASH_LOAN_AMOUNT,
             MIN_EXPECTED_RESERVE_TOKEN,
@@ -518,7 +518,7 @@ contract OrigamiFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        OrigamiFacet(facet).forceRebalanceDown(
+        MORELeverageFacet(facet).forceRebalanceDown(
             manager,
             FLASH_LOAN_AMOUNT,
             MIN_EXPECTED_RESERVE_TOKEN,

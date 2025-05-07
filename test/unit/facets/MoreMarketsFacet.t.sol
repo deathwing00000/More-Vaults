@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {IMoreMarketsFacet, MoreMarketsFacet} from "../../../src/facets/MoreMarketsFacet.sol";
+import {IAaveV3Facet, AaveV3Facet} from "../../../src/facets/AaveV3Facet.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {IPool} from "@aave-v3-core/contracts/interfaces/IPool.sol";
 import {ICreditDelegationToken} from "@aave-v3-core/contracts/interfaces/ICreditDelegationToken.sol";
@@ -17,7 +17,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 
-contract MoreMarketsFacetTest is Test {
+contract AaveV3FacetTest is Test {
     // Test addresses
     address public facet = address(100);
     address public token1 = address(2);
@@ -42,7 +42,7 @@ contract MoreMarketsFacetTest is Test {
 
     function setUp() public {
         // Deploy facet
-        MoreMarketsFacet facetContract = new MoreMarketsFacet();
+        AaveV3Facet facetContract = new AaveV3Facet();
         facet = address(facetContract);
 
         // Set initial values in storage
@@ -114,29 +114,29 @@ contract MoreMarketsFacetTest is Test {
 
     function test_facetName_ShouldReturnCorrectName() public view {
         assertEq(
-            MoreMarketsFacet(facet).facetName(),
-            "MoreMarketsFacet",
+            AaveV3Facet(facet).facetName(),
+            "AaveV3Facet",
             "Should return correct facet name"
         );
     }
 
     function test_initialize_ShouldRevertWhenAlreadyInitialized() public {
         // First initialization
-        MoreMarketsFacet(facet).initialize(abi.encode(facet));
+        AaveV3Facet(facet).initialize(abi.encode(facet));
 
         // Try to initialize again
         vm.expectRevert(BaseFacetInitializer.AlreadyInitialized.selector);
-        MoreMarketsFacet(facet).initialize(abi.encode(facet));
+        AaveV3Facet(facet).initialize(abi.encode(facet));
     }
 
     function test_initialize_ShouldInitializeFacet() public {
         // First initialization
-        MoreMarketsFacet(facet).initialize(abi.encode(facet));
+        AaveV3Facet(facet).initialize(abi.encode(facet));
 
         assertEq(
             MoreVaultsStorageHelper.getSupportedInterface(
                 facet,
-                type(IMoreMarketsFacet).interfaceId
+                type(IAaveV3Facet).interfaceId
             ),
             true
         );
@@ -147,27 +147,23 @@ contract MoreMarketsFacetTest is Test {
     {
         vm.startPrank(user);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).supply(pool, token1, 1e18, 0);
+        AaveV3Facet(facet).supply(pool, token1, 1e18, 0);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).borrow(pool, token1, 1e18, 1, 0, address(this));
+        AaveV3Facet(facet).borrow(pool, token1, 1e18, 1, 0, address(this));
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).repay(pool, token1, 1e18, 1);
+        AaveV3Facet(facet).repay(pool, token1, 1e18, 1);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).repayWithATokens(pool, token1, 1e18, 1);
+        AaveV3Facet(facet).repayWithATokens(pool, token1, 1e18, 1);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).swapBorrowRateMode(pool, token1, 1);
+        AaveV3Facet(facet).swapBorrowRateMode(pool, token1, 1);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).rebalanceStableBorrowRate(
+        AaveV3Facet(facet).rebalanceStableBorrowRate(
             pool,
             token1,
             address(this)
         );
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).setUserUseReserveAsCollateral(
-            pool,
-            token1,
-            true
-        );
+        AaveV3Facet(facet).setUserUseReserveAsCollateral(pool, token1, true);
 
         bytes memory params = "";
         address[] memory assets = new address[](1);
@@ -178,7 +174,7 @@ contract MoreMarketsFacetTest is Test {
         interestRateModes[0] = 1;
 
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).flashLoan(
+        AaveV3Facet(facet).flashLoan(
             pool,
             address(this),
             assets,
@@ -189,7 +185,7 @@ contract MoreMarketsFacetTest is Test {
             0
         );
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).flashLoanSimple(
+        AaveV3Facet(facet).flashLoanSimple(
             pool,
             address(this),
             token1,
@@ -198,12 +194,9 @@ contract MoreMarketsFacetTest is Test {
             0
         );
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).setUserEMode(pool, 1);
+        AaveV3Facet(facet).setUserEMode(pool, 1);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        MoreMarketsFacet(facet).claimAllRewards(
-            rewardsController,
-            new address[](1)
-        );
+        AaveV3Facet(facet).claimAllRewards(rewardsController, new address[](1));
 
         vm.stopPrank();
     }
@@ -230,7 +223,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).supply(pool, token1, amount, 0);
+        AaveV3Facet(facet).supply(pool, token1, amount, 0);
 
         // Verify mToken was added to held tokens
         address[] memory mTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -280,7 +273,7 @@ contract MoreMarketsFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        MoreMarketsFacet(facet).withdraw(pool, token1, amount);
+        AaveV3Facet(facet).withdraw(pool, token1, amount);
 
         // Verify mToken was removed from held tokens
         mTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -329,7 +322,7 @@ contract MoreMarketsFacetTest is Test {
         // Set up as curator
         vm.prank(facet);
 
-        MoreMarketsFacet(facet).withdraw(pool, token1, amount);
+        AaveV3Facet(facet).withdraw(pool, token1, amount);
 
         // Verify mToken was not removed from held tokens
         mTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -359,7 +352,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).borrow(
+        AaveV3Facet(facet).borrow(
             pool,
             token1,
             amount,
@@ -396,7 +389,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).borrow(
+        AaveV3Facet(facet).borrow(
             pool,
             token1,
             amount,
@@ -453,7 +446,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).repay(pool, token1, amount, interestRateMode);
+        AaveV3Facet(facet).repay(pool, token1, amount, interestRateMode);
 
         // Verify debt token was removed from held tokens
         debtTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -502,7 +495,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).repay(pool, token1, amount, interestRateMode);
+        AaveV3Facet(facet).repay(pool, token1, amount, interestRateMode);
 
         // Verify debt token was removed from held tokens
         debtTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -552,7 +545,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).repayWithATokens(
+        AaveV3Facet(facet).repayWithATokens(
             pool,
             token1,
             amount,
@@ -607,7 +600,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).repayWithATokens(
+        AaveV3Facet(facet).repayWithATokens(
             pool,
             token1,
             amount,
@@ -648,11 +641,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).swapBorrowRateMode(
-            pool,
-            token1,
-            interestRateMode
-        );
+        AaveV3Facet(facet).swapBorrowRateMode(pool, token1, interestRateMode);
 
         // Verify debt tokens were updated
         debtTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -689,11 +678,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).swapBorrowRateMode(
-            pool,
-            token1,
-            interestRateMode
-        );
+        AaveV3Facet(facet).swapBorrowRateMode(pool, token1, interestRateMode);
 
         // Verify debt tokens were updated
         debtTokens = MoreVaultsStorageHelper.getTokensHeld(
@@ -716,7 +701,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).rebalanceStableBorrowRate(
+        AaveV3Facet(facet).rebalanceStableBorrowRate(
             pool,
             token1,
             address(this)
@@ -737,7 +722,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).setUserUseReserveAsCollateral(
+        AaveV3Facet(facet).setUserUseReserveAsCollateral(
             pool,
             token1,
             useAsCollateral
@@ -769,7 +754,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).flashLoan(
+        AaveV3Facet(facet).flashLoan(
             pool,
             address(this),
             assets,
@@ -799,7 +784,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).flashLoanSimple(
+        AaveV3Facet(facet).flashLoanSimple(
             pool,
             address(this),
             token1,
@@ -819,7 +804,7 @@ contract MoreMarketsFacetTest is Test {
         );
 
         vm.prank(facet);
-        MoreMarketsFacet(facet).setUserEMode(pool, categoryId);
+        AaveV3Facet(facet).setUserEMode(pool, categoryId);
     }
 
     function test_claimAllRewards_ShouldCallRewardsController() public {
@@ -844,7 +829,7 @@ contract MoreMarketsFacetTest is Test {
         (
             address[] memory actualRewardsList,
             uint256[] memory actualClaimedAmounts
-        ) = MoreMarketsFacet(facet).claimAllRewards(rewardsController, assets);
+        ) = AaveV3Facet(facet).claimAllRewards(rewardsController, assets);
 
         assertEq(actualRewardsList.length, 1, "Should have one reward");
         assertEq(
@@ -863,10 +848,10 @@ contract MoreMarketsFacetTest is Test {
         vm.prank(facet);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IMoreMarketsFacet.UnsupportedAsset.selector,
+                IAaveV3Facet.UnsupportedAsset.selector,
                 assets[0]
             )
         );
-        MoreMarketsFacet(facet).claimAllRewards(rewardsController, assets);
+        AaveV3Facet(facet).claimAllRewards(rewardsController, assets);
     }
 }

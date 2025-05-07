@@ -12,8 +12,8 @@ import {IConfigurationFacet, ConfigurationFacet} from "../src/facets/Configurati
 import {IMulticallFacet, MulticallFacet} from "../src/facets/MulticallFacet.sol";
 import {IVaultFacet, IERC4626, IERC20, VaultFacet} from "../src/facets/VaultFacet.sol";
 import {IUniswapV2Facet, UniswapV2Facet} from "../src/facets/UniswapV2Facet.sol";
-import {IOrigamiFacet, OrigamiFacet} from "../src/facets/OrigamiFacet.sol";
-import {IPool, IMoreMarketsFacet, MoreMarketsFacet} from "../src/facets/MoreMarketsFacet.sol";
+import {IMORELeverageFacet, MORELeverageFacet} from "../src/facets/MORELeverageFacet.sol";
+import {IPool, IAaveV3Facet, AaveV3Facet} from "../src/facets/AaveV3Facet.sol";
 import {IIzumiSwapFacet, IzumiSwapFacet} from "../src/facets/IzumiSwapFacet.sol";
 import {IAggroKittySwapFacet, AggroKittySwapFacet} from "../src/facets/AggroKittySwapFacet.sol";
 import {DeployConfig} from "./config/DeployConfig.s.sol";

@@ -12,10 +12,10 @@ import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IAaveV3RewardsController} from "../interfaces/Aave/v3/IAaveV3RewardsController.sol";
 import {IATokenExtended} from "../interfaces/Aave/v3/IATokenExtended.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
-import {IMoreMarketsFacet} from "../interfaces/facets/IMoreMarketsFacet.sol";
+import {IAaveV3Facet} from "../interfaces/facets/IAaveV3Facet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
-contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
+contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant MTOKENS_ID = keccak256("MTOKENS_ID");
@@ -27,7 +27,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         override
         returns (bytes32)
     {
-        return keccak256("MoreVaults.storage.initializable.MoreMarketsFacet");
+        return keccak256("MoreVaults.storage.initializable.AaveV3Facet");
     }
 
     function initialize(bytes calldata data) external initializerFacet {
@@ -36,14 +36,14 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
         address facetAddress = abi.decode(data, (address));
         ds.facetsForAccounting.push(facetAddress);
 
-        ds.supportedInterfaces[type(IMoreMarketsFacet).interfaceId] = true;
+        ds.supportedInterfaces[type(IAaveV3Facet).interfaceId] = true;
     }
 
     function facetName() external pure returns (string memory) {
-        return "MoreMarketsFacet";
+        return "AaveV3Facet";
     }
 
-    function accountingMoreMarketsFacet() public view returns (uint sum) {
+    function accountingAaveV3Facet() public view returns (uint sum) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage mTokensHeld = ds.tokensHeld[
@@ -84,7 +84,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function supply(
         address pool,
@@ -104,7 +104,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function withdraw(
         address pool,
@@ -118,7 +118,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function borrow(
         address pool,
@@ -157,7 +157,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function repay(
         address pool,
@@ -197,7 +197,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function repayWithATokens(
         address pool,
@@ -237,7 +237,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function swapBorrowRateMode(
         address pool,
@@ -269,7 +269,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function rebalanceStableBorrowRate(
         address pool,
@@ -284,7 +284,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function setUserUseReserveAsCollateral(
         address pool,
@@ -298,7 +298,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function flashLoan(
         address pool,
@@ -350,7 +350,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function flashLoanSimple(
         address pool,
@@ -374,7 +374,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function setUserEMode(address pool, uint8 categoryId) external {
         AccessControlLib.validateDiamond(msg.sender);
@@ -383,7 +383,7 @@ contract MoreMarketsFacet is BaseFacetInitializer, IMoreMarketsFacet {
     }
 
     /**
-     * @inheritdoc IMoreMarketsFacet
+     * @inheritdoc IAaveV3Facet
      */
     function claimAllRewards(
         address rewardsController,

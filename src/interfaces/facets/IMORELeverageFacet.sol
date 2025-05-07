@@ -5,13 +5,13 @@ import {IOrigamiInvestment} from "../Origami/IOrigamiInvestment.sol";
 import {IOrigamiLovTokenFlashAndBorrowManager} from "../Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";
 import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
-interface IOrigamiFacet is IGenericMoreVaultFacetInitializable {
+interface IMORELeverageFacet is IGenericMoreVaultFacetInitializable {
     error UnsupportedAsset(address);
     error UnsupportedLovToken(address);
 
     function facetName() external pure returns (string memory);
 
-    function accountingOrigamiFacet() external view returns (uint sum);
+    function accountingMORELeverageFacet() external view returns (uint sum);
 
     /**
      * @notice Invests with a token

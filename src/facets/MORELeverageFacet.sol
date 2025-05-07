@@ -8,13 +8,13 @@ import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IOrigamiInvestment} from "../interfaces/Origami/IOrigamiInvestment.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IOrigamiLovTokenFlashAndBorrowManager} from "../interfaces/Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";
-import {IOrigamiFacet} from "../interfaces/facets/IOrigamiFacet.sol";
+import {IMORELeverageFacet} from "../interfaces/facets/IMORELeverageFacet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
 error UnsupportedAsset(address);
 error UnsupportedLovToken(address);
 
-contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
+contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant ORIGAMI_VAULT_TOKENS_ID =
@@ -27,11 +27,11 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
         override
         returns (bytes32)
     {
-        return keccak256("MoreVaults.storage.initializable.OrigamiFacet");
+        return keccak256("MoreVaults.storage.initializable.MORELeverageFacet");
     }
 
     function facetName() external pure returns (string memory) {
-        return "OrigamiFacet";
+        return "MORELeverageFacet";
     }
 
     function initialize(bytes calldata data) external initializerFacet {
@@ -39,10 +39,10 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
             .moreVaultsStorage();
         address facetAddress = abi.decode(data, (address));
         ds.facetsForAccounting.push(facetAddress);
-        ds.supportedInterfaces[type(IOrigamiFacet).interfaceId] = true;
+        ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = true;
     }
 
-    function accountingOrigamiFacet() external view returns (uint sum) {
+    function accountingMORELeverageFacet() external view returns (uint sum) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage lovTokensHeld = ds.tokensHeld[
@@ -77,7 +77,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function investWithToken(
         address lovToken,
@@ -97,7 +97,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function investWithNative(
         address lovToken,
@@ -114,7 +114,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function exitToToken(
         address lovToken,
@@ -127,7 +127,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function exitToNative(
         address lovToken,
@@ -140,7 +140,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function rebalanceUp(
         address manager,
@@ -166,7 +166,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function forceRebalanceUp(
         address manager,
@@ -192,7 +192,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function rebalanceDown(
         address manager,
@@ -216,7 +216,7 @@ contract OrigamiFacet is BaseFacetInitializer, IOrigamiFacet {
     }
 
     /**
-     * @inheritdoc IOrigamiFacet
+     * @inheritdoc IMORELeverageFacet
      */
     function forceRebalanceDown(
         address manager,
