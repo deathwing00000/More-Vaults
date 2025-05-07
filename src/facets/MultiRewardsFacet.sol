@@ -10,7 +10,7 @@ import {IMultiRewardsFacet, IMultiRewards} from "../interfaces/facets/IMultiRewa
 
 /**
  * @title MultiRewardsFacet
- * @notice Facet for handling staking into MultiRewards smart contract
+ * @notice Facet for handling staking into Curve's MultiRewards smart contract
  * @dev Implements functionality to stake/withdraw of the lp tokens and claim of rewards
  */
 contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
@@ -47,7 +47,10 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
             IMultiRewards staking = IMultiRewards(stakings.at(i));
             address[] memory rewardTokens = staking.getRewardTokens();
             for (uint256 j = 0; j < rewardTokens.length; ) {
-                uint balance = staking.earned(address(this), rewardTokens[j]);
+                uint256 balance = staking.earned(
+                    address(this),
+                    rewardTokens[j]
+                );
 
                 sum += MoreVaultsLib.convertToUnderlying(
                     rewardTokens[j],
@@ -104,10 +107,6 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         IERC20 stakingToken = IMultiRewards(staking).stakingToken();
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        MoreVaultsLib.removeTokenIfnecessary(
-            ds.tokensHeld[MULTI_REWARDS_STAKINGS_ID],
-            staking
-        );
         ds.staked[address(stakingToken)] -= amount;
     }
 

@@ -24,6 +24,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {CurveFacet} from "../src/facets/CurveFacet.sol";
 import {IUniswapV3Facet, UniswapV3Facet} from "../src/facets/UniswapV3Facet.sol";
 import {IMultiRewardsFacet, MultiRewardsFacet} from "../src/facets/MultiRewardsFacet.sol";
+import {ICurveLiquidityGaugeV6Facet, CurveLiquidityGaugeV6Facet} from "../src/facets/CurveLiquidityGaugeV6Facet.sol";
 
 // testnet deployment script
 // forge script scripts/Deploy.s.sol:DeployScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org -vv --slow --broadcast --verify --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
@@ -36,21 +37,6 @@ contract DeployScript is Script {
     VaultsRegistry registry;
     VaultsFactory factory;
     MoreVaultsDiamond diamond;
-    DiamondCutFacet diamondCut;
-    DiamondLoupeFacet diamondLoupe;
-    AccessControlFacet accessControl;
-    ConfigurationFacet configuration;
-    MulticallFacet multicall;
-    VaultFacet vault;
-    UniswapV2Facet uniswapV2;
-    OrigamiFacet origami;
-    MoreMarketsFacet moreMarkets;
-    IzumiSwapFacet izumiSwap;
-    AggroKittySwapFacet aggroKittySwap;
-    CurveFacet curve;
-    UniswapV3Facet uniswapV3;
-    MultiRewardsFacet multiRewards;
-
     function test_skip() public pure {}
 
     function setUp() public {
@@ -77,22 +63,41 @@ contract DeployScript is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
+        DeployConfig.FacetAddresses memory facetAddresses;
+        DiamondCutFacet diamondCut = new DiamondCutFacet();
 
-        // Deploy facets
-        diamondCut = new DiamondCutFacet();
-        diamondLoupe = new DiamondLoupeFacet();
-        accessControl = new AccessControlFacet();
-        configuration = new ConfigurationFacet();
-        multicall = new MulticallFacet();
-        vault = new VaultFacet();
-        uniswapV2 = new UniswapV2Facet();
-        origami = new OrigamiFacet();
-        moreMarkets = new MoreMarketsFacet();
-        izumiSwap = new IzumiSwapFacet();
-        aggroKittySwap = new AggroKittySwapFacet();
-        curve = new CurveFacet();
-        uniswapV3 = new UniswapV3Facet();
-        multiRewards = new MultiRewardsFacet();
+        {
+            // Deploy facets
+            DiamondLoupeFacet diamondLoupe = new DiamondLoupeFacet();
+            AccessControlFacet accessControl = new AccessControlFacet();
+            ConfigurationFacet configuration = new ConfigurationFacet();
+            MulticallFacet multicall = new MulticallFacet();
+            VaultFacet vault = new VaultFacet();
+            UniswapV2Facet uniswapV2 = new UniswapV2Facet();
+            OrigamiFacet origami = new OrigamiFacet();
+            MoreMarketsFacet moreMarkets = new MoreMarketsFacet();
+            IzumiSwapFacet izumiSwap = new IzumiSwapFacet();
+            AggroKittySwapFacet aggroKittySwap = new AggroKittySwapFacet();
+            CurveFacet curve = new CurveFacet();
+            UniswapV3Facet uniswapV3 = new UniswapV3Facet();
+            MultiRewardsFacet multiRewards = new MultiRewardsFacet();
+            CurveLiquidityGaugeV6Facet curveGaugeV6 = new CurveLiquidityGaugeV6Facet();
+
+            facetAddresses.diamondLoupe = address(diamondLoupe);
+            facetAddresses.accessControl = address(accessControl);
+            facetAddresses.configuration = address(configuration);
+            facetAddresses.multicall = address(multicall);
+            facetAddresses.vault = address(vault);
+            facetAddresses.uniswapV2 = address(uniswapV2);
+            facetAddresses.origami = address(origami);
+            facetAddresses.moreMarkets = address(moreMarkets);
+            facetAddresses.izumiSwap = address(izumiSwap);
+            facetAddresses.aggroKittySwap = address(aggroKittySwap);
+            facetAddresses.curve = address(curve);
+            facetAddresses.uniswapV3 = address(uniswapV3);
+            facetAddresses.multiRewards = address(multiRewards);
+            facetAddresses.curveGaugeV6 = address(curveGaugeV6);
+        }
 
         // Save addresses to .env.deployments file
         string memory addresses = string(
@@ -101,43 +106,46 @@ contract DeployScript is Script {
                 vm.toString(address(diamondCut)),
                 "\n",
                 "DIAMOND_LOUPE_FACET=",
-                vm.toString(address(diamondLoupe)),
+                vm.toString(facetAddresses.diamondLoupe),
                 "\n",
                 "ACCESS_CONTROL_FACET=",
-                vm.toString(address(accessControl)),
+                vm.toString(facetAddresses.accessControl),
                 "\n",
                 "CONFIGURATION_FACET=",
-                vm.toString(address(configuration)),
+                vm.toString(facetAddresses.configuration),
                 "\n",
                 "VAULT_FACET=",
-                vm.toString(address(vault)),
+                vm.toString(facetAddresses.vault),
                 "\n",
                 "MULTICALL_FACET=",
-                vm.toString(address(multicall)),
+                vm.toString(facetAddresses.multicall),
                 "\n",
                 "UNISWAP_V2_FACET=",
-                vm.toString(address(uniswapV2)),
+                vm.toString(facetAddresses.uniswapV2),
                 "\n",
                 "IZUMI_SWAP_FACET=",
-                vm.toString(address(izumiSwap)),
+                vm.toString(facetAddresses.izumiSwap),
                 "\n",
                 "ORIGAMI_FACET=",
-                vm.toString(address(origami)),
+                vm.toString(facetAddresses.origami),
                 "\n",
                 "MORE_MARKETS_FACET=",
-                vm.toString(address(moreMarkets)),
+                vm.toString(facetAddresses.moreMarkets),
                 "\n",
                 "AGGRO_KITTY_SWAP_FACET=",
-                vm.toString(address(aggroKittySwap)),
+                vm.toString(facetAddresses.aggroKittySwap),
                 "\n",
                 "CURVE_FACET=",
-                vm.toString(address(curve)),
+                vm.toString(facetAddresses.curve),
                 "\n",
                 "UNISWAP_V3_FACET=",
-                vm.toString(address(uniswapV3)),
+                vm.toString(facetAddresses.uniswapV3),
                 "\n",
                 "MULTI_REWARDS_FACET=",
-                vm.toString(address(multiRewards)),
+                vm.toString(facetAddresses.multiRewards),
+                "\n"
+                "CURVE_LIQUIDITY_GAUGE_V6_FACET=",
+                vm.toString(facetAddresses.curveGaugeV6),
                 "\n"
             )
         );
@@ -154,47 +162,54 @@ contract DeployScript is Script {
                 vm.toString(address(diamondCut)),
                 "\n",
                 "DIAMOND_LOUPE_FACET=",
-                vm.toString(address(diamondLoupe)),
+                vm.toString(facetAddresses.diamondLoupe),
                 "\n",
                 "ACCESS_CONTROL_FACET=",
-                vm.toString(address(accessControl)),
+                vm.toString(facetAddresses.accessControl),
                 "\n",
                 "CONFIGURATION_FACET=",
-                vm.toString(address(configuration)),
+                vm.toString(facetAddresses.configuration),
                 "\n",
                 "VAULT_FACET=",
-                vm.toString(address(vault)),
+                vm.toString(facetAddresses.vault),
                 "\n",
                 "MULTICALL_FACET=",
-                vm.toString(address(multicall)),
+                vm.toString(facetAddresses.multicall),
                 "\n",
                 "UNISWAP_V2_FACET=",
-                vm.toString(address(uniswapV2)),
+                vm.toString(facetAddresses.uniswapV2),
                 "\n",
                 "IZUMI_SWAP_FACET=",
-                vm.toString(address(izumiSwap)),
+                vm.toString(facetAddresses.izumiSwap),
                 "\n",
                 "ORIGAMI_FACET=",
-                vm.toString(address(origami)),
+                vm.toString(facetAddresses.origami),
                 "\n",
                 "MORE_MARKETS_FACET=",
-                vm.toString(address(moreMarkets)),
+                vm.toString(facetAddresses.moreMarkets),
                 "\n",
                 "AGGRO_KITTY_SWAP_FACET=",
-                vm.toString(address(aggroKittySwap)),
-                "\n",
-                "CURVE_FACET=",
-                vm.toString(address(curve)),
-                "\n",
-                "UNISWAP_V3_FACET=",
-                vm.toString(address(uniswapV3)),
-                "\n",
-                "MULTI_REWARDS_FACET=",
-                vm.toString(address(multiRewards)),
+                vm.toString(facetAddresses.aggroKittySwap),
                 "\n"
             )
         );
-        vm.writeFile(".env", addresses);
+        string memory addresses2 = string(
+            abi.encodePacked(
+                "CURVE_FACET=",
+                vm.toString(facetAddresses.curve),
+                "\n",
+                "UNISWAP_V3_FACET=",
+                vm.toString(facetAddresses.uniswapV3),
+                "\n",
+                "MULTI_REWARDS_FACET=",
+                vm.toString(facetAddresses.multiRewards),
+                "\n"
+                "CURVE_LIQUIDITY_GAUGE_V6_FACET=",
+                vm.toString(facetAddresses.curveGaugeV6),
+                "\n"
+            )
+        );
+        vm.writeFile(".env", string(abi.encodePacked(addresses, addresses2)));
 
         console.log("Facets deployed");
 
@@ -239,30 +254,20 @@ contract DeployScript is Script {
             )
         );
 
-        // Add diamond cut facet to registry
-        bytes4[] memory functionSelectorsDiamondCutFacet = new bytes4[](1);
-        functionSelectorsDiamondCutFacet[0] = IDiamondCut.diamondCut.selector;
-        registry.addFacet(
-            address(diamondCut),
-            functionSelectorsDiamondCutFacet
-        );
+        {
+            // Add diamond cut facet to registry
+            bytes4[] memory functionSelectorsDiamondCutFacet = new bytes4[](1);
+            functionSelectorsDiamondCutFacet[0] = IDiamondCut
+                .diamondCut
+                .selector;
+            registry.addFacet(
+                address(diamondCut),
+                functionSelectorsDiamondCutFacet
+            );
+        }
 
         // Add facets to registry
-        IDiamondCut.FacetCut[] memory cuts = config.getCuts(
-            address(diamondLoupe),
-            address(accessControl),
-            address(configuration),
-            address(multicall),
-            address(vault),
-            address(uniswapV2),
-            address(origami),
-            address(moreMarkets),
-            address(izumiSwap),
-            address(aggroKittySwap),
-            address(curve),
-            address(uniswapV3),
-            address(multiRewards)
-        );
+        IDiamondCut.FacetCut[] memory cuts = config.getCuts(facetAddresses);
         for (uint i = 0; i < cuts.length; ) {
             registry.addFacet(cuts[i].facetAddress, cuts[i].functionSelectors);
             unchecked {

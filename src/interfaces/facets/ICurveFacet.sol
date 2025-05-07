@@ -14,6 +14,8 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     function accountingCurveFacet() external view returns (uint256);
 
     /// @notice Performs up to 5 swaps in a single transaction.
+    /// it is mandatory that coin with index zero in the pool should be available asset in the vault
+    /// in case if curator trying to add liquidity. It necessary for correct accounting of lp tokens.
     /// @param curveRouter Address of the Curve router contract
     /// @param _route Array of [initial token, pool or zap, token, pool or zap, token, ...]
     /// @param _swap_params Multidimensional array of [i, j, swap_type, pool_type, n_coins] where

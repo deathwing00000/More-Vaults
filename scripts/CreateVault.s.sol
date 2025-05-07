@@ -30,7 +30,6 @@ import {console} from "forge-std/console.sol";
 contract CreateVaultScript is Script {
     DeployConfig config;
     VaultsFactory factory;
-    VaultFacet vault;
 
     address diamondLoupe;
     address accessControl;
@@ -42,9 +41,10 @@ contract CreateVaultScript is Script {
     address izumiSwap;
     address aggroKittySwap;
     address curve;
-    address vaultFacet;
+    address vault;
     address uniswapV3;
     address multiRewards;
+    address curveGaugeV6;
 
     function test_skip() public pure {}
 
@@ -66,7 +66,7 @@ contract CreateVaultScript is Script {
         diamondLoupe = vm.envAddress("DIAMOND_LOUPE_FACET");
         accessControl = vm.envAddress("ACCESS_CONTROL_FACET");
         configuration = vm.envAddress("CONFIGURATION_FACET");
-        vaultFacet = vm.envAddress("VAULT_FACET");
+        vault = vm.envAddress("VAULT_FACET");
         multicall = vm.envAddress("MULTICALL_FACET");
         uniswapV2 = vm.envAddress("UNISWAP_V2_FACET");
         origami = vm.envAddress("ORIGAMI_FACET");
@@ -76,6 +76,7 @@ contract CreateVaultScript is Script {
         curve = vm.envAddress("CURVE_FACET");
         uniswapV3 = vm.envAddress("UNISWAP_V3_FACET");
         multiRewards = vm.envAddress("MULTI_REWARDS_FACET");
+        curveGaugeV6 = vm.envAddress("CURVE_LIQUIDITY_GAUGE_V6_FACET");
     }
 
     function run() public {
@@ -84,21 +85,23 @@ contract CreateVaultScript is Script {
 
         factory = VaultsFactory(vm.envAddress("VAULTS_FACTORY"));
 
-        IDiamondCut.FacetCut[] memory cuts = config.getCuts(
-            address(diamondLoupe),
-            address(accessControl),
-            address(configuration),
-            address(multicall),
-            address(vaultFacet),
-            address(uniswapV2),
-            address(origami),
-            address(moreMarkets),
-            address(izumiSwap),
-            address(aggroKittySwap),
-            address(curve),
-            address(uniswapV3),
-            address(multiRewards)
-        );
+        DeployConfig.FacetAddresses memory facetAddresses;
+        facetAddresses.diamondLoupe = address(diamondLoupe);
+        facetAddresses.accessControl = address(accessControl);
+        facetAddresses.configuration = address(configuration);
+        facetAddresses.multicall = address(multicall);
+        facetAddresses.vault = address(vault);
+        facetAddresses.uniswapV2 = address(uniswapV2);
+        facetAddresses.origami = address(origami);
+        facetAddresses.moreMarkets = address(moreMarkets);
+        facetAddresses.izumiSwap = address(izumiSwap);
+        facetAddresses.aggroKittySwap = address(aggroKittySwap);
+        facetAddresses.curve = address(curve);
+        facetAddresses.uniswapV3 = address(uniswapV3);
+        facetAddresses.multiRewards = address(multiRewards);
+        facetAddresses.curveGaugeV6 = address(curveGaugeV6);
+
+        IDiamondCut.FacetCut[] memory cuts = config.getCuts(facetAddresses);
 
         // Deploy vault
         address vaultAddress = factory.deployVault(cuts);

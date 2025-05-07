@@ -31,6 +31,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {ICurveFacet, CurveFacet} from "../../src/facets/CurveFacet.sol";
 import {IUniswapV3Facet, UniswapV3Facet} from "../../src/facets/UniswapV3Facet.sol";
 import {IMultiRewardsFacet, MultiRewardsFacet} from "../../src/facets/MultiRewardsFacet.sol";
+import {ICurveLiquidityGaugeV6Facet, CurveLiquidityGaugeV6Facet} from "../../src/facets/CurveLiquidityGaugeV6Facet.sol";
 import {console} from "forge-std/console.sol";
 
 contract E2EFlowTest is Test {
@@ -91,6 +92,7 @@ contract E2EFlowTest is Test {
     CurveFacet curve;
     UniswapV3Facet uniswapV3;
     MultiRewardsFacet multiRewards;
+    CurveLiquidityGaugeV6Facet curveGaugeV6;
 
     // Mock tokens
     IERC20 usdce;
@@ -128,6 +130,7 @@ contract E2EFlowTest is Test {
         curve = new CurveFacet();
         uniswapV3 = new UniswapV3Facet();
         multiRewards = new MultiRewardsFacet();
+        curveGaugeV6 = new CurveLiquidityGaugeV6Facet();
 
         // Deploy registry
         registry = new VaultsRegistry();
@@ -517,8 +520,6 @@ contract E2EFlowTest is Test {
             .swapDesire
             .selector;
 
-        bytes memory initDataIzumiSwapFacet = abi.encode(address(izumiSwap));
-
         // selectors for aggro kitty swap
         bytes4[] memory functionSelectorsAggroKittySwapFacet = new bytes4[](3);
         functionSelectorsAggroKittySwapFacet[0] = IAggroKittySwapFacet
@@ -576,7 +577,33 @@ contract E2EFlowTest is Test {
             address(multiRewards)
         );
 
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](13);
+        // selectors for CurveLiquidityGaugeV6Facet
+        bytes4[]
+            memory functionSelectorsCurveLiquidityGaugeV6Facet = new bytes4[](
+                5
+            );
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            0
+        ] = ICurveLiquidityGaugeV6Facet
+            .accountingCurveLiquidityGaugeV6Facet
+            .selector;
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            1
+        ] = ICurveLiquidityGaugeV6Facet.depositCurveGaugeV6.selector;
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            2
+        ] = ICurveLiquidityGaugeV6Facet.withdrawCurveGaugeV6.selector;
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            3
+        ] = ICurveLiquidityGaugeV6Facet.claimRewardsCurveGaugeV6.selector;
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            4
+        ] = ICurveLiquidityGaugeV6Facet.mintCRV.selector;
+        bytes memory initDataCurveLiquidityGaugeV6Facet = abi.encode(
+            address(curveGaugeV6)
+        );
+
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](14);
         cuts[0] = IDiamondCut.FacetCut({
             facetAddress: address(diamondLoupe),
             action: IDiamondCut.FacetCutAction.Add,
@@ -654,6 +681,12 @@ contract E2EFlowTest is Test {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsMultiRewardsFacet,
             initData: initDataMultiRewardsFacet
+        });
+        cuts[13] = IDiamondCut.FacetCut({
+            facetAddress: address(curveGaugeV6),
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsCurveLiquidityGaugeV6Facet,
+            initData: initDataCurveLiquidityGaugeV6Facet
         });
 
         return cuts;
