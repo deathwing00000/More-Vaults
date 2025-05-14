@@ -80,57 +80,11 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     function exchangeNg(
         address curveRouter,
         address[11] calldata _route,
-        uint256[5][5] calldata _swap_params,
+        uint256[4][5] calldata _swap_params,
         uint256 _amount,
         uint256 _min_dy
     ) external payable returns (uint256) {
         AccessControlLib.validateDiamond(msg.sender);
-        address[5] memory _pools;
-        return
-            _exchange(
-                curveRouter,
-                _route,
-                _swap_params,
-                _amount,
-                _min_dy,
-                _pools,
-                true
-            );
-    }
-
-    /**
-     * @inheritdoc ICurveFacet
-     */
-    function exchange(
-        address curveRouter,
-        address[11] calldata _route,
-        uint256[5][5] calldata _swap_params,
-        uint256 _amount,
-        uint256 _min_dy,
-        address[5] calldata _pools
-    ) external payable returns (uint256) {
-        AccessControlLib.validateDiamond(msg.sender);
-        return
-            _exchange(
-                curveRouter,
-                _route,
-                _swap_params,
-                _amount,
-                _min_dy,
-                _pools,
-                false
-            );
-    }
-
-    function _exchange(
-        address curveRouter,
-        address[11] calldata _route,
-        uint256[5][5] calldata _swap_params,
-        uint256 _amount,
-        uint256 _min_dy,
-        address[5] memory _pools,
-        bool isNgRouterOnly
-    ) internal returns (uint256) {
         address inputToken = _route[0];
         (
             uint256 index,
@@ -151,25 +105,67 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             );
         }
         IERC20(inputToken).approve(curveRouter, _amount);
-        uint256 receivedAmount;
-        if (isNgRouterOnly) {
-            receivedAmount = ICurveRouter(curveRouter).exchange(
-                _route,
-                _swap_params,
-                _amount,
-                _min_dy,
-                address(this)
-            );
-        } else {
-            receivedAmount = ICurveRouter(curveRouter).exchange(
-                _route,
-                _swap_params,
-                _amount,
-                _min_dy,
-                _pools,
-                address(this)
+        uint256 receivedAmount = ICurveRouter(curveRouter).exchange(
+            _route,
+            _swap_params,
+            _amount,
+            _min_dy,
+            address(this)
+        );
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        if (_swap_params[index][2] == 4) {
+            ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
+        } else if (_swap_params[index][2] == 6) {
+            MoreVaultsLib.removeTokenIfnecessary(
+                ds.tokensHeld[CURVE_LP_TOKENS_ID],
+                inputToken
             );
         }
+        return receivedAmount;
+    }
+
+    /**
+     * @inheritdoc ICurveFacet
+     */
+    function exchange(
+        address curveRouter,
+        address[11] calldata _route,
+        uint256[5][5] calldata _swap_params,
+        uint256 _amount,
+        uint256 _min_dy,
+        address[5] calldata _pools
+    ) external payable returns (uint256) {
+        AccessControlLib.validateDiamond(msg.sender);
+        address inputToken = _route[0];
+        (
+            uint256 index,
+            address outputToken
+        ) = _getOutputTokenAddressAndIndexOfLastSwap(_route);
+
+        // If not remove liquidity - validate input token
+        if (_swap_params[index][2] != 6) {
+            MoreVaultsLib.validateAssetAvailable(inputToken);
+        }
+        // If not add liquidity - validate output token
+        if (_swap_params[index][2] != 4) {
+            MoreVaultsLib.validateAssetAvailable(outputToken);
+        } else {
+            // if add liquidity, validate, that first coin in pool is available in vault
+            MoreVaultsLib.validateAssetAvailable(
+                ICurveViews(outputToken).coins(0)
+            );
+        }
+        IERC20(inputToken).approve(curveRouter, _amount);
+        uint256 receivedAmount = ICurveRouter(curveRouter).exchange(
+            _route,
+            _swap_params,
+            _amount,
+            _min_dy,
+            _pools,
+            address(this)
+        );
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();

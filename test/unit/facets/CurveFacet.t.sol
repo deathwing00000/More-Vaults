@@ -21,6 +21,7 @@ contract CurveFacetTest is Test {
 
     address[11] public route;
     uint256[5][5] public swap_params;
+    uint256[4][5] public swap_params_ng;
 
     // Storage slot for AccessControlStorage struct
     bytes32 constant ACCESS_CONTROL_STORAGE_POSITION =
@@ -59,6 +60,11 @@ contract CurveFacetTest is Test {
         swap_params[0][2] = 1; // default swap
         swap_params[0][3] = 1; // stable pool
         swap_params[0][4] = 2; // two coins in the pool
+
+        swap_params_ng[0][0] = 0; // index of the first token in the pool
+        swap_params_ng[0][1] = 1; // index of the second token in the pool
+        swap_params_ng[0][2] = 1; // default swap
+        swap_params_ng[0][3] = 1; // stable pool
     }
 
     function test_facetName_ShouldReturnCorrectName() public view {
@@ -111,11 +117,11 @@ contract CurveFacetTest is Test {
             abi.encodeWithSelector(
                 bytes4(
                     keccak256(
-                        "exchange(address[11],uint256[5][5],uint256,uint256,address)"
+                        "exchange(address[11],uint256[4][5],uint256,uint256,address)"
                     )
                 ),
                 route,
-                swap_params,
+                swap_params_ng,
                 amount,
                 minAmount,
                 address(facet)
@@ -126,7 +132,7 @@ contract CurveFacetTest is Test {
         uint256 received = facet.exchangeNg(
             router,
             route,
-            swap_params,
+            swap_params_ng,
             amount,
             minAmount
         );
@@ -152,7 +158,7 @@ contract CurveFacetTest is Test {
                 unsupportedToken
             )
         );
-        facet.exchangeNg(router, route, swap_params, amount, minAmount);
+        facet.exchangeNg(router, route, swap_params_ng, amount, minAmount);
 
         vm.stopPrank();
     }
@@ -173,7 +179,7 @@ contract CurveFacetTest is Test {
                 unsupportedToken
             )
         );
-        facet.exchangeNg(router, route, swap_params, amount, minAmount);
+        facet.exchangeNg(router, route, swap_params_ng, amount, minAmount);
 
         vm.stopPrank();
     }
@@ -187,7 +193,7 @@ contract CurveFacetTest is Test {
         uint256 minAmount = 0.9e18;
         address unsupportedToken = address(123456);
         route[2] = pool;
-        swap_params[0][2] = 4;
+        swap_params_ng[0][2] = 4;
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -208,7 +214,7 @@ contract CurveFacetTest is Test {
                 unsupportedToken
             )
         );
-        facet.exchangeNg(router, route, swap_params, amount, minAmount);
+        facet.exchangeNg(router, route, swap_params_ng, amount, minAmount);
 
         vm.stopPrank();
     }
@@ -220,7 +226,7 @@ contract CurveFacetTest is Test {
         uint256 minAmount = 0.9e18;
 
         route[2] = pool;
-        swap_params[0][2] = 4; // add liquidity
+        swap_params_ng[0][2] = 4; // add liquidity
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -234,11 +240,11 @@ contract CurveFacetTest is Test {
             abi.encodeWithSelector(
                 bytes4(
                     keccak256(
-                        "exchange(address[11],uint256[5][5],uint256,uint256,address)"
+                        "exchange(address[11],uint256[4][5],uint256,uint256,address)"
                     )
                 ),
                 route,
-                swap_params,
+                swap_params_ng,
                 amount,
                 minAmount,
                 address(facet)
@@ -254,7 +260,7 @@ contract CurveFacetTest is Test {
         uint256 received = facet.exchangeNg(
             router,
             route,
-            swap_params,
+            swap_params_ng,
             amount,
             minAmount
         );
@@ -288,7 +294,7 @@ contract CurveFacetTest is Test {
         uint256 minAmount = 0.9e18;
 
         route[0] = pool;
-        swap_params[0][2] = 6; // add liquidity
+        swap_params_ng[0][2] = 6; // add liquidity
 
         IERC20(token1).approve(address(facet), amount);
 
@@ -302,11 +308,11 @@ contract CurveFacetTest is Test {
             abi.encodeWithSelector(
                 bytes4(
                     keccak256(
-                        "exchange(address[11],uint256[5][5],uint256,uint256,address)"
+                        "exchange(address[11],uint256[4][5],uint256,uint256,address)"
                     )
                 ),
                 route,
-                swap_params,
+                swap_params_ng,
                 amount,
                 minAmount,
                 address(facet)
@@ -323,7 +329,7 @@ contract CurveFacetTest is Test {
         uint256 received = facet.exchangeNg(
             router,
             route,
-            swap_params,
+            swap_params_ng,
             amount,
             minAmount
         );

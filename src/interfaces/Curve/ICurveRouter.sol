@@ -14,7 +14,7 @@ interface ICurveRouter {
     /// @return Received amount of the final output token.
     function exchange(
         address[11] calldata _route,
-        uint256[5][5] calldata _swap_params,
+        uint256[4][5] calldata _swap_params,
         uint256 _amount,
         uint256 _min_dy,
         address _receiver

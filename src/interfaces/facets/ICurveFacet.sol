@@ -18,7 +18,7 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     /// in case if curator trying to add liquidity. It necessary for correct accounting of lp tokens.
     /// @param curveRouter Address of the Curve router contract
     /// @param _route Array of [initial token, pool or zap, token, pool or zap, token, ...]
-    /// @param _swap_params Multidimensional array of [i, j, swap_type, pool_type, n_coins] where
+    /// @param _swap_params Multidimensional array of [i, j, swap_type, pool_type, n_coins]
     /// @param _amount The amount of input token (`_route[0]`) to be sent.
     /// @param _min_dy The minimum amount received after the final swap.
     /// @param _pools Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
@@ -35,14 +35,14 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     /// @notice Performs up to 5 swaps in a single transaction. Works only with NG pools.
     /// @param curveRouter Address of the Curve router contract
     /// @param _route Array of [initial token, pool or zap, token, pool or zap, token, ...]
-    /// @param _swap_params Multidimensional array of [i, j, swap_type, pool_type, n_coins] where
+    /// @param _swap_params Multidimensional array of [i, j, swap_type, pool_type]
     /// @param _amount The amount of input token (`_route[0]`) to be sent.
     /// @param _min_dy The minimum amount received after the final swap.
     /// @return Received amount of the final output token.
     function exchangeNg(
         address curveRouter,
         address[11] calldata _route,
-        uint256[5][5] calldata _swap_params,
+        uint256[4][5] calldata _swap_params,
         uint256 _amount,
         uint256 _min_dy
     ) external payable returns (uint256);
