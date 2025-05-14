@@ -49,6 +49,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             address lpToken = tokensHeld.at(i);
             // if the lp token is available asset, then it should be already accounted
             if (ds.isAssetAvailable[lpToken]) {
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
             uint totalSupply = IERC20(lpToken).totalSupply();

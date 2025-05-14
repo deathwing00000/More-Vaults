@@ -51,6 +51,9 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         for (uint i = 0; i < lovTokensHeld.length(); ) {
             address lovToken = lovTokensHeld.at(i);
             if (ds.isAssetAvailable[lovToken]) {
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
             uint balance = IERC20(lovToken).balanceOf(address(this)) +

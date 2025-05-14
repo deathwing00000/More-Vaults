@@ -54,6 +54,9 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             address lpToken = tokensHeld.at(i);
             // if the lp token is available asset, then it should be already accounted
             if (ds.isAssetAvailable[lpToken]) {
+                unchecked {
+                    ++i;
+                }
                 continue;
             }
             uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
