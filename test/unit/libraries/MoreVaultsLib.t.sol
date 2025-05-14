@@ -185,9 +185,21 @@ contract MoreVaultsLibTest is Test {
             abi.encode(8)
         );
 
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(8)
+        );
+
+        vm.mockCall(
+            wrappedNative,
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
+
         uint256 amount = 1e18; // 1 ETH
         uint256 result = MoreVaultsLib.convertToUnderlying(address(0), amount);
-        uint256 expectedResult = (amount.mulDiv(ETH_PRICE, 1e8));
+        uint256 expectedResult = (amount.mulDiv(ETH_PRICE, 1e18));
         assertEq(
             result,
             expectedResult, // Convert from 8 decimals to 18 decimals
@@ -260,10 +272,21 @@ contract MoreVaultsLibTest is Test {
             abi.encodeWithSelector(IAggregatorV2V3Interface.decimals.selector),
             abi.encode(8)
         );
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(8)
+        );
+
+        vm.mockCall(
+            token2,
+            abi.encodeWithSelector(IERC20Metadata.decimals.selector),
+            abi.encode(18)
+        );
 
         uint256 amount = 1e18; // 1 SOL
         uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
-        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8));
+        uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e18));
         assertEq(
             result,
             expectedResult, // Convert from 8 decimals to 18 decimals
@@ -292,7 +315,7 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             token1,
             abi.encodeWithSelector(IERC20Metadata.decimals.selector),
-            abi.encode(18)
+            abi.encode(8)
         );
 
         // Mock oracle sources

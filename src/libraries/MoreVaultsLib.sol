@@ -193,8 +193,9 @@ library MoreVaultsLib {
         }
 
         uint256 convertedAmount = amount.mulDiv(
-            finalPriceForConversion,
-            10 ** inputTokenOracleDecimals
+            finalPriceForConversion *
+                10 ** IERC20Metadata(underlyingToken).decimals(),
+            10 ** (inputTokenOracleDecimals + IERC20Metadata(_token).decimals())
         );
 
         return convertedAmount;
