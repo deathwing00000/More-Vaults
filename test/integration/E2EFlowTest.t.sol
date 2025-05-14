@@ -226,6 +226,8 @@ contract E2EFlowTest is Test {
             "mToken balance",
             IERC20(mToken).balanceOf(address(vaultAddress))
         );
+        console.log(IERC20(vaultAddress).balanceOf(USER));
+        console.log(IERC20(vaultAddress).totalSupply());
         vm.stopPrank();
     }
 
@@ -351,7 +353,7 @@ contract E2EFlowTest is Test {
         bytes memory initDataMulticallFacet = abi.encode(0);
 
         // selectors for vault
-        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](28);
+        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](29);
         functionSelectorsVaultFacet[0] = IERC20Metadata.name.selector;
         functionSelectorsVaultFacet[1] = IERC20Metadata.symbol.selector;
         functionSelectorsVaultFacet[2] = IERC20Metadata.decimals.selector;
@@ -360,29 +362,30 @@ contract E2EFlowTest is Test {
         functionSelectorsVaultFacet[5] = IERC20.transfer.selector;
         functionSelectorsVaultFacet[6] = IERC20.transferFrom.selector;
         functionSelectorsVaultFacet[7] = IERC20.allowance.selector;
-        functionSelectorsVaultFacet[8] = IERC4626.asset.selector;
-        functionSelectorsVaultFacet[9] = IERC4626.totalAssets.selector;
-        functionSelectorsVaultFacet[10] = IERC4626.convertToAssets.selector;
-        functionSelectorsVaultFacet[11] = IERC4626.convertToShares.selector;
-        functionSelectorsVaultFacet[12] = IERC4626.maxDeposit.selector;
-        functionSelectorsVaultFacet[13] = IERC4626.previewDeposit.selector;
-        functionSelectorsVaultFacet[14] = IERC4626.deposit.selector;
-        functionSelectorsVaultFacet[15] = IERC4626.maxMint.selector;
-        functionSelectorsVaultFacet[16] = IERC4626.previewMint.selector;
-        functionSelectorsVaultFacet[17] = IERC4626.mint.selector;
-        functionSelectorsVaultFacet[18] = IERC4626.maxWithdraw.selector;
-        functionSelectorsVaultFacet[19] = IERC4626.previewWithdraw.selector;
-        functionSelectorsVaultFacet[20] = IERC4626.withdraw.selector;
-        functionSelectorsVaultFacet[21] = IERC4626.maxRedeem.selector;
-        functionSelectorsVaultFacet[22] = IERC4626.previewRedeem.selector;
-        functionSelectorsVaultFacet[23] = IERC4626.redeem.selector;
+        functionSelectorsVaultFacet[8] = IERC20.totalSupply.selector;
+        functionSelectorsVaultFacet[9] = IERC4626.asset.selector;
+        functionSelectorsVaultFacet[10] = IERC4626.totalAssets.selector;
+        functionSelectorsVaultFacet[11] = IERC4626.convertToAssets.selector;
+        functionSelectorsVaultFacet[12] = IERC4626.convertToShares.selector;
+        functionSelectorsVaultFacet[13] = IERC4626.maxDeposit.selector;
+        functionSelectorsVaultFacet[14] = IERC4626.previewDeposit.selector;
+        functionSelectorsVaultFacet[15] = IERC4626.deposit.selector;
+        functionSelectorsVaultFacet[16] = IERC4626.maxMint.selector;
+        functionSelectorsVaultFacet[17] = IERC4626.previewMint.selector;
+        functionSelectorsVaultFacet[18] = IERC4626.mint.selector;
+        functionSelectorsVaultFacet[19] = IERC4626.maxWithdraw.selector;
+        functionSelectorsVaultFacet[20] = IERC4626.previewWithdraw.selector;
+        functionSelectorsVaultFacet[21] = IERC4626.withdraw.selector;
+        functionSelectorsVaultFacet[22] = IERC4626.maxRedeem.selector;
+        functionSelectorsVaultFacet[23] = IERC4626.previewRedeem.selector;
+        functionSelectorsVaultFacet[24] = IERC4626.redeem.selector;
         // Multi-token deposit function
-        functionSelectorsVaultFacet[24] = bytes4(
+        functionSelectorsVaultFacet[25] = bytes4(
             keccak256("deposit(address[],uint256[],address)")
         );
-        functionSelectorsVaultFacet[25] = IVaultFacet.paused.selector;
-        functionSelectorsVaultFacet[26] = IVaultFacet.pause.selector;
-        functionSelectorsVaultFacet[27] = IVaultFacet.unpause.selector;
+        functionSelectorsVaultFacet[26] = IVaultFacet.paused.selector;
+        functionSelectorsVaultFacet[27] = IVaultFacet.pause.selector;
+        functionSelectorsVaultFacet[28] = IVaultFacet.unpause.selector;
 
         bytes memory initDataVaultFacet = abi.encode(
             VAULT_NAME,
