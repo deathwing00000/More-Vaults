@@ -102,6 +102,12 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
         address liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
             .getPair(tokenA, tokenB);
+
+        if (liquidityToken == address(0)) {
+            liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
+                .createPair(tokenA, tokenB);
+        }
+
         ds.tokensHeld[UNISWAP_V2_LP_TOKENS_ID].add(liquidityToken);
 
         return
