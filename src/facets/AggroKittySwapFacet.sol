@@ -7,8 +7,10 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
+    using SafeERC20 for IERC20;
     using AccessControlLib for address;
     using MoreVaultsLib for address;
 
@@ -46,7 +48,7 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
             _trade.path[_trade.path.length - 1]
         );
 
-        IERC20(_trade.path[0]).approve(_router, _trade.amountIn);
+        IERC20(_trade.path[0]).forceApprove(_router, _trade.amountIn);
 
         IAggroKittyRouter(_router).swapNoSplit(_trade, address(this));
     }
@@ -80,7 +82,7 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(_trade.path[0]);
         MoreVaultsLib.validateAssetAvailable(address(0));
 
-        IERC20(_trade.path[0]).approve(_router, _trade.amountIn);
+        IERC20(_trade.path[0]).forceApprove(_router, _trade.amountIn);
 
         IAggroKittyRouter(_router).swapNoSplitToNative(_trade, address(this));
     }

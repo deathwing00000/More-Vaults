@@ -9,6 +9,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
 import {IMinter} from "../interfaces/Curve/IMinter.sol";
 import {ICurveLiquidityGaugeV6Facet} from "../interfaces/facets/ICurveLiquidityGaugeV6Facet.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title CurveLiquidityGaugeV6Facet
@@ -19,6 +20,7 @@ contract CurveLiquidityGaugeV6Facet is
     ICurveLiquidityGaugeV6Facet,
     BaseFacetInitializer
 {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant CURVE_LIQUIDITY_GAUGES_V6_ID =
@@ -103,7 +105,7 @@ contract CurveLiquidityGaugeV6Facet is
             }
         }
         IERC20 lpToken = IERC20(_gauge.lp_token());
-        lpToken.approve(gauge, amount);
+        lpToken.forceApprove(gauge, amount);
         _gauge.deposit(amount, address(this), false);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib

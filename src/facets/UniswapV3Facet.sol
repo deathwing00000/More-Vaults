@@ -8,6 +8,7 @@ import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 import {IUniswapV3Facet, ISwapRouter} from "../interfaces/facets/IUniswapV3Facet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {console} from "forge-std/console.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title UniswapV3Facet
@@ -15,6 +16,7 @@ import {console} from "forge-std/console.sol";
  * @dev Implements swap functionality with amount and desire-based single and multihop swaps
  */
 contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
+    using SafeERC20 for IERC20;
     using Bytes for bytes;
 
     function INITIALIZABLE_STORAGE_SLOT()
@@ -54,7 +56,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(params.tokenIn);
         MoreVaultsLib.validateAssetAvailable(params.tokenOut);
 
-        IERC20(params.tokenIn).approve(router, params.amountIn);
+        IERC20(params.tokenIn).forceApprove(router, params.amountIn);
         amountOut = ISwapRouter(router).exactInputSingle(params);
     }
 
@@ -74,7 +76,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(inputToken);
         MoreVaultsLib.validateAssetAvailable(outputToken);
 
-        IERC20(inputToken).approve(router, params.amountIn);
+        IERC20(inputToken).forceApprove(router, params.amountIn);
         amountOut = ISwapRouter(router).exactInput(params);
     }
 
@@ -92,7 +94,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(params.tokenIn);
         MoreVaultsLib.validateAssetAvailable(params.tokenOut);
 
-        IERC20(params.tokenIn).approve(router, params.amountInMaximum);
+        IERC20(params.tokenIn).forceApprove(router, params.amountInMaximum);
         amountIn = ISwapRouter(router).exactOutputSingle(params);
     }
 
@@ -112,7 +114,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(inputToken);
         MoreVaultsLib.validateAssetAvailable(outputToken);
 
-        IERC20(inputToken).approve(router, params.amountInMaximum);
+        IERC20(inputToken).forceApprove(router, params.amountInMaximum);
         amountIn = ISwapRouter(router).exactOutput(params);
     }
 

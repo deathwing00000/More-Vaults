@@ -8,6 +8,7 @@ import {ISwap} from "../interfaces/iZUMi/ISwap.sol";
 import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 import {IIzumiSwapFacet} from "../interfaces/facets/IIzumiSwapFacet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title IzumiSwapFacet
@@ -15,6 +16,7 @@ import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
  * @dev Implements swap functionality with amount and desire-based swaps
  */
 contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
+    using SafeERC20 for IERC20;
     using Bytes for bytes;
 
     function INITIALIZABLE_STORAGE_SLOT()
@@ -56,7 +58,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(inputToken);
         MoreVaultsLib.validateAssetAvailable(outputToken);
 
-        IERC20(inputToken).approve(swapContract, params.amount);
+        IERC20(inputToken).forceApprove(swapContract, params.amount);
         (cost, acquire) = ISwap(swapContract).swapAmount(params);
     }
 
@@ -76,7 +78,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         MoreVaultsLib.validateAssetAvailable(inputToken);
         MoreVaultsLib.validateAssetAvailable(outputToken);
 
-        IERC20(inputToken).approve(swapContract, params.maxPayed);
+        IERC20(inputToken).forceApprove(swapContract, params.maxPayed);
         (cost, acquire) = ISwap(swapContract).swapDesire(params);
     }
 

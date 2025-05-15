@@ -10,11 +10,13 @@ import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IOrigamiLovTokenFlashAndBorrowManager} from "../interfaces/Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";
 import {IMORELeverageFacet} from "../interfaces/facets/IMORELeverageFacet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 error UnsupportedAsset(address);
 error UnsupportedLovToken(address);
 
 contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant ORIGAMI_VAULT_TOKENS_ID =
@@ -92,7 +94,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        IERC20(fromToken).approve(lovToken, quoteData.fromTokenAmount);
+        IERC20(fromToken).forceApprove(lovToken, quoteData.fromTokenAmount);
         investmentAmount = IOrigamiInvestment(lovToken).investWithToken(
             quoteData
         );

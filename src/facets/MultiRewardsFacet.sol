@@ -7,6 +7,7 @@ import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IMultiRewardsFacet, IMultiRewards} from "../interfaces/facets/IMultiRewardsFacet.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title MultiRewardsFacet
@@ -14,6 +15,7 @@ import {IMultiRewardsFacet, IMultiRewards} from "../interfaces/facets/IMultiRewa
  * @dev Implements functionality to stake/withdraw of the lp tokens and claim of rewards
  */
 contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant MULTI_REWARDS_STAKINGS_ID =
@@ -88,7 +90,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
             }
         }
         IERC20 stakingToken = _staking.stakingToken();
-        stakingToken.approve(staking, amount);
+        stakingToken.forceApprove(staking, amount);
         _staking.stake(amount);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib

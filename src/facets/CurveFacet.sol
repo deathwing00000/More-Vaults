@@ -9,12 +9,14 @@ import {ICurveRouter} from "../interfaces/Curve/ICurveRouter.sol";
 import {ICurveViews} from "../interfaces/Curve/ICurveViews.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title CurveFacet
  * @notice Facet for handling token exchanges through Curve protocol
  */
 contract CurveFacet is ICurveFacet, BaseFacetInitializer {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant CURVE_LP_TOKENS_ID = keccak256("CURVE_LP_TOKENS_ID");
@@ -107,7 +109,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 ICurveViews(outputToken).coins(0)
             );
         }
-        IERC20(inputToken).approve(curveRouter, _amount);
+        IERC20(inputToken).forceApprove(curveRouter, _amount);
         uint256 receivedAmount = ICurveRouter(curveRouter).exchange(
             _route,
             _swap_params,
@@ -160,7 +162,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 ICurveViews(outputToken).coins(0)
             );
         }
-        IERC20(inputToken).approve(curveRouter, _amount);
+        IERC20(inputToken).forceApprove(curveRouter, _amount);
         uint256 receivedAmount = ICurveRouter(curveRouter).exchange(
             _route,
             _swap_params,

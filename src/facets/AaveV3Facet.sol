@@ -7,6 +7,7 @@ import {IPoolAddressesProvider} from "@aave-v3-core/contracts/interfaces/IPoolAd
 import {ICreditDelegationToken} from "@aave-v3-core/contracts/interfaces/ICreditDelegationToken.sol";
 import {IPool, DataTypes} from "@aave-v3-core/contracts/interfaces/IPool.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IAaveV3RewardsController} from "../interfaces/Aave/v3/IAaveV3RewardsController.sol";
@@ -16,6 +17,7 @@ import {IAaveV3Facet} from "../interfaces/facets/IAaveV3Facet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 
 contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
+    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     bytes32 constant MTOKENS_ID = keccak256("MTOKENS_ID");
@@ -97,7 +99,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        IERC20(asset).approve(pool, amount);
+        IERC20(asset).forceApprove(pool, amount);
         IPool(pool).supply(asset, amount, address(this), referralCode);
         address mToken = IPool(pool).getReserveData(asset).aTokenAddress;
         ds.tokensHeld[MTOKENS_ID].add(mToken);
@@ -172,7 +174,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        IERC20(asset).approve(pool, amount);
+        IERC20(asset).forceApprove(pool, amount);
         repaidAmount = IPool(pool).repay(
             asset,
             amount,
@@ -213,7 +215,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             .moreVaultsStorage();
         address mToken = IPool(pool).getReserveData(asset).aTokenAddress;
 
-        IERC20(mToken).approve(pool, amount);
+        IERC20(mToken).forceApprove(pool, amount);
         repaidAmount = IPool(pool).repayWithATokens(
             asset,
             amount,
@@ -417,7 +419,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             .moreVaultsStorage();
         address mToken = IPool(pool).getReserveData(asset).aTokenAddress;
 
-        IERC20(mToken).approve(pool, amount);
+        IERC20(mToken).forceApprove(pool, amount);
         withdrawnAmount = IPool(pool).withdraw(asset, amount, to);
 
         MoreVaultsLib.removeTokenIfnecessary(ds.tokensHeld[MTOKENS_ID], mToken);
