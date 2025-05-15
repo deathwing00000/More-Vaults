@@ -249,7 +249,7 @@ contract VaultFacet is
             shares,
             totalSupply(),
             newTotalAssets,
-            Math.Rounding.Floor
+            Math.Rounding.Ceil
         );
         _validateCapacity(receiver, newTotalAssets, assets);
         _deposit(_msgSender(), receiver, assets, shares);
@@ -307,7 +307,7 @@ contract VaultFacet is
             shares,
             totalSupply(),
             newTotalAssets,
-            Math.Rounding.Ceil
+            Math.Rounding.Floor
         );
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
