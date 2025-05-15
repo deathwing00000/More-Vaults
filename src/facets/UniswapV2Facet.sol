@@ -142,8 +142,13 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         IERC20(token).approve(router, amountTokenDesired);
 
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
+
         address liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
-            .getPair(token, address(0));
+            .getPair(token, ds.wrappedNative);
+        if (liquidityToken == address(0)) {
+            liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
+                .createPair(token, ds.wrappedNative);
+        }
         ds.tokensHeld[UNISWAP_V2_LP_TOKENS_ID].add(liquidityToken);
 
         return
@@ -359,7 +364,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             .moreVaultsStorage();
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
         address liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
-            .getPair(token, address(0));
+            .getPair(token, ds.wrappedNative);
 
         IERC20(liquidityToken).approve(router, liquidity);
         amountETH = IUniswapV2Router02(router)
@@ -458,7 +463,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             .moreVaultsStorage();
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
         address liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
-            .getPair(token, address(0));
+            .getPair(token, ds.wrappedNative);
 
         IERC20(liquidityToken).approve(router, liquidity);
         (amountToken, amountETH) = IUniswapV2Router02(router)
