@@ -102,6 +102,8 @@ contract E2EFlowTest is Test {
 
     address vaultAddress;
 
+    uint8 decimalsOffset = 2;
+
     function setUp() public {
         deadline = block.timestamp + 1 hours;
 
@@ -188,15 +190,20 @@ contract E2EFlowTest is Test {
         IERC4626(vaultAddress).deposit(DEPOSIT_AMOUNT, USER);
         vm.stopPrank();
 
-        assertEq(IERC4626(vaultAddress).balanceOf(USER), DEPOSIT_AMOUNT);
+        assertEq(
+            IERC4626(vaultAddress).balanceOf(USER),
+            DEPOSIT_AMOUNT * 10 ** decimalsOffset
+        );
         assertEq(IERC4626(vaultAddress).totalAssets(), DEPOSIT_AMOUNT);
         assertEq(
-            IERC4626(vaultAddress).convertToAssets(DEPOSIT_AMOUNT),
+            IERC4626(vaultAddress).convertToAssets(
+                DEPOSIT_AMOUNT * 10 ** decimalsOffset
+            ),
             DEPOSIT_AMOUNT
         );
         assertEq(
             IERC4626(vaultAddress).convertToShares(DEPOSIT_AMOUNT),
-            DEPOSIT_AMOUNT
+            DEPOSIT_AMOUNT * 10 ** decimalsOffset
         );
 
         address[] memory availableAssets2 = IConfigurationFacet(vaultAddress)

@@ -503,4 +503,8 @@ contract VaultFacet is
             revert ERC4626ExceededMaxDeposit(receiver, newAssets, maxToDeposit);
         }
     }
+
+    function _decimalsOffset() internal pure override returns (uint8) {
+        return 2;
+    }
 }

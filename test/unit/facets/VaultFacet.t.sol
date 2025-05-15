@@ -48,6 +48,7 @@ contract VaultFacetTest is Test {
 
     address public protocolFeeRecipient = address(1003);
     uint96 public protocolFee = 1000; // 10%
+    uint8 public decimalsOffset = 2;
 
     function setUp() public {
         vm.warp(block.timestamp + 1 days);
@@ -114,7 +115,7 @@ contract VaultFacetTest is Test {
         );
         assertEq(
             IERC20Metadata(facet).decimals(),
-            18,
+            18 + decimalsOffset,
             "Should set correct decimals"
         );
         assertEq(
@@ -300,7 +301,7 @@ contract VaultFacetTest is Test {
         uint256 expectedShares = depositAmount + depositAmount2;
         assertEq(
             IERC20(facet).balanceOf(user),
-            expectedShares,
+            expectedShares * 10 ** decimalsOffset,
             "Should mint correct amount of shares"
         );
         assertEq(
@@ -366,7 +367,7 @@ contract VaultFacetTest is Test {
     }
 
     function test_mint_ShouldRevertWhenExceededDepositCapacity() public {
-        uint256 mintAmount = 1000001 ether;
+        uint256 mintAmount = 1000001 * 10 ** IERC20Metadata(facet).decimals();
 
         // Mock oracle call
         vm.mockCall(
@@ -405,8 +406,8 @@ contract VaultFacetTest is Test {
             abi.encodeWithSelector(
                 ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
                 user,
-                1000001 ether,
-                1000000 ether
+                1000001 * 10 ** IERC20Metadata(asset).decimals(),
+                1000000 * 10 ** IERC20Metadata(asset).decimals()
             )
         );
         uint256 assets = VaultFacet(facet).mint(mintAmount, user);
@@ -484,12 +485,12 @@ contract VaultFacetTest is Test {
 
         assertEq(
             IERC20(asset).balanceOf(user),
-            950 ether,
+            950 * 10 ** IERC20Metadata(asset).decimals(),
             "Should return correct amount of assets"
         );
         assertEq(
             IERC20(facet).balanceOf(user),
-            50 ether,
+            50 * 10 ** IERC20Metadata(facet).decimals(),
             "Should burn correct amount of shares"
         );
     }
@@ -1044,7 +1045,8 @@ contract VaultFacetTest is Test {
         );
         assertApproxEqAbs(
             IERC20(facet).totalSupply(),
-            depositAmount +
+            depositAmount *
+                10 ** decimalsOffset +
                 newShares +
                 VaultFacet(facet).convertToShares(totalFee),
             10,
@@ -1140,7 +1142,7 @@ contract VaultFacetTest is Test {
         );
         assertEq(
             IERC20(facet).totalSupply(),
-            depositAmount,
+            depositAmount * 10 ** decimalsOffset,
             "Should not mint extra shares for fee"
         );
     }
@@ -1232,7 +1234,7 @@ contract VaultFacetTest is Test {
         );
         assertEq(
             IERC20(facet).totalSupply(),
-            depositAmount,
+            depositAmount * 10 ** decimalsOffset,
             "Should not mint extra shares for fee"
         );
     }
