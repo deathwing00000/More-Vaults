@@ -310,8 +310,6 @@ library MoreVaultsLib {
         for (uint256 facetIndex; facetIndex < _diamondCut.length; ) {
             IDiamondCut.FacetCutAction action = _diamondCut[facetIndex].action;
             address facetAddress = _diamondCut[facetIndex].facetAddress;
-            // bytes4[] memory functionSelectors = _diamondCut[facetIndex]
-            //     .functionSelectors;
 
             // Validate facet and selectors for Add and Replace actions
             if (
@@ -556,6 +554,10 @@ library MoreVaultsLib {
         (bool success, bytes memory error) = _facetAddress.delegatecall(
             callData
         );
+        // 0x0dc149f0 is selector of error AlreadyInitialized()
+        if (bytes4(error) == bytes4(hex"0dc149f0")) {
+            return;
+        }
         if (!success) {
             if (error.length > 0) {
                 // bubble up error
