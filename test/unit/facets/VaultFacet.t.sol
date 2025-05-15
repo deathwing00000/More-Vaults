@@ -316,6 +316,100 @@ contract VaultFacetTest is Test {
         );
     }
 
+    function test_deposit_ShouldMintSharesWhenDepositingNative() public {
+        MockERC20 mockAsset2 = new MockERC20("Test Asset 2", "TA2");
+        address asset2 = address(mockAsset2);
+        uint256 depositAmount = 100 ether;
+        uint256 depositAmount2 = 200 ether;
+
+        MockERC20(asset2).mint(user, depositAmount2);
+        vm.prank(user);
+        IERC20(asset2).approve(facet, type(uint256).max);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = asset;
+        tokens[1] = asset2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = depositAmount;
+        amounts[1] = depositAmount2;
+        MoreVaultsStorageHelper.setAvailableAssets(facet, tokens);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            MoreVaultsStorageHelper.setDepositableAssets(
+                facet,
+                tokens[i],
+                true
+            );
+        }
+
+        // Mock oracle call
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("oracle()"),
+            abi.encode(aaveOracleProvider)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getDenominationAsset()"),
+            abi.encode(asset)
+        );
+        vm.mockCall(
+            aaveOracleProvider,
+            abi.encodeWithSignature("getSourceOfAsset(address)"),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("latestRoundData()"),
+            abi.encode(0, 1 * 10 ** 8, block.timestamp, block.timestamp, 0)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("decimals()"),
+            abi.encode(8)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+
+        vm.prank(user);
+        uint256 depositAmountInNative = 100 ether;
+        vm.deal(user, depositAmountInNative);
+        MoreVaultsStorageHelper.setWrappedNative(facet, asset);
+        VaultFacet(facet).deposit{value: depositAmountInNative}(
+            tokens,
+            amounts,
+            user
+        );
+
+        // apply generic slippage 1% for conversion of non underlying asset
+        uint256 expectedShares = depositAmount +
+            depositAmount2 +
+            depositAmountInNative;
+        assertEq(
+            IERC20(facet).balanceOf(user),
+            expectedShares * 10 ** decimalsOffset,
+            "Should mint correct amount of shares"
+        );
+        assertEq(
+            IERC20(asset).balanceOf(facet),
+            depositAmount,
+            "Should receive correct amount of assets1"
+        );
+        assertEq(
+            IERC20(asset2).balanceOf(facet),
+            depositAmount2,
+            "Should receive correct amount of assets2"
+        );
+
+        assertEq(
+            address(facet).balance,
+            depositAmountInNative,
+            "Should receive correct amount of native"
+        );
+    }
+
     function test_mint_ShouldMintShares() public {
         uint256 mintAmount = 100 ether;
 

@@ -122,7 +122,7 @@ contract VaultFacet is
             if (wrappedNative == asset) {
                 _totalAssets += MoreVaultsLib.convertToUnderlying(
                     wrappedNative,
-                    address(this).balance
+                    ds.nativeBalanceForAccounting
                 );
             }
             unchecked {
@@ -326,11 +326,13 @@ contract VaultFacet is
         address[] calldata tokens,
         uint256[] calldata assets,
         address receiver
-    ) external whenNotPaused returns (uint256 shares) {
-        uint256 newTotalAssets = _accrueInterest();
-
+    ) external payable whenNotPaused returns (uint256 shares) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        if (msg.value > 0) {
+            ds.nativeBalanceForAccounting = address(this).balance - msg.value;
+        }
+        uint256 newTotalAssets = _accrueInterest();
 
         ds.lastTotalAssets = newTotalAssets;
 
@@ -348,6 +350,13 @@ contract VaultFacet is
                 ++i;
             }
         }
+        if (msg.value > 0) {
+            MoreVaultsLib.validateAssetDepositable(ds.wrappedNative);
+            totalConvertedAmount += MoreVaultsLib.convertToUnderlying(
+                ds.wrappedNative,
+                msg.value
+            );
+        }
 
         _validateCapacity(receiver, newTotalAssets, totalConvertedAmount);
 
@@ -360,6 +369,7 @@ contract VaultFacet is
         _deposit(_msgSender(), receiver, tokens, assets, shares);
 
         ds.lastTotalAssets = ds.lastTotalAssets + totalConvertedAmount;
+        ds.nativeBalanceForAccounting = address(this).balance;
     }
 
     function _convertToSharesWithTotals(

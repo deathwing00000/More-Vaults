@@ -44,7 +44,7 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
         address[] calldata tokens,
         uint256[] calldata assets,
         address receiver
-    ) external returns (uint256 shares);
+    ) external payable returns (uint256 shares);
 
     /// @notice Deposit a single asset for shares
     /// @param assets Amount of asset to deposit
