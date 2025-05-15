@@ -6,6 +6,7 @@ import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetIniti
 interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
     error VaultHasNotAllowedFacet(address facet);
     error VaultHasNotAllowedSelector(address facet, bytes4 selector);
+    error UnaibleToChangeRegistryToPermissionless();
 
     /**
      * @dev Emitted when more vault registry is changed
@@ -16,7 +17,7 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
     );
 
     /**
-     * @notice Sets the more vault registry address
+     * @notice Sets the more vault registry address, can't be changed from permissioned to permissionless
      * @param newRegistry Address of the new more vault registry
      */
     function setMoreVaultRegistry(address newRegistry) external;

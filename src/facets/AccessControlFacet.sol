@@ -59,6 +59,13 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
 
         // Check if all existing facets and their selectors are allowed in the new registry
         IMoreVaultsRegistry registry = IMoreVaultsRegistry(newRegistry);
+        // if address zero allowed as facet, then registry is permissionless
+        if (
+            !IMoreVaultsRegistry(previousRegistry).isFacetAllowed(address(0)) &&
+            registry.isFacetAllowed(address(0))
+        ) {
+            revert UnaibleToChangeRegistryToPermissionless();
+        }
 
         // Get all facet addresses
         address[] memory facetAddresses = ds.facetAddresses;

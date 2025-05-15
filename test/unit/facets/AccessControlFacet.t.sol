@@ -250,6 +250,23 @@ contract AccessControlFacetTest is Test {
     function test_setMoreVaultRegistry_ShouldUpdateRegistry() public {
         vm.startPrank(owner);
 
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
+                address(0)
+            ),
+            abi.encode(false)
+        );
+        vm.mockCall(
+            newRegistry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
+                address(0)
+            ),
+            abi.encode(false)
+        );
+
         // Mock selectorToFacet to return different facets for different selectors
         vm.mockCall(
             newRegistry,
@@ -277,6 +294,37 @@ contract AccessControlFacetTest is Test {
             newRegistry,
             "Registry should be updated in storage"
         );
+
+        vm.stopPrank();
+    }
+
+    function test_setMoreVaultRegistry_ShouldRevertIfChangingFromPermissionedToPermissionless()
+        public
+    {
+        vm.startPrank(owner);
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
+                address(0)
+            ),
+            abi.encode(false)
+        );
+        vm.mockCall(
+            newRegistry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
+                address(0)
+            ),
+            abi.encode(true)
+        );
+
+        // Set new registry
+        vm.expectRevert(
+            IAccessControlFacet.UnaibleToChangeRegistryToPermissionless.selector
+        );
+        facet.setMoreVaultRegistry(newRegistry);
 
         vm.stopPrank();
     }
@@ -329,6 +377,17 @@ contract AccessControlFacetTest is Test {
         public
     {
         vm.startPrank(owner);
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(IMoreVaultsRegistry.isFacetAllowed.selector),
+            abi.encode(false)
+        );
+        vm.mockCall(
+            newRegistry,
+            abi.encodeWithSelector(IMoreVaultsRegistry.isFacetAllowed.selector),
+            abi.encode(false)
+        );
 
         // Mock registry to return false for isFacetAllowed
         vm.mockCall(
