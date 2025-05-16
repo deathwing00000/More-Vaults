@@ -329,9 +329,6 @@ contract VaultFacet is
     ) external payable whenNotPaused returns (uint256 shares) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        if (msg.value > 0) {
-            ds.nativeBalanceForAccounting = address(this).balance - msg.value;
-        }
         uint256 newTotalAssets = _accrueInterest();
 
         ds.lastTotalAssets = newTotalAssets;
@@ -437,10 +434,16 @@ contract VaultFacet is
     }
 
     function _accrueInterest() internal returns (uint256 newTotalAssets) {
-        uint256 feeShares;
-        (feeShares, newTotalAssets) = _accruedFeeShares();
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        if (msg.value > 0) {
+            ds.nativeBalanceForAccounting = address(this).balance - msg.value;
+        } else {
+            ds.nativeBalanceForAccounting = address(this).balance;
+        }
+
+        uint256 feeShares;
+        (feeShares, newTotalAssets) = _accruedFeeShares();
         AccessControlLib.AccessControlStorage storage acs = AccessControlLib
             .accessControlStorage();
 
