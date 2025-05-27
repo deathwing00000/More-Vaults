@@ -29,6 +29,7 @@ interface IVaultsFactory {
     function initialize(
         address _registry,
         address _diamondCutFacet,
+        address _accessControlFacet,
         address _wrappedNative
     ) external;
 
@@ -55,10 +56,12 @@ interface IVaultsFactory {
     /**
      * @notice Deploy new vault instance
      * @param facetCuts Array of facets to add
+     * @param accessControlFacetInitData encoded data that contains addresses of owner, curator and guardian
      * @return vault Address of deployed vault
      */
     function deployVault(
-        IDiamondCut.FacetCut[] calldata facetCuts
+        IDiamondCut.FacetCut[] calldata facetCuts,
+        bytes memory accessControlFacetInitData
     ) external returns (address vault);
 
     /**

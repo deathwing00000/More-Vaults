@@ -40,7 +40,7 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
     /**
      * @inheritdoc IAccessControlFacet
      */
-    function setMoreVaultRegistry(address newRegistry) external {
+    function setMoreVaultsRegistry(address newRegistry) external {
         AccessControlLib.validateOwner(msg.sender);
         if (newRegistry == address(0)) {
             revert AccessControlLib.ZeroAddress();

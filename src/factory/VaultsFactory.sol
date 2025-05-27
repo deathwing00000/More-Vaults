@@ -20,6 +20,9 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     /// @dev DiamondCutFacet address
     address public diamondCutFacet;
 
+    /// @dev AccessContorlFacet address
+    address public accessControlFacet;
+
     /// @dev Mapping vault address => is deployed by this factory
     mapping(address => bool) public isFactoryVault;
 
@@ -32,14 +35,18 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     function initialize(
         address _registry,
         address _diamondCutFacet,
+        address _accessControlFacet,
         address _wrappedNative
     ) external initializer {
         if (
             _registry == address(0) ||
             _diamondCutFacet == address(0) ||
+            _accessControlFacet == address(0) ||
             _wrappedNative == address(0)
         ) revert ZeroAddress();
         _setDiamondCutFacet(_diamondCutFacet);
+        _setAccessControlFacet(_accessControlFacet);
+
         wrappedNative = _wrappedNative;
 
         registry = IMoreVaultsRegistry(_registry);
@@ -58,12 +65,21 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     }
 
     /**
-     * @notice Deploy new vault instance
-     * @param facets Array of facets to add
-     * @return vault Address of deployed vault
+     * @notice Set the access control facet address, that manages ownership and roles of the vault
+     * @param _accessControlFacet The address of the access control facet
+     */
+    function setAccessControlFacet(
+        address _accessControlFacet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setAccessControlFacet(_accessControlFacet);
+    }
+
+    /**
+     * @inheritdoc IVaultsFactory
      */
     function deployVault(
-        IDiamondCut.FacetCut[] calldata facets
+        IDiamondCut.FacetCut[] calldata facets,
+        bytes memory accessControlFacetInitData
     ) external returns (address vault) {
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](
             facets.length
@@ -83,9 +99,11 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
         vault = address(
             new MoreVaultsDiamond(
                 diamondCutFacet,
+                accessControlFacet,
                 address(registry),
                 wrappedNative,
-                cuts
+                cuts,
+                accessControlFacetInitData
             )
         );
         isFactoryVault[vault] = true;
@@ -127,5 +145,10 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
         if (_diamondCutFacet == address(0)) revert ZeroAddress();
         diamondCutFacet = _diamondCutFacet;
         emit DiamondCutFacetUpdated(diamondCutFacet);
+    }
+
+    function _setAccessControlFacet(address _accessControlFacet) internal {
+        if (_accessControlFacet == address(0)) revert ZeroAddress();
+        accessControlFacet = _accessControlFacet;
     }
 }

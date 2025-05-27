@@ -247,7 +247,7 @@ contract AccessControlFacetTest is Test {
         assertEq(facet.guardian(), guardian, "Guardian should be correct");
     }
 
-    function test_setMoreVaultRegistry_ShouldUpdateRegistry() public {
+    function test_setMoreVaultsRegistry_ShouldUpdateRegistry() public {
         vm.startPrank(owner);
 
         vm.mockCall(
@@ -286,7 +286,7 @@ contract AccessControlFacetTest is Test {
         );
 
         // Set new registry
-        facet.setMoreVaultRegistry(newRegistry);
+        facet.setMoreVaultsRegistry(newRegistry);
 
         // Verify new registry in storage
         assertEq(
@@ -298,7 +298,7 @@ contract AccessControlFacetTest is Test {
         vm.stopPrank();
     }
 
-    function test_setMoreVaultRegistry_ShouldRevertIfChangingFromPermissionedToPermissionless()
+    function test_setMoreVaultsRegistry_ShouldRevertIfChangingFromPermissionedToPermissionless()
         public
     {
         vm.startPrank(owner);
@@ -324,12 +324,12 @@ contract AccessControlFacetTest is Test {
         vm.expectRevert(
             IAccessControlFacet.UnaibleToChangeRegistryToPermissionless.selector
         );
-        facet.setMoreVaultRegistry(newRegistry);
+        facet.setMoreVaultsRegistry(newRegistry);
 
         vm.stopPrank();
     }
 
-    function test_setMoreVaultRegistry_ShouldRevertWhenUnauthorized() public {
+    function test_setMoreVaultsRegistry_ShouldRevertWhenUnauthorized() public {
         vm.startPrank(unauthorized);
 
         // Mock validateRegistryOwner to revert for unauthorized address
@@ -341,7 +341,7 @@ contract AccessControlFacetTest is Test {
 
         // Attempt to set new registry
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        facet.setMoreVaultRegistry(newRegistry);
+        facet.setMoreVaultsRegistry(newRegistry);
 
         // Verify registry remains unchanged in storage
         assertEq(
@@ -353,27 +353,27 @@ contract AccessControlFacetTest is Test {
         vm.stopPrank();
     }
 
-    function test_setMoreVaultRegistry_ShouldRevertWhenZeroAddress() public {
+    function test_setMoreVaultsRegistry_ShouldRevertWhenZeroAddress() public {
         vm.startPrank(owner);
 
         // Attempt to set zero address as registry
         vm.expectRevert(AccessControlLib.ZeroAddress.selector);
-        facet.setMoreVaultRegistry(address(0));
+        facet.setMoreVaultsRegistry(address(0));
 
         vm.stopPrank();
     }
 
-    function test_setMoreVaultRegistry_ShouldRevertWhenSameAddress() public {
+    function test_setMoreVaultsRegistry_ShouldRevertWhenSameAddress() public {
         vm.startPrank(owner);
 
         // Attempt to set same registry address
         vm.expectRevert(AccessControlLib.SameAddress.selector);
-        facet.setMoreVaultRegistry(registry);
+        facet.setMoreVaultsRegistry(registry);
 
         vm.stopPrank();
     }
 
-    function test_setMoreVaultRegistry_ShouldRevertWhenFacetNotAllowed()
+    function test_setMoreVaultsRegistry_ShouldRevertWhenFacetNotAllowed()
         public
     {
         vm.startPrank(owner);
@@ -403,7 +403,7 @@ contract AccessControlFacetTest is Test {
                 address(facet1)
             )
         );
-        facet.setMoreVaultRegistry(newRegistry);
+        facet.setMoreVaultsRegistry(newRegistry);
 
         vm.stopPrank();
     }

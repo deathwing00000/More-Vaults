@@ -8,17 +8,23 @@ import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {DiamondCutFacet} from "../../../src/facets/DiamondCutFacet.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {AccessControlFacet} from "../../../src/facets/AccessControlFacet.sol";
 
 contract MoreVaultsDiamondTest is Test {
     MoreVaultsDiamond public diamond;
     DiamondCutFacet public diamondCutFacet;
+    AccessControlFacet public accessControlFacet;
     address public registry;
     address public wrappedNative;
     IDiamondCut.FacetCut[] public cuts;
+    address owner = address(1111);
+    address curator = address(2222);
+    address guardian = address(3333);
 
     function setUp() public {
         // Deploy real DiamondCutFacet
         diamondCutFacet = new DiamondCutFacet();
+        accessControlFacet = new AccessControlFacet();
         registry = address(2);
         wrappedNative = address(3);
         cuts = new IDiamondCut.FacetCut[](0);
@@ -33,19 +39,54 @@ contract MoreVaultsDiamondTest is Test {
             abi.encode(true)
         );
 
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
+                address(accessControlFacet)
+            ),
+            abi.encode(true)
+        );
+
+        bytes memory accessControlFacetInitData = abi.encode(
+            owner,
+            curator,
+            guardian
+        );
+
         diamond = new MoreVaultsDiamond(
             address(diamondCutFacet),
+            address(accessControlFacet),
             registry,
             wrappedNative,
-            cuts
+            cuts,
+            accessControlFacetInitData
         );
     }
 
-    function test_Constructor_ShouldSetRegistry() public view {
+    function test_Constructor_ShouldSetRegistry() public {
         assertEq(
             MoreVaultsStorageHelper.getMoreVaultsRegistry(address(diamond)),
             registry,
             "Registry should be set correctly"
+        );
+    }
+
+    function test_Constructor_ShouldSetAccessControlParams() public view {
+        assertEq(
+            MoreVaultsStorageHelper.getOwner(address(diamond)),
+            owner,
+            "Owner should be set correctly"
+        );
+        assertEq(
+            MoreVaultsStorageHelper.getCurator(address(diamond)),
+            curator,
+            "Curator should be set correctly"
+        );
+        assertEq(
+            MoreVaultsStorageHelper.getGuardian(address(diamond)),
+            guardian,
+            "guardian should be set correctly"
         );
     }
 

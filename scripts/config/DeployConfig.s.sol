@@ -100,7 +100,7 @@ contract DeployConfig {
         // selectors for access control
         bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](8);
         functionSelectorsAccessControlFacet[0] = AccessControlFacet
-            .setMoreVaultRegistry
+            .setMoreVaultsRegistry
             .selector;
         functionSelectorsAccessControlFacet[1] = AccessControlFacet
             .transferCuratorship
@@ -232,8 +232,8 @@ contract DeployConfig {
         functionSelectorsVaultFacet[28] = IVaultFacet.unpause.selector;
 
         bytes memory initDataVaultFacet = abi.encode(
-            "More Vault",
-            "MORE",
+            "SafeYields Test ankrFlow Vault",
+            "SYV",
             assetToDeposit,
             feeRecipient,
             fee,

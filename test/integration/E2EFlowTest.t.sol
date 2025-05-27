@@ -155,10 +155,21 @@ contract E2EFlowTest is Test {
 
         // Deploy factory
         factory = new VaultsFactory();
-        factory.initialize(address(registry), address(diamondCut), WFLOW);
+        factory.initialize(
+            address(registry),
+            address(diamondCut),
+            address(accessControl),
+            WFLOW
+        );
+
+        bytes memory accessControlFacetInitData = abi.encode(
+            OWNER,
+            CURATOR,
+            GUARDIAN
+        );
 
         // Deploy diamond
-        vaultAddress = factory.deployVault(cuts);
+        vaultAddress = factory.deployVault(cuts, accessControlFacetInitData);
 
         // Setup mock tokens
         deal(USDCe, USER, INITIAL_BALANCE);
@@ -262,27 +273,24 @@ contract E2EFlowTest is Test {
         // selectors for access control
         bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](8);
         functionSelectorsAccessControlFacet[0] = AccessControlFacet
-            .setMoreVaultRegistry
-            .selector;
-        functionSelectorsAccessControlFacet[1] = AccessControlFacet
             .transferCuratorship
             .selector;
-        functionSelectorsAccessControlFacet[2] = AccessControlFacet
+        functionSelectorsAccessControlFacet[1] = AccessControlFacet
             .transferOwner
             .selector;
-        functionSelectorsAccessControlFacet[3] = AccessControlFacet
+        functionSelectorsAccessControlFacet[2] = AccessControlFacet
             .transferGuardian
             .selector;
-        functionSelectorsAccessControlFacet[4] = AccessControlFacet
+        functionSelectorsAccessControlFacet[3] = AccessControlFacet
             .owner
             .selector;
-        functionSelectorsAccessControlFacet[5] = AccessControlFacet
+        functionSelectorsAccessControlFacet[4] = AccessControlFacet
             .curator
             .selector;
-        functionSelectorsAccessControlFacet[6] = AccessControlFacet
+        functionSelectorsAccessControlFacet[5] = AccessControlFacet
             .guardian
             .selector;
-        functionSelectorsAccessControlFacet[7] = AccessControlFacet
+        functionSelectorsAccessControlFacet[6] = AccessControlFacet
             .moreVaultsRegistry
             .selector;
 

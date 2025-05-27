@@ -8,6 +8,7 @@ pragma solidity 0.8.28;
 import {MoreVaultsLib} from "./libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "./libraries/AccessControlLib.sol";
 import {IDiamondCut} from "./interfaces/facets/IDiamondCut.sol";
+import {IAccessControlFacet} from "./interfaces/facets/IAccessControlFacet.sol";
 
 contract MoreVaultsDiamond {
     error NativeTokenNotAvailable();
@@ -15,18 +16,31 @@ contract MoreVaultsDiamond {
 
     constructor(
         address _diamondCutFacet,
+        address _accessControlFacet,
         address _registry,
         address _wrappedNative,
-        IDiamondCut.FacetCut[] memory _cuts
+        IDiamondCut.FacetCut[] memory _cuts,
+        bytes memory accessControlFacetInitData
     ) payable {
-        IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](1);
-        bytes4[] memory functionSelectors = new bytes4[](1);
-        functionSelectors[0] = IDiamondCut.diamondCut.selector;
+        IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](2);
+        bytes4[] memory functionSelectorsDc = new bytes4[](1);
+        functionSelectorsDc[0] = IDiamondCut.diamondCut.selector;
         cut[0] = IDiamondCut.FacetCut({
             facetAddress: _diamondCutFacet,
             action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectors,
+            functionSelectors: functionSelectorsDc,
             initData: ""
+        });
+
+        bytes4[] memory functionSelectorsAc = new bytes4[](1);
+        functionSelectorsAc[0] = IAccessControlFacet
+            .setMoreVaultsRegistry
+            .selector;
+        cut[1] = IDiamondCut.FacetCut({
+            facetAddress: _accessControlFacet,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: functionSelectorsAc,
+            initData: accessControlFacetInitData
         });
         AccessControlLib.setMoreVaultsRegistry(_registry);
 

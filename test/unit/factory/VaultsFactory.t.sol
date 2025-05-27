@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {Test} from "forge-std/Test.sol";
 import {IVaultsFactory, VaultsFactory} from "../../../src/factory/VaultsFactory.sol";
 import {DiamondCutFacet} from "../../../src/facets/DiamondCutFacet.sol";
+import {IAccessControlFacet, AccessControlFacet} from "../../../src/facets/AccessControlFacet.sol";
 import {IDiamondCut} from "../../../src/interfaces/facets/IDiamondCut.sol";
 import {IMoreVaultsRegistry, IAaveOracle} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
@@ -14,6 +15,7 @@ contract VaultsFactoryTest is Test {
     VaultsFactory public factory;
     address public registry;
     address public diamondCutFacet;
+    address public accessControlFacet;
     address public admin = address(1);
     address public curator = address(2);
     address public guardian = address(3);
@@ -34,7 +36,9 @@ contract VaultsFactoryTest is Test {
         wrappedNative = address(1002);
 
         DiamondCutFacet cutFacet = new DiamondCutFacet();
+        AccessControlFacet accessFacet = new AccessControlFacet();
         diamondCutFacet = address(cutFacet);
+        accessControlFacet = address(accessFacet);
 
         MockERC20 mockAsset = new MockERC20("Test Asset", "TA");
         asset = address(mockAsset);
@@ -46,7 +50,12 @@ contract VaultsFactoryTest is Test {
 
     function test_initialize_ShouldSetInitialValues() public {
         vm.prank(admin);
-        factory.initialize(registry, diamondCutFacet, wrappedNative);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
         assertEq(
             address(VaultsFactory(factory).registry()),
@@ -66,18 +75,46 @@ contract VaultsFactoryTest is Test {
 
     function test_initialize_ShouldRevertIfZeroAddress() public {
         vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
-        factory.initialize(address(0), diamondCutFacet, wrappedNative);
+        factory.initialize(
+            address(0),
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
         vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
-        factory.initialize(registry, address(0), wrappedNative);
+        factory.initialize(
+            registry,
+            address(0),
+            accessControlFacet,
+            wrappedNative
+        );
 
         vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
-        factory.initialize(registry, diamondCutFacet, address(0));
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            address(0),
+            wrappedNative
+        );
+
+        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            address(0)
+        );
     }
 
     function test_setDiamondCutFacet_ShouldRevertWhenNotAdmin() public {
         vm.prank(admin);
-        factory.initialize(registry, diamondCutFacet, wrappedNative);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
         address newFacet = address(5);
         vm.prank(curator);
@@ -87,7 +124,12 @@ contract VaultsFactoryTest is Test {
 
     function test_setDiamondCutFacet_ShouldRevertWithZeroAddress() public {
         vm.prank(admin);
-        factory.initialize(registry, diamondCutFacet, wrappedNative);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
         vm.prank(admin);
         vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
@@ -96,7 +138,12 @@ contract VaultsFactoryTest is Test {
 
     function test_setDiamondCutFacet_ShouldUpdateFacet() public {
         vm.prank(admin);
-        factory.initialize(registry, diamondCutFacet, wrappedNative);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
         address newFacet = address(5);
         vm.prank(admin);
@@ -108,9 +155,62 @@ contract VaultsFactoryTest is Test {
         );
     }
 
+    function test_setAccessControlFacet_ShouldRevertWhenNotAdmin() public {
+        vm.prank(admin);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
+
+        address newFacet = address(5);
+        vm.prank(curator);
+        vm.expectRevert();
+        VaultsFactory(factory).setAccessControlFacet(newFacet);
+    }
+
+    function test_setAccessControlFacet_ShouldRevertWithZeroAddress() public {
+        vm.prank(admin);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
+
+        vm.prank(admin);
+        vm.expectRevert(IVaultsFactory.ZeroAddress.selector);
+        VaultsFactory(factory).setAccessControlFacet(address(0));
+    }
+
+    function test_setAccessControlFacet_ShouldUpdateFacet() public {
+        vm.prank(admin);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
+
+        address newFacet = address(5);
+        vm.prank(admin);
+        VaultsFactory(factory).setAccessControlFacet(newFacet);
+        assertEq(
+            VaultsFactory(factory).accessControlFacet(),
+            newFacet,
+            "Should update access control facet"
+        );
+    }
+
     function test_deployVault_ShouldDeployVaultWithFacets() public {
         vm.prank(admin);
-        factory.initialize(registry, diamondCutFacet, wrappedNative);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
         // Prepare facets
         VaultFacet vaultFacet = new VaultFacet();
@@ -153,6 +253,24 @@ contract VaultsFactoryTest is Test {
             registry,
             abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
+                accessControlFacet
+            ),
+            abi.encode(true)
+        );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                IAccessControlFacet.setMoreVaultsRegistry.selector
+            ),
+            abi.encode(accessControlFacet)
+        );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isFacetAllowed.selector,
                 vaultFacet
             ),
             abi.encode(true)
@@ -182,7 +300,15 @@ contract VaultsFactoryTest is Test {
             abi.encode(address(1000))
         );
 
-        address vault = VaultsFactory(factory).deployVault(facets);
+        bytes memory accessControlFacetInitData = abi.encode(
+            admin,
+            curator,
+            guardian
+        );
+        address vault = VaultsFactory(factory).deployVault(
+            facets,
+            accessControlFacetInitData
+        );
 
         assertTrue(
             VaultsFactory(factory).isVault(vault),

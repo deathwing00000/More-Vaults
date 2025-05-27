@@ -20,7 +20,7 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
      * @notice Sets the more vault registry address, can't be changed from permissioned to permissionless
      * @param newRegistry Address of the new more vault registry
      */
-    function setMoreVaultRegistry(address newRegistry) external;
+    function setMoreVaultsRegistry(address newRegistry) external;
 
     /**
      * @notice Transfers owner role to a new address
