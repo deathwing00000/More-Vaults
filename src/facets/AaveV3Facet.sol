@@ -344,6 +344,8 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                     }
                     continue;
                 }
+
+                MoreVaultsLib.validateAssetAvailable(assets[i]);
                 if (interestRateModes[i] == 1)
                     debtToken = IPool(pool)
                         .getReserveData(assets[i])

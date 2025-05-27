@@ -766,6 +766,51 @@ contract AaveV3FacetTest is Test {
         );
     }
 
+    function test_flashLoan_ShouldRevertIfCreatedDebtInNonAvailableAsset()
+        public
+    {
+        address[] memory assets = new address[](1);
+        assets[0] = address(0x123); // Unsupported asset
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18;
+        uint256[] memory interestRateModes = new uint256[](1);
+        interestRateModes[0] = 1;
+        bytes memory params = "";
+
+        vm.mockCall(
+            pool,
+            abi.encodeWithSelector(
+                IPool.flashLoan.selector,
+                address(facet),
+                assets,
+                amounts,
+                interestRateModes,
+                address(facet),
+                params,
+                0
+            ),
+            abi.encode()
+        );
+
+        vm.prank(facet);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAaveV3Facet.UnsupportedAsset.selector,
+                assets[0]
+            )
+        );
+        AaveV3Facet(facet).flashLoan(
+            pool,
+            address(facet),
+            assets,
+            amounts,
+            interestRateModes,
+            address(facet),
+            params,
+            0
+        );
+    }
+
     function test_flashLoanSimple_ShouldCallPool() public {
         uint256 amount = 1e18;
         bytes memory params = "";
