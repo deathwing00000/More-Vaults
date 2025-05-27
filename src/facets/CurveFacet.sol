@@ -99,7 +99,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ) = _getOutputTokenAddressAndIndexOfLastSwap(_route);
 
         // If not remove liquidity - validate input token
-        if (_swap_params[index][2] != 6) {
+        if (_swap_params[0][2] != 6) {
             MoreVaultsLib.validateAssetAvailable(inputToken);
         }
         // If not add liquidity - validate output token
@@ -124,7 +124,8 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
-        } else if (_swap_params[index][2] == 6) {
+        }
+        if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(
                 ds.tokensHeld[CURVE_LP_TOKENS_ID],
                 inputToken
@@ -152,7 +153,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ) = _getOutputTokenAddressAndIndexOfLastSwap(_route);
 
         // If not remove liquidity - validate input token
-        if (_swap_params[index][2] != 6) {
+        if (_swap_params[0][2] != 6) {
             MoreVaultsLib.validateAssetAvailable(inputToken);
         }
         // If not add liquidity - validate output token
@@ -178,7 +179,8 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
-        } else if (_swap_params[index][2] == 6) {
+        }
+        if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(
                 ds.tokensHeld[CURVE_LP_TOKENS_ID],
                 inputToken
