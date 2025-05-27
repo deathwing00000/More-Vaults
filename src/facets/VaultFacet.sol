@@ -117,12 +117,14 @@ contract VaultFacet is
             address asset = ds.availableAssets[i];
             _totalAssets += MoreVaultsLib.convertToUnderlying(
                 asset,
-                IERC20(asset).balanceOf(address(this)) + ds.staked[asset]
+                IERC20(asset).balanceOf(address(this)) + ds.staked[asset],
+                Math.Rounding.Floor
             );
             if (wrappedNative == asset) {
                 _totalAssets += MoreVaultsLib.convertToUnderlying(
                     wrappedNative,
-                    ds.nativeBalanceForAccounting
+                    ds.nativeBalanceForAccounting,
+                    Math.Rounding.Floor
                 );
             }
             unchecked {
@@ -341,7 +343,8 @@ contract VaultFacet is
             MoreVaultsLib.validateAssetDepositable(tokens[i]);
             totalConvertedAmount += MoreVaultsLib.convertToUnderlying(
                 tokens[i],
-                assets[i]
+                assets[i],
+                Math.Rounding.Floor
             );
             unchecked {
                 ++i;
@@ -351,7 +354,8 @@ contract VaultFacet is
             MoreVaultsLib.validateAssetDepositable(ds.wrappedNative);
             totalConvertedAmount += MoreVaultsLib.convertToUnderlying(
                 ds.wrappedNative,
-                msg.value
+                msg.value,
+                Math.Rounding.Floor
             );
         }
 

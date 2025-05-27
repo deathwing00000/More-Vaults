@@ -11,6 +11,7 @@ import {IOrigamiLovTokenFlashAndBorrowManager} from "../interfaces/Origami/IOrig
 import {IMORELeverageFacet} from "../interfaces/facets/IMORELeverageFacet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 error UnsupportedAsset(address);
 error UnsupportedLovToken(address);
@@ -73,7 +74,8 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
 
             sum += MoreVaultsLib.convertToUnderlying(
                 underlyingToken,
-                quoteData.minToTokenAmount
+                quoteData.minToTokenAmount,
+                Math.Rounding.Floor
             );
             unchecked {
                 ++i;

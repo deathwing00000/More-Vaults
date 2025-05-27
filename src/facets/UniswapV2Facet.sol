@@ -67,11 +67,13 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
 
             sum += MoreVaultsLib.convertToUnderlying(
                 IUniswapV2Pair(lpToken).token0(),
-                token0
+                token0,
+                Math.Rounding.Floor
             );
             sum += MoreVaultsLib.convertToUnderlying(
                 IUniswapV2Pair(lpToken).token1(),
-                token1
+                token1,
+                Math.Rounding.Floor
             );
             unchecked {
                 ++i;

@@ -8,6 +8,7 @@ import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IMultiRewardsFacet, IMultiRewards} from "../interfaces/facets/IMultiRewardsFacet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title MultiRewardsFacet
@@ -56,7 +57,8 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
 
                 sum += MoreVaultsLib.convertToUnderlying(
                     rewardTokens[j],
-                    balance
+                    balance,
+                    Math.Rounding.Floor
                 );
                 unchecked {
                     ++j;

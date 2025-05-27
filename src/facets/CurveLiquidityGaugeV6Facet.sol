@@ -10,6 +10,7 @@ import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
 import {IMinter} from "../interfaces/Curve/IMinter.sol";
 import {ICurveLiquidityGaugeV6Facet} from "../interfaces/facets/ICurveLiquidityGaugeV6Facet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title CurveLiquidityGaugeV6Facet
@@ -68,7 +69,11 @@ contract CurveLiquidityGaugeV6Facet is
                     rewardToken
                 );
 
-                sum += MoreVaultsLib.convertToUnderlying(rewardToken, reward);
+                sum += MoreVaultsLib.convertToUnderlying(
+                    rewardToken,
+                    reward,
+                    Math.Rounding.Floor
+                );
                 unchecked {
                     ++j;
                 }

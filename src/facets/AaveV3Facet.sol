@@ -15,6 +15,7 @@ import {IATokenExtended} from "../interfaces/Aave/v3/IATokenExtended.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IAaveV3Facet} from "../interfaces/facets/IAaveV3Facet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
     using SafeERC20 for IERC20;
@@ -63,7 +64,8 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                 .UNDERLYING_ASSET_ADDRESS();
             sum += MoreVaultsLib.convertToUnderlying(
                 underlyingOfMToken,
-                balance
+                balance,
+                Math.Rounding.Floor
             );
             unchecked {
                 ++i;
@@ -77,7 +79,8 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
 
             sum -= MoreVaultsLib.convertToUnderlying(
                 underlyingOfDebtToken,
-                balance
+                balance,
+                Math.Rounding.Ceil
             );
             unchecked {
                 ++i;

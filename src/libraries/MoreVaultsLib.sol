@@ -155,7 +155,8 @@ library MoreVaultsLib {
 
     function convertToUnderlying(
         address _token,
-        uint amount
+        uint amount,
+        Math.Rounding rounding
     ) internal view returns (uint) {
         if (amount == 0) return 0;
         MoreVaultsStorage storage ds = moreVaultsStorage();
@@ -188,7 +189,8 @@ library MoreVaultsLib {
             uint8 underlyingTokenOracleDecimals = aggregator.decimals();
             uint256 inputToUnderlyingPrice = inputTokenPrice.mulDiv(
                 10 ** underlyingTokenOracleDecimals,
-                underlyingTokenPrice
+                underlyingTokenPrice,
+                rounding
             );
             finalPriceForConversion = inputToUnderlyingPrice;
         }
@@ -196,7 +198,9 @@ library MoreVaultsLib {
         uint256 convertedAmount = amount.mulDiv(
             finalPriceForConversion *
                 10 ** IERC20Metadata(underlyingToken).decimals(),
-            10 ** (inputTokenOracleDecimals + IERC20Metadata(_token).decimals())
+            10 **
+                (inputTokenOracleDecimals + IERC20Metadata(_token).decimals()),
+            rounding
         );
 
         return convertedAmount;

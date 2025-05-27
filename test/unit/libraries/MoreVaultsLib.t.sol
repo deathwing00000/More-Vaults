@@ -198,7 +198,11 @@ contract MoreVaultsLibTest is Test {
         );
 
         uint256 amount = 1e18; // 1 ETH
-        uint256 result = MoreVaultsLib.convertToUnderlying(address(0), amount);
+        uint256 result = MoreVaultsLib.convertToUnderlying(
+            address(0),
+            amount,
+            Math.Rounding.Floor
+        );
         uint256 expectedResult = (amount.mulDiv(ETH_PRICE, 1e18));
         assertEq(
             result,
@@ -285,7 +289,11 @@ contract MoreVaultsLibTest is Test {
         );
 
         uint256 amount = 1e18; // 1 SOL
-        uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
+        uint256 result = MoreVaultsLib.convertToUnderlying(
+            token2,
+            amount,
+            Math.Rounding.Floor
+        );
         uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e18));
         assertEq(
             result,
@@ -370,7 +378,11 @@ contract MoreVaultsLibTest is Test {
         );
 
         uint256 amount = 1e8; // 1 SOL with 8 decimals
-        uint256 result = MoreVaultsLib.convertToUnderlying(token2, amount);
+        uint256 result = MoreVaultsLib.convertToUnderlying(
+            token2,
+            amount,
+            Math.Rounding.Floor
+        );
 
         uint256 expectedResult = (amount.mulDiv(SOL_PRICE, 1e8));
         assertEq(
@@ -385,7 +397,11 @@ contract MoreVaultsLibTest is Test {
         view
     {
         uint256 amount = 1e8; // 1 SOL with 8 decimals
-        uint256 result = MoreVaultsLib.convertToUnderlying(token1, amount);
+        uint256 result = MoreVaultsLib.convertToUnderlying(
+            token1,
+            amount,
+            Math.Rounding.Floor
+        );
 
         assertEq(
             result,
@@ -423,7 +439,11 @@ contract MoreVaultsLibTest is Test {
             abi.encode(denominationAsset)
         );
 
-        uint256 result = MoreVaultsLib.convertToUnderlying(token1, 0);
+        uint256 result = MoreVaultsLib.convertToUnderlying(
+            token1,
+            0,
+            Math.Rounding.Floor
+        );
         assertEq(result, 0, "Should return 0 for zero amount");
     }
 
