@@ -115,37 +115,6 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
         vm.stopPrank();
     }
 
-    function test_depositCurveGaugeV6_ShouldRevertIfRewardTokensNotSupported()
-        public
-    {
-        vm.startPrank(address(facet));
-
-        uint256 amount = 1e18;
-
-        address unsupportedToken = address(4444);
-        // Mock calls
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGaugeV6.reward_count.selector),
-            abi.encode(1)
-        );
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGaugeV6.reward_tokens.selector, 0),
-            abi.encode(unsupportedToken)
-        );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                MoreVaultsLib.UnsupportedAsset.selector,
-                unsupportedToken
-            )
-        );
-        facet.depositCurveGaugeV6(gauge, amount);
-
-        vm.stopPrank();
-    }
-
     function test_withdrawCurveGaugeV6_ShouldPerformWithdraw() public {
         vm.startPrank(address(facet));
 
@@ -330,35 +299,6 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
             gauge,
             "Stored staking should be equal to staking address"
         );
-
-        vm.stopPrank();
-    }
-
-    function test_claimRewardsCurveGaugeV6_ShouldRevertIfRewardTokensNotSupported()
-        public
-    {
-        vm.startPrank(address(facet));
-
-        address unsupportedToken = address(4444);
-        // Mock calls
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGaugeV6.reward_count.selector),
-            abi.encode(1)
-        );
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGaugeV6.reward_tokens.selector, 0),
-            abi.encode(unsupportedToken)
-        );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                MoreVaultsLib.UnsupportedAsset.selector,
-                unsupportedToken
-            )
-        );
-        facet.claimRewardsCurveGaugeV6(gauge);
 
         vm.stopPrank();
     }

@@ -64,6 +64,10 @@ contract CurveLiquidityGaugeV6Facet is
 
             for (uint256 j = 0; j < numberOfRewardTokens; ) {
                 address rewardToken = gauge.reward_tokens(j);
+                if (!ds.isAssetAvailable[rewardToken]) {
+                    ++j;
+                    continue;
+                }
                 uint256 reward = gauge.claimable_reward(
                     address(this),
                     rewardToken
@@ -102,13 +106,6 @@ contract CurveLiquidityGaugeV6Facet is
         ILiquidityGaugeV6 _gauge = ILiquidityGaugeV6(gauge);
         uint256 numberOfRewardTokens = _gauge.reward_count();
 
-        for (uint256 i = 0; i < numberOfRewardTokens; ) {
-            address rewardToken = _gauge.reward_tokens(i);
-            MoreVaultsLib.validateAssetAvailable(rewardToken);
-            unchecked {
-                ++i;
-            }
-        }
         IERC20 lpToken = IERC20(_gauge.lp_token());
         lpToken.forceApprove(gauge, amount);
         _gauge.deposit(amount, address(this), false);
@@ -140,13 +137,6 @@ contract CurveLiquidityGaugeV6Facet is
         ILiquidityGaugeV6 _gauge = ILiquidityGaugeV6(gauge);
         uint256 numberOfRewardTokens = _gauge.reward_count();
 
-        for (uint256 i = 0; i < numberOfRewardTokens; ) {
-            address rewardToken = _gauge.reward_tokens(i);
-            MoreVaultsLib.validateAssetAvailable(rewardToken);
-            unchecked {
-                ++i;
-            }
-        }
         _gauge.claim_rewards(address(this), address(this));
 
         if (IERC20(gauge).balanceOf(address(this)) == 0) {
