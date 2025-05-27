@@ -10,7 +10,7 @@ import {IAggregatorV2V3Interface} from "../interfaces/Chainlink/IAggregatorV2V3I
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
+import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
 
 library MoreVaultsLib {
     error InitializationFunctionReverted(
@@ -33,6 +33,8 @@ library MoreVaultsLib {
     error AssetAlreadyAvailable();
     error InvalidAddress();
     error NoOracleForAsset();
+    error FacetHasBalance(address facet);
+    error AccountingFailed(address facet);
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using Math for uint256;
@@ -541,6 +543,33 @@ library MoreVaultsLib {
             delete ds
                 .facetFunctionSelectors[_facetAddress]
                 .facetAddressPosition;
+
+            for (uint256 i; i < ds.facetsForAccounting.length; ) {
+                if (ds.facetsForAccounting[i] == _facetAddress) {
+                    (bool success, bytes memory result) = address(this)
+                        .staticcall(
+                            abi.encodeWithSignature(
+                                string.concat(
+                                    "accounting",
+                                    IGenericMoreVaultFacet(_facetAddress)
+                                        .facetName(),
+                                    "()"
+                                ),
+                                ""
+                            )
+                        );
+                    if (success) {
+                        uint256 decodedAmount = abi.decode(result, (uint256));
+                        if (decodedAmount > 10e4) {
+                            revert FacetHasBalance(_facetAddress);
+                        }
+                        ds.facetsForAccounting[i] = ds.facetsForAccounting[
+                            ds.facetsForAccounting.length - 1
+                        ];
+                        ds.facetsForAccounting.pop();
+                    } else revert AccountingFailed(_facetAddress);
+                }
+            }
         }
     }
 
