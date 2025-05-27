@@ -245,6 +245,8 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             ds.tokensHeld[MORE_DEBT_TOKENS_ID],
             debtToken
         );
+
+        MoreVaultsLib.removeTokenIfnecessary(ds.tokensHeld[MTOKENS_ID], mToken);
     }
 
     /**

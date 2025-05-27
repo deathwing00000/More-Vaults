@@ -544,6 +544,12 @@ contract AaveV3FacetTest is Test {
             abi.encode(amount)
         );
 
+        vm.mockCall(
+            mToken1,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, facet),
+            abi.encode(0)
+        );
+
         vm.prank(facet);
         AaveV3Facet(facet).repayWithATokens(
             pool,
@@ -597,6 +603,12 @@ contract AaveV3FacetTest is Test {
                 interestRateMode
             ),
             abi.encode(amount)
+        );
+
+        vm.mockCall(
+            mToken1,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, facet),
+            abi.encode(0)
         );
 
         vm.prank(facet);
