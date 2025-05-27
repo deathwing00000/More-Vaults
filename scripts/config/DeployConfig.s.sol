@@ -98,15 +98,15 @@ contract DeployConfig {
         functionSelectorsLoupeFacet[4] = IERC165.supportsInterface.selector;
 
         // selectors for access control
-        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](8);
+        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](9);
         functionSelectorsAccessControlFacet[0] = AccessControlFacet
-            .setMoreVaultsRegistry
-            .selector;
-        functionSelectorsAccessControlFacet[1] = AccessControlFacet
             .transferCuratorship
             .selector;
+        functionSelectorsAccessControlFacet[1] = AccessControlFacet
+            .transferOwnership
+            .selector;
         functionSelectorsAccessControlFacet[2] = AccessControlFacet
-            .transferOwner
+            .acceptOwnership
             .selector;
         functionSelectorsAccessControlFacet[3] = AccessControlFacet
             .transferGuardian
@@ -115,12 +115,15 @@ contract DeployConfig {
             .owner
             .selector;
         functionSelectorsAccessControlFacet[5] = AccessControlFacet
-            .curator
+            .pendingOwner
             .selector;
         functionSelectorsAccessControlFacet[6] = AccessControlFacet
-            .guardian
+            .curator
             .selector;
         functionSelectorsAccessControlFacet[7] = AccessControlFacet
+            .guardian
+            .selector;
+        functionSelectorsAccessControlFacet[8] = AccessControlFacet
             .moreVaultsRegistry
             .selector;
 

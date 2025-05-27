@@ -271,26 +271,32 @@ contract E2EFlowTest is Test {
         functionSelectorsLoupeFacet[4] = IERC165.supportsInterface.selector;
 
         // selectors for access control
-        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](8);
+        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](9);
         functionSelectorsAccessControlFacet[0] = AccessControlFacet
             .transferCuratorship
             .selector;
         functionSelectorsAccessControlFacet[1] = AccessControlFacet
-            .transferOwner
+            .transferOwnership
             .selector;
         functionSelectorsAccessControlFacet[2] = AccessControlFacet
-            .transferGuardian
+            .acceptOwnership
             .selector;
         functionSelectorsAccessControlFacet[3] = AccessControlFacet
-            .owner
+            .transferGuardian
             .selector;
         functionSelectorsAccessControlFacet[4] = AccessControlFacet
-            .curator
+            .owner
             .selector;
         functionSelectorsAccessControlFacet[5] = AccessControlFacet
-            .guardian
+            .pendingOwner
             .selector;
         functionSelectorsAccessControlFacet[6] = AccessControlFacet
+            .curator
+            .selector;
+        functionSelectorsAccessControlFacet[7] = AccessControlFacet
+            .guardian
+            .selector;
+        functionSelectorsAccessControlFacet[8] = AccessControlFacet
             .moreVaultsRegistry
             .selector;
 

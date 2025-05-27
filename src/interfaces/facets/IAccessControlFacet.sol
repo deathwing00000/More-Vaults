@@ -26,7 +26,12 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
      * @notice Transfers owner role to a new address
      * @param _newOwner Address of the new owner
      */
-    function transferOwner(address _newOwner) external;
+    function transferOwnership(address _newOwner) external;
+
+    /**
+     * @notice Accepts ownership role
+     */
+    function acceptOwnership() external;
 
     /**
      * @notice Transfers curator role to a new address
@@ -45,6 +50,12 @@ interface IAccessControlFacet is IGenericMoreVaultFacetInitializable {
      * @return Address of the current owner
      */
     function owner() external view returns (address);
+
+    /**
+     * @notice Returns the current pending owner address
+     * @return Address of the current pending owner
+     */
+    function pendingOwner() external view returns (address);
 
     /**
      * @notice Returns the current curator address

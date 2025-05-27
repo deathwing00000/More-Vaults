@@ -16,6 +16,7 @@ library AccessControlLib {
     error UnauthorizedAccess();
     error ZeroAddress();
     error SameAddress();
+    error NotPendingOwner();
 
     bytes32 constant ACCESS_CONTROL_STORAGE_POSITION =
         keccak256("MoreVaults.accessControl.storage");
@@ -25,12 +26,18 @@ library AccessControlLib {
         address curator;
         address guardian;
         address moreVaultsRegistry;
+        address pendingOwner;
     }
 
     /**
      * @dev Emitted when owner address is changed
      */
     event OwnerChanged(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Emitted when pending owner address is changed
+     */
+    event PendingOwnerSet(address indexed newPendingOwner);
 
     /**
      * @dev Emitted when curator address is changed
@@ -70,6 +77,12 @@ library AccessControlLib {
         }
     }
 
+    function validatePendingOwner(address caller) internal view {
+        if (caller != accessControlStorage().pendingOwner) {
+            revert UnauthorizedAccess();
+        }
+    }
+
     /**
      * @notice Validates if caller is curator
      * @param caller Address to validate
@@ -100,6 +113,20 @@ library AccessControlLib {
         if (caller != address(this)) {
             revert UnauthorizedAccess();
         }
+    }
+
+    function setPendingOwner(address _newPendingOwner) internal {
+        if (_newPendingOwner == address(0)) {
+            revert ZeroAddress();
+        }
+
+        if (_newPendingOwner == accessControlStorage().owner) {
+            revert SameAddress();
+        }
+
+        accessControlStorage().pendingOwner = _newPendingOwner;
+
+        emit PendingOwnerSet(_newPendingOwner);
     }
 
     /**
@@ -185,6 +212,10 @@ library AccessControlLib {
      */
     function vaultOwner() internal view returns (address) {
         return accessControlStorage().owner;
+    }
+
+    function pendingOwner() internal view returns (address) {
+        return accessControlStorage().pendingOwner;
     }
 
     /**

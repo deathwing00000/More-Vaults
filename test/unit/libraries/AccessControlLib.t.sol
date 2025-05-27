@@ -14,6 +14,7 @@ contract MockAccessControl {
 
 contract AccessControlLibTest is Test {
     address public owner = address(111);
+    address public pendingOwner = address(112);
     address public curator = address(1);
     address public guardian = address(2);
     address public registry = address(3);
@@ -42,15 +43,15 @@ contract AccessControlLibTest is Test {
         );
     }
 
-    function test_validateCurator_ShouldNotRevertWhenCallerIsCurator() public {
-        vm.startPrank(curator);
-        AccessControlLib.validateCurator(curator);
-        vm.stopPrank();
-    }
-
     function test_validateCurator_ShouldNotRevertWhenCallerIsOwner() public {
         vm.startPrank(owner);
         AccessControlLib.validateCurator(owner);
+        vm.stopPrank();
+    }
+
+    function test_validateCurator_ShouldNotRevertWhenCallerIsCurator() public {
+        vm.startPrank(curator);
+        AccessControlLib.validateCurator(curator);
         vm.stopPrank();
     }
 
@@ -72,6 +73,31 @@ contract AccessControlLibTest is Test {
     function test_validateOwner_ShouldNotRevertWhenCallerIsOwner() public {
         vm.startPrank(owner);
         AccessControlLib.validateOwner(owner);
+        vm.stopPrank();
+    }
+
+    function test_validateOwner_ShouldRevertWhenCallerIsNotOwner() public {
+        vm.startPrank(unauthorized);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        AccessControlLib.validateOwner(unauthorized);
+        vm.stopPrank();
+    }
+
+    function test_validatePendingOwner_ShouldNotRevertWhenCallerIsPendingOwner()
+        public
+    {
+        MoreVaultsStorageHelper.setPendingOwner(address(this), pendingOwner);
+        vm.startPrank(pendingOwner);
+        AccessControlLib.validatePendingOwner(pendingOwner);
+        vm.stopPrank();
+    }
+
+    function test_validatePendingOwner_ShouldRevertWhenCallerIsNotPendingOwner()
+        public
+    {
+        vm.startPrank(unauthorized);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        AccessControlLib.validatePendingOwner(unauthorized);
         vm.stopPrank();
     }
 
@@ -116,6 +142,26 @@ contract AccessControlLibTest is Test {
     function test_setVaultOwner_ShouldRevertWhenSameAddress() public {
         vm.expectRevert(AccessControlLib.SameAddress.selector);
         AccessControlLib.setVaultOwner(owner);
+    }
+
+    function test_setPendingOwner_ShouldSetNewPendingOwner() public {
+        address newPendingOwner = address(5);
+        AccessControlLib.setPendingOwner(newPendingOwner);
+        assertEq(
+            AccessControlLib.pendingOwner(),
+            newPendingOwner,
+            "Pending owner should be updated"
+        );
+    }
+
+    function test_setPendingOwner_ShouldRevertWhenZeroAddress() public {
+        vm.expectRevert(AccessControlLib.ZeroAddress.selector);
+        AccessControlLib.setPendingOwner(zeroAddress);
+    }
+
+    function test_setPendingOwner_ShouldRevertWhenSameAddress() public {
+        vm.expectRevert(AccessControlLib.SameAddress.selector);
+        AccessControlLib.setPendingOwner(owner);
     }
 
     function test_setVaultCurator_ShouldSetNewCurator() public {

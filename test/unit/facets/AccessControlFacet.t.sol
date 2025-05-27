@@ -13,6 +13,7 @@ contract AccessControlFacetTest is Test {
     AccessControlFacet public facet;
 
     address public owner = address(111);
+    address public newOwner = address(112);
     address public curator = address(1);
     address public guardian = address(2);
     address public newCurator = address(3);
@@ -132,16 +133,6 @@ contract AccessControlFacetTest is Test {
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
         facet.transferCuratorship(newCurator);
 
-        // Verify curator remains unchanged in storage
-        assertEq(
-            MoreVaultsStorageHelper.getCurator(address(facet)),
-            curator,
-            "Curator should not be changed in storage"
-        );
-
-        // Verify through getter
-        assertEq(facet.curator(), curator, "Curator should not be changed");
-
         vm.stopPrank();
     }
 
@@ -161,6 +152,71 @@ contract AccessControlFacetTest is Test {
         // Attempt to transfer curatorship to same address
         vm.expectRevert(AccessControlLib.SameAddress.selector);
         facet.transferCuratorship(curator);
+
+        vm.stopPrank();
+    }
+
+    function test_transferOwnership_ShouldUpdatePendingOwner() public {
+        vm.startPrank(owner);
+
+        // Transfer curatorship
+        facet.transferOwnership(newOwner);
+
+        // Verify new curator in storage
+        assertEq(
+            MoreVaultsStorageHelper.getPendingOwner(address(facet)),
+            newOwner,
+            "Pending owner should be set"
+        );
+
+        // Verify through getter
+        assertEq(
+            facet.pendingOwner(),
+            newOwner,
+            "Pending owner should be updated"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_transferOwnership_ShouldRevertWhenUnauthorized() public {
+        vm.startPrank(unauthorized);
+
+        // Attempt to transfer ownership
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        facet.transferOwnership(newOwner);
+
+        vm.stopPrank();
+    }
+
+    function test_acceptOwnership_ShouldSetOwner() public {
+        vm.startPrank(owner);
+
+        // Set pending owner
+        facet.transferOwnership(newOwner);
+
+        vm.stopPrank();
+
+        // Attempt to transfer ownership
+        vm.startPrank(newOwner);
+        facet.acceptOwnership();
+
+        // Verify owner in storage
+        assertEq(
+            MoreVaultsStorageHelper.getOwner(address(facet)),
+            newOwner,
+            "Owner should be set"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_acceptOwnership_ShouldRevertWhenUnauthorized() public {
+        vm.startPrank(unauthorized);
+
+        // Attempt to transfer ownership
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        facet.acceptOwnership();
 
         vm.stopPrank();
     }

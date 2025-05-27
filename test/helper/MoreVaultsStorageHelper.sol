@@ -34,6 +34,7 @@ library MoreVaultsStorageHelper {
     uint256 constant CURATOR = 1;
     uint256 constant GUARDIAN = 2;
     uint256 constant MORE_VAULTS_REGISTRY = 3;
+    uint256 constant PENDING_OWNER = 4;
 
     bytes32 constant ACS_POSITION =
         keccak256("MoreVaults.accessControl.storage");
@@ -630,6 +631,17 @@ library MoreVaultsStorageHelper {
         );
     }
 
+    function setPendingOwner(
+        address contractAddress,
+        address pendingOwner
+    ) internal {
+        vm.store(
+            contractAddress,
+            bytes32(uint256(ACS_POSITION) + PENDING_OWNER),
+            bytes32(uint256(uint160(pendingOwner)))
+        );
+    }
+
     function getOwner(address contractAddress) internal view returns (address) {
         return
             address(
@@ -638,6 +650,22 @@ library MoreVaultsStorageHelper {
                         vm.load(
                             contractAddress,
                             bytes32(uint256(ACS_POSITION) + OWNER)
+                        )
+                    )
+                )
+            );
+    }
+
+    function getPendingOwner(
+        address contractAddress
+    ) internal view returns (address) {
+        return
+            address(
+                uint160(
+                    uint256(
+                        vm.load(
+                            contractAddress,
+                            bytes32(uint256(ACS_POSITION) + PENDING_OWNER)
                         )
                     )
                 )

@@ -87,9 +87,17 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
     /**
      * @inheritdoc IAccessControlFacet
      */
-    function transferOwner(address _newOwner) external {
+    function transferOwnership(address _newOwner) external {
         AccessControlLib.validateOwner(msg.sender);
-        AccessControlLib.setVaultOwner(_newOwner);
+        AccessControlLib.setPendingOwner(_newOwner);
+    }
+
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
+    function acceptOwnership() external {
+        AccessControlLib.validatePendingOwner(msg.sender);
+        AccessControlLib.setVaultOwner(msg.sender);
     }
 
     /**
@@ -113,6 +121,13 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
      */
     function owner() external view returns (address) {
         return AccessControlLib.vaultOwner();
+    }
+
+    /**
+     * @inheritdoc IAccessControlFacet
+     */
+    function pendingOwner() external view returns (address) {
+        return AccessControlLib.pendingOwner();
     }
 
     /**
