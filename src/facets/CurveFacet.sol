@@ -98,6 +98,13 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             address outputToken
         ) = _getOutputTokenAddressAndIndexOfLastSwap(_route);
 
+        for (uint256 i = 0; i < _swap_params.length; ) {
+            if (_swap_params[i][2] == 5 || _swap_params[i][2] == 7)
+                revert InvalidSwapType(i);
+            unchecked {
+                ++i;
+            }
+        }
         // If not remove liquidity - validate input token
         if (_swap_params[0][2] != 6) {
             MoreVaultsLib.validateAssetAvailable(inputToken);
@@ -151,6 +158,14 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             uint256 index,
             address outputToken
         ) = _getOutputTokenAddressAndIndexOfLastSwap(_route);
+
+        for (uint256 i = 0; i < _swap_params.length; ) {
+            if (_swap_params[i][2] == 5 || _swap_params[i][2] == 7)
+                revert InvalidSwapType(i);
+            unchecked {
+                ++i;
+            }
+        }
 
         // If not remove liquidity - validate input token
         if (_swap_params[0][2] != 6) {

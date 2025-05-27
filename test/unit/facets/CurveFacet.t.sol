@@ -219,6 +219,25 @@ contract CurveFacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_exchangeNg_ShouldRevertIfSwapTypeIsNotValid() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        swap_params_ng[0][2] = 5;
+
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ICurveFacet.InvalidSwapType.selector, 0)
+        );
+        facet.exchangeNg(router, route, swap_params_ng, amount, minAmount);
+
+        vm.stopPrank();
+    }
+
     function test_exchangeNg_ShouldAddTokenToArrayIfLiquidityAdded() public {
         vm.startPrank(address(facet));
 
@@ -432,6 +451,25 @@ contract CurveFacetTest is Test {
                 MoreVaultsLib.UnsupportedAsset.selector,
                 unsupportedToken
             )
+        );
+        facet.exchange(router, route, swap_params, amount, minAmount, pools);
+
+        vm.stopPrank();
+    }
+
+    function test_exchange_ShouldRevertIfSwapTypeIsNotValid() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        swap_params[0][2] = 5;
+
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
+
+        IERC20(token1).approve(address(facet), amount);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(ICurveFacet.InvalidSwapType.selector, 0)
         );
         facet.exchange(router, route, swap_params, amount, minAmount, pools);
 
