@@ -22,6 +22,8 @@ import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC2
 import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 
 contract VaultFacetTest is Test {
     using Math for uint256;
@@ -1331,5 +1333,70 @@ contract VaultFacetTest is Test {
             depositAmount * 10 ** decimalsOffset,
             "Should not mint extra shares for fee"
         );
+    }
+
+    function test_setFee_ShouldUpdateFee() public {
+        vm.startPrank(owner);
+
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.protocolFeeInfo.selector
+            ),
+            abi.encode(address(0), 0)
+        );
+
+        // Set new fee
+        uint96 newFee = 200; // 2%
+        IVaultFacet(facet).setFee(newFee);
+
+        // Verify through getter
+        assertEq(
+            MoreVaultsStorageHelper.getFee(address(facet)),
+            newFee,
+            "Fee should be updated"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_setFee_ShouldRevertWhenUnauthorized() public {
+        MoreVaultsStorageHelper.setFee(address(facet), 100); // 1%
+
+        address unauthorized = address(113);
+        vm.startPrank(unauthorized);
+
+        // Attempt to set new fee
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        IVaultFacet(facet).setFee(200);
+
+        // Verify fee remains unchanged
+        assertEq(
+            MoreVaultsStorageHelper.getFee(address(facet)),
+            100,
+            "Fee should not be changed"
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_setFee_ShouldRevertWhenInvalidFee() public {
+        MoreVaultsStorageHelper.setFee(address(facet), 100); // 1%
+
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.protocolFeeInfo.selector
+            ),
+            abi.encode(address(0), 0)
+        );
+
+        vm.startPrank(owner);
+
+        // Attempt to set fee above 50%
+        vm.expectRevert(MoreVaultsLib.InvalidFee.selector);
+        IVaultFacet(facet).setFee(5001);
+
+        vm.stopPrank();
     }
 }

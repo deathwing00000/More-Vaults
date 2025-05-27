@@ -134,50 +134,6 @@ contract ConfigurationFacetTest is Test {
         vm.stopPrank();
     }
 
-    function test_setFee_ShouldUpdateFee() public {
-        vm.startPrank(owner);
-
-        // Set new fee
-        uint96 newFee = 200; // 2%
-        facet.setFee(newFee);
-
-        // Verify through getter
-        assertEq(
-            MoreVaultsStorageHelper.getFee(address(facet)),
-            newFee,
-            "Fee should be updated"
-        );
-
-        vm.stopPrank();
-    }
-
-    function test_setFee_ShouldRevertWhenUnauthorized() public {
-        vm.startPrank(unauthorized);
-
-        // Attempt to set new fee
-        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
-        facet.setFee(200);
-
-        // Verify fee remains unchanged
-        assertEq(
-            MoreVaultsStorageHelper.getFee(address(facet)),
-            100,
-            "Fee should not be changed"
-        );
-
-        vm.stopPrank();
-    }
-
-    function test_setFee_ShouldRevertWhenInvalidFee() public {
-        vm.startPrank(owner);
-
-        // Attempt to set fee above 50%
-        vm.expectRevert(MoreVaultsLib.InvalidFee.selector);
-        facet.setFee(5001);
-
-        vm.stopPrank();
-    }
-
     function test_setTimeLockPeriod_ShouldUpdatePeriod() public {
         vm.startPrank(owner);
 

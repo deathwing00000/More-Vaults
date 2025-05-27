@@ -37,14 +37,6 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     /**
      * @inheritdoc IConfigurationFacet
      */
-    function setFee(uint96 _fee) external {
-        AccessControlLib.validateOwner(msg.sender);
-        MoreVaultsLib._setFee(_fee);
-    }
-
-    /**
-     * @inheritdoc IConfigurationFacet
-     */
     function setDepositCapacity(uint256 capacity) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib._setDepositCapacity(capacity);

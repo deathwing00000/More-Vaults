@@ -85,4 +85,10 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
         address receiver,
         address owner
     ) external returns (uint256 assets);
+
+    /**
+     * @notice Sets fee amount
+     * @param fee New fee amount (in basis points, max 10000 = 100%)
+     */
+    function setFee(uint96 fee) external;
 }

@@ -134,50 +134,47 @@ contract DeployConfig {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](15);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](14);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
         functionSelectorsConfigurationFacet[1] = ConfigurationFacet
-            .setFee
-            .selector;
-        functionSelectorsConfigurationFacet[2] = ConfigurationFacet
             .setTimeLockPeriod
             .selector;
-        functionSelectorsConfigurationFacet[3] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[2] = ConfigurationFacet
             .setDepositCapacity
             .selector;
-        functionSelectorsConfigurationFacet[4] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[3] = ConfigurationFacet
             .addAvailableAsset
             .selector;
-        functionSelectorsConfigurationFacet[5] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[4] = ConfigurationFacet
             .addAvailableAssets
             .selector;
-        functionSelectorsConfigurationFacet[6] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[5] = ConfigurationFacet
             .enableAssetToDeposit
             .selector;
-        functionSelectorsConfigurationFacet[7] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[6] = ConfigurationFacet
             .disableAssetToDeposit
             .selector;
-        functionSelectorsConfigurationFacet[8] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[7] = ConfigurationFacet
             .isAssetAvailable
             .selector;
-        functionSelectorsConfigurationFacet[9] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[8] = ConfigurationFacet
             .isAssetDepositable
             .selector;
-        functionSelectorsConfigurationFacet[10] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[9] = ConfigurationFacet
             .getAvailableAssets
             .selector;
-        functionSelectorsConfigurationFacet[11] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[10] = ConfigurationFacet
             .fee
             .selector;
-        functionSelectorsConfigurationFacet[12] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[11] = ConfigurationFacet
             .depositCapacity
             .selector;
-        functionSelectorsConfigurationFacet[13] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[12] = ConfigurationFacet
             .timeLockPeriod
             .selector;
-        functionSelectorsConfigurationFacet[14] = ConfigurationFacet
+        functionSelectorsConfigurationFacet[13] = ConfigurationFacet
             .feeRecipient
             .selector;
 
@@ -201,7 +198,7 @@ contract DeployConfig {
         bytes memory initDataMulticallFacet = abi.encode(timeLockPeriod);
 
         // selectors for vault
-        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](29);
+        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](30);
         functionSelectorsVaultFacet[0] = IERC20Metadata.name.selector;
         functionSelectorsVaultFacet[1] = IERC20Metadata.symbol.selector;
         functionSelectorsVaultFacet[2] = IERC20Metadata.decimals.selector;
@@ -233,6 +230,7 @@ contract DeployConfig {
         functionSelectorsVaultFacet[26] = IVaultFacet.paused.selector;
         functionSelectorsVaultFacet[27] = IVaultFacet.pause.selector;
         functionSelectorsVaultFacet[28] = IVaultFacet.unpause.selector;
+        functionSelectorsVaultFacet[29] = IVaultFacet.setFee.selector;
 
         bytes memory initDataVaultFacet = abi.encode(
             "SafeYields Test ankrFlow Vault",

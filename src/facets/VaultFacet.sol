@@ -373,6 +373,21 @@ contract VaultFacet is
         ds.nativeBalanceForAccounting = address(this).balance;
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
+    function setFee(uint96 _fee) external {
+        AccessControlLib.validateOwner(msg.sender);
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        uint256 newTotalAssets = _accrueInterest();
+
+        ds.lastTotalAssets = newTotalAssets;
+
+        MoreVaultsLib._setFee(_fee);
+    }
+
     function _convertToSharesWithTotals(
         uint256 assets,
         uint256 newTotalSupply,

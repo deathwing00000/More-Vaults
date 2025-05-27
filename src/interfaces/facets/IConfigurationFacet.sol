@@ -31,17 +31,7 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
      * @notice Sets fee recipient address
      * @param recipient New fee recipient address
      */
-    /// @notice Sets the fee recipient address
-    /// @param recipient The new fee recipient address
     function setFeeRecipient(address recipient) external;
-
-    /**
-     * @notice Sets fee amount
-     * @param fee New fee amount (in basis points, max 10000 = 100%)
-     */
-    /// @notice Sets the fee amount
-    /// @param fee The new fee amount (in basis points, max 10000 = 100%)
-    function setFee(uint96 fee) external;
 
     /**
      * @notice Sets time lock period
