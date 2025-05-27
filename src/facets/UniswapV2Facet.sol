@@ -143,6 +143,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
         IERC20(token).forceApprove(router, amountTokenDesired);
 
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
@@ -205,6 +206,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external returns (uint amountToken, uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(token);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
         (amountToken, amountETH) = _removeLiquidityETH(
             router,
             token,
@@ -277,6 +281,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
         return
             IUniswapV2Router02(router).swapExactETHForTokens{value: amountIn}(
                 amountOutMin,
@@ -298,6 +305,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(path[0]);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
 
         IERC20(path[0]).forceApprove(router, amountInMax);
         return
@@ -322,6 +332,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(path[0]);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
         IERC20(path[0]).forceApprove(router, amountIn);
         return
             IUniswapV2Router02(router).swapExactTokensForETH(
@@ -345,6 +358,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
         return
             IUniswapV2Router02(router).swapETHForExactTokens{
                 value: amountInMax
@@ -366,6 +382,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
         address defaultUniswapFactory = IUniswapV2Router02(router).factory();
         address liquidityToken = IUniswapV2Factory(defaultUniswapFactory)
             .getPair(token, ds.wrappedNative);
@@ -424,6 +441,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
 
         IUniswapV2Router02(router)
             .swapExactETHForTokensSupportingFeeOnTransferTokens{
@@ -443,6 +463,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAssetAvailable(path[0]);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        MoreVaultsLib.validateAssetAvailable(ds.wrappedNative);
 
         IERC20(path[0]).forceApprove(router, amountIn);
         IUniswapV2Router02(router)

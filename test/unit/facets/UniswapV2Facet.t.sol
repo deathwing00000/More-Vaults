@@ -16,6 +16,7 @@ contract UniswapV2FacetTest is Test {
     address public facet = address(100);
     address public token1 = address(2);
     address public token2 = address(3);
+    address public wrappedNative = address(101);
     address public router = address(4);
     address public factory = address(5);
     address public pair = address(6);
@@ -36,9 +37,11 @@ contract UniswapV2FacetTest is Test {
         facet = address(facetContract);
 
         // Set initial values in storage
-        address[] memory availableAssets = new address[](2);
+        address[] memory availableAssets = new address[](3);
         availableAssets[0] = token1;
         availableAssets[1] = token2;
+        availableAssets[2] = wrappedNative;
+        MoreVaultsStorageHelper.setWrappedNative(facet, wrappedNative);
         MoreVaultsStorageHelper.setAvailableAssets(facet, availableAssets);
         MoreVaultsStorageHelper.setCurator(facet, curator);
 
@@ -62,7 +65,7 @@ contract UniswapV2FacetTest is Test {
             abi.encodeWithSelector(
                 IUniswapV2Factory.getPair.selector,
                 token1,
-                address(0)
+                wrappedNative
             ),
             abi.encode(pair)
         );
