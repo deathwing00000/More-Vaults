@@ -58,6 +58,12 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
 
         for (uint i = 0; i < mTokensHeld.length(); ) {
             address mToken = mTokensHeld.at(i);
+            if (ds.isAssetAvailable[mToken]) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
             uint balance = IERC20(mToken).balanceOf(address(this)) +
                 ds.staked[mToken];
             address underlyingOfMToken = IATokenExtended(mToken)
