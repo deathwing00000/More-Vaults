@@ -12,6 +12,7 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IAaveV3RewardsController} from "../interfaces/Aave/v3/IAaveV3RewardsController.sol";
 import {IATokenExtended} from "../interfaces/Aave/v3/IATokenExtended.sol";
+import {IRewardsDistributor} from "../interfaces/Aave/v3/IRewardsDistributor.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IAaveV3Facet} from "../interfaces/facets/IAaveV3Facet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
@@ -73,6 +74,32 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                 balance,
                 Math.Rounding.Floor
             );
+
+            address[] memory mTokenSingleArray = new address[](1);
+            mTokenSingleArray[0] = mToken;
+            (
+                address[] memory rewards,
+                uint256[] memory amounts
+            ) = IRewardsDistributor(
+                    IATokenExtended(mToken).getIncentivesController()
+                ).getAllUserRewards(mTokenSingleArray, address(this));
+
+            for (uint256 j = 0; j < rewards.length; ) {
+                if (ds.isAssetAvailable[rewards[j]]) {
+                    unchecked {
+                        ++j;
+                    }
+                    continue;
+                }
+                sum += MoreVaultsLib.convertToUnderlying(
+                    rewards[j],
+                    amounts[j],
+                    Math.Rounding.Floor
+                );
+                unchecked {
+                    ++j;
+                }
+            }
             unchecked {
                 ++i;
             }
