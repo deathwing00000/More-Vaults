@@ -50,6 +50,10 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
             IMultiRewards staking = IMultiRewards(stakings.at(i));
             address[] memory rewardTokens = staking.getRewardTokens();
             for (uint256 j = 0; j < rewardTokens.length; ) {
+                if (!ds.isAssetAvailable[rewardTokens[j]]) {
+                    ++j;
+                    continue;
+                }
                 uint256 balance = staking.earned(
                     address(this),
                     rewardTokens[j]
@@ -121,12 +125,6 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         AccessControlLib.validateDiamond(msg.sender);
         IMultiRewards _staking = IMultiRewards(staking);
         address[] memory rewardTokens = _staking.getRewardTokens();
-        for (uint256 i; i < rewardTokens.length; ) {
-            MoreVaultsLib.validateAssetAvailable(rewardTokens[i]);
-            unchecked {
-                ++i;
-            }
-        }
         _staking.getReward();
 
         if (_staking.balanceOf(address(this)) == 0) {

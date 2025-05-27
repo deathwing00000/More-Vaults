@@ -298,28 +298,4 @@ contract MultiRewardsFacetTest is Test {
 
         vm.stopPrank();
     }
-
-    function test_getReward_ShouldRevertIfRewardTokensNotSupported() public {
-        vm.startPrank(address(facet));
-
-        address[] memory rewardTokens = new address[](1);
-        address unsupportedToken = address(4444);
-        rewardTokens[0] = unsupportedToken;
-        // Mock calls
-        vm.mockCall(
-            staking,
-            abi.encodeWithSelector(IMultiRewards.getRewardTokens.selector),
-            abi.encode(rewardTokens)
-        );
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                MoreVaultsLib.UnsupportedAsset.selector,
-                unsupportedToken
-            )
-        );
-        facet.getReward(staking);
-
-        vm.stopPrank();
-    }
 }
