@@ -119,6 +119,34 @@ contract MoreVaultsLibTest is Test {
         assertTrue(tokensHeld.contains(token1), "Token should not be removed");
     }
 
+    function test_removeTokenIfnecessary_ShouldNotRemoveTokenWhenBalanceIsLowButStakedIsHigh()
+        public
+    {
+        // Mock IERC20.balanceOf to return high balance
+        vm.mockCall(
+            token1,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this)),
+            abi.encode(1e3) // More than 10e3
+        );
+
+        // Get storage pointer for tokensHeld
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        EnumerableSet.AddressSet storage tokensHeld = ds.tokensHeld[
+            keccak256("test")
+        ];
+        MoreVaultsStorageHelper.setStaked(address(this), token1, 10e4);
+
+        // Add token to set
+        tokensHeld.add(token1);
+
+        // Call function
+        MoreVaultsLib.removeTokenIfnecessary(tokensHeld, token1);
+
+        // Verify token was not removed
+        assertTrue(tokensHeld.contains(token1), "Token should not be removed");
+    }
+
     function test_convertToUnderlying_ShouldConvertNativeToken() public {
         // Mock registry and oracle
         vm.mockCall(

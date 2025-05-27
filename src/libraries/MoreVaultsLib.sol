@@ -148,7 +148,8 @@ library MoreVaultsLib {
         EnumerableSet.AddressSet storage tokensHeld,
         address token
     ) internal {
-        if (IERC20(token).balanceOf(address(this)) < 10e3) {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        if (IERC20(token).balanceOf(address(this)) + ds.staked[token] < 10e3) {
             tokensHeld.remove(token);
         }
     }
