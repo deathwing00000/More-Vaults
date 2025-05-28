@@ -71,6 +71,15 @@ contract DiamondCutFacetTest is Test {
             abi.encode(true)
         );
 
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                TEST_SELECTOR
+            ),
+            abi.encode(mockFacetAddress)
+        );
+
         // Prepare facet cut data
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](1);
         cuts[0] = IDiamondCut.FacetCut({
@@ -112,6 +121,15 @@ contract DiamondCutFacetTest is Test {
             abi.encode(true)
         );
 
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                TEST_SELECTOR
+            ),
+            abi.encode(mockFacetAddress)
+        );
+
         // First add a facet
         IDiamondCut.FacetCut[] memory addCuts = new IDiamondCut.FacetCut[](1);
         addCuts[0] = IDiamondCut.FacetCut({
@@ -133,6 +151,14 @@ contract DiamondCutFacetTest is Test {
                 newTestFacet
             ),
             abi.encode(true)
+        );
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                TEST_SELECTOR
+            ),
+            abi.encode(newTestFacet)
         );
 
         IDiamondCut.FacetCut[] memory replaceCuts = new IDiamondCut.FacetCut[](
@@ -174,6 +200,14 @@ contract DiamondCutFacetTest is Test {
                 mockFacetAddress
             ),
             abi.encode(true)
+        );
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                TEST_SELECTOR
+            ),
+            abi.encode(mockFacetAddress)
         );
 
         // First add a facet

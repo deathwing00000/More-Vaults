@@ -19,6 +19,7 @@ library MoreVaultsLib {
     );
     error UnsupportedAsset(address);
     error FacetNotAllowed(address facet);
+    error SelectorNotAllowed(bytes4 selector);
     error InvalidSelectorForFacet(bytes4 selector, address facet);
     error IncorrectFacetCutAction(uint8 action);
     error ContractDoesntHaveCode(string errorMessage);
@@ -325,9 +326,32 @@ library MoreVaultsLib {
                 action == IDiamondCut.FacetCutAction.Replace
             ) {
                 // Check if facet is allowed in registry
-                bool isAllowed = registry.isFacetAllowed(facetAddress);
-                if (!isAllowed) {
+                if (!registry.isFacetAllowed(facetAddress)) {
                     revert FacetNotAllowed(facetAddress);
+                }
+
+                for (
+                    uint256 selectorIndex;
+                    selectorIndex <
+                    _diamondCut[facetIndex].functionSelectors.length;
+
+                ) {
+                    if (
+                        registry.selectorToFacet(
+                            _diamondCut[facetIndex].functionSelectors[
+                                selectorIndex
+                            ]
+                        ) != facetAddress
+                    ) {
+                        revert SelectorNotAllowed(
+                            _diamondCut[facetIndex].functionSelectors[
+                                selectorIndex
+                            ]
+                        );
+                    }
+                    unchecked {
+                        ++selectorIndex;
+                    }
                 }
             }
 

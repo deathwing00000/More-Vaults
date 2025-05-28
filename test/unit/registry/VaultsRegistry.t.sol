@@ -92,6 +92,42 @@ contract VaultsRegistryTest is Test {
         );
     }
 
+    function test_addFacet_ShouldAddSelectorsIfFacetAlreadyExists() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        bytes4[] memory selectorsNew = new bytes4[](1);
+        selectorsNew[0] = bytes4(keccak256("test3()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectorsNew);
+        assertTrue(registry.isFacetAllowed(facet), "Should allow facet");
+        assertEq(
+            registry.getFacetSelectors(facet).length,
+            3,
+            "Should add selectors"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[0]),
+            facet,
+            "Should map selector to facet"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[1]),
+            facet,
+            "Should map selector to facet"
+        );
+        assertEq(
+            registry.selectorToFacet(selectorsNew[0]),
+            facet,
+            "Should map selector to facet"
+        );
+    }
+
     function test_addFacet_ShouldRevertWithZeroAddress() public {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = bytes4(keccak256("test()"));
@@ -99,23 +135,6 @@ contract VaultsRegistryTest is Test {
         vm.prank(admin);
         vm.expectRevert(IMoreVaultsRegistry.ZeroAddress.selector);
         registry.addFacet(address(0), selectors);
-    }
-
-    function test_addFacet_ShouldRevertWhenFacetAlreadyExists() public {
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = bytes4(keccak256("test()"));
-
-        vm.prank(admin);
-        registry.addFacet(facet, selectors);
-
-        vm.prank(admin);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IMoreVaultsRegistry.FacetAlreadyExists.selector,
-                facet
-            )
-        );
-        registry.addFacet(facet, selectors);
     }
 
     function test_addFacet_ShouldRevertWhenSelectorAlreadyExists() public {

@@ -42,10 +42,28 @@ contract MoreVaultsDiamondTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                IDiamondCut.diamondCut.selector
+            ),
+            abi.encode(address(diamondCutFacet))
+        );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
                 address(accessControlFacet)
             ),
             abi.encode(true)
+        );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.selectorToFacet.selector,
+                AccessControlFacet.setMoreVaultsRegistry.selector
+            ),
+            abi.encode(address(accessControlFacet))
         );
 
         bytes memory accessControlFacetInitData = abi.encode(

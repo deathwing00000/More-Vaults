@@ -137,11 +137,20 @@ contract E2EFlowTest is Test {
         // Deploy registry
         registry = new VaultsRegistry();
         registry.initialize(AaveOracle, USDCe);
+
         bytes4[] memory functionSelectorsDiamondCutFacet = new bytes4[](1);
         functionSelectorsDiamondCutFacet[0] = IDiamondCut.diamondCut.selector;
+        bytes4[] memory functionSelectorsAccessControlFacet = new bytes4[](1);
+        functionSelectorsAccessControlFacet[0] = AccessControlFacet
+            .setMoreVaultsRegistry
+            .selector;
         registry.addFacet(
             address(diamondCut),
             functionSelectorsDiamondCutFacet
+        );
+        registry.addFacet(
+            address(accessControl),
+            functionSelectorsAccessControlFacet
         );
 
         IDiamondCut.FacetCut[] memory cuts = _getCuts();
@@ -152,7 +161,6 @@ contract E2EFlowTest is Test {
                 ++i;
             }
         }
-
         // Deploy factory
         factory = new VaultsFactory();
         factory.initialize(

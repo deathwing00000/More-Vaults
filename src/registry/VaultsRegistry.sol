@@ -19,7 +19,7 @@ contract VaultsRegistry is BaseVaultsRegistry {
     uint96 private constant MAX_PROTOCOL_FEE = 5000; // 50%
 
     /**
-     * @notice Add new facet with its selectors
+     * @notice Add new facet with its selectors or additional selector for existing facet
      * @param facet Address of the facet contract
      * @param selectors Array of function selectors
      */
@@ -28,7 +28,6 @@ contract VaultsRegistry is BaseVaultsRegistry {
         bytes4[] calldata selectors
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (facet == address(0)) revert ZeroAddress();
-        if (_allowedFacets[facet]) revert FacetAlreadyExists(facet);
 
         _allowedFacets[facet] = true;
         facetsList.push(facet);
