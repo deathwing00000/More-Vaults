@@ -243,7 +243,8 @@ contract MulticallFacetTest is Test {
         vm.startPrank(curator);
 
         // Submit actions
-        uint256 nonce = facet.submitActions(actionsData);
+        uint256[] memory nonce = new uint256[](1);
+        nonce[0] = facet.submitActions(actionsData);
 
         vm.stopPrank();
         vm.startPrank(guardian);
@@ -253,7 +254,7 @@ contract MulticallFacetTest is Test {
 
         // Verify actions were deleted
         (bytes[] memory storedActions, uint256 pendingUntil) = facet
-            .getPendingActions(nonce);
+            .getPendingActions(nonce[0]);
         assertEq(storedActions.length, 0, "Actions should be deleted");
         assertEq(pendingUntil, 0, "Pending until should be zero");
 
@@ -264,7 +265,8 @@ contract MulticallFacetTest is Test {
         vm.startPrank(curator);
 
         // Submit actions
-        uint256 nonce = facet.submitActions(actionsData);
+        uint256[] memory nonce = new uint256[](1);
+        nonce[0] = facet.submitActions(actionsData);
 
         vm.stopPrank();
         vm.startPrank(unauthorized);
@@ -279,11 +281,14 @@ contract MulticallFacetTest is Test {
     function test_vetoActions_ShouldRevertWhenNoSuchActions() public {
         vm.startPrank(guardian);
 
+        uint256[] memory nonce = new uint256[](1);
+        nonce[0] = 999;
+
         // Attempt to veto non-existent actions
         vm.expectRevert(
             abi.encodeWithSelector(IMulticallFacet.NoSuchActions.selector, 999)
         );
-        facet.vetoActions(999);
+        facet.vetoActions(nonce);
 
         vm.stopPrank();
     }
@@ -292,11 +297,12 @@ contract MulticallFacetTest is Test {
         vm.startPrank(curator);
 
         // Submit actions
-        uint256 nonce = facet.submitActions(actionsData);
+        uint256[] memory nonce = new uint256[](1);
+        nonce[0] = facet.submitActions(actionsData);
 
         // Get pending actions
         (bytes[] memory storedActions, uint256 pendingUntil) = facet
-            .getPendingActions(nonce);
+            .getPendingActions(nonce[0]);
 
         // Verify data
         assertEq(

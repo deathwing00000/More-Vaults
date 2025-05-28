@@ -61,9 +61,9 @@ interface IMulticallFacet is IGenericMoreVaultFacetInitializable {
 
     /**
      * @notice Veto (cancel) pending sequence of actions
-     * @param actionsNonce Nonce of actions sequence to veto
+     * @param actionsNonces Array of nonces of actions sequences to veto
      */
-    function vetoActions(uint256 actionsNonce) external;
+    function vetoActions(uint256[] calldata actionsNonces) external;
 
     /**
      * @notice Get pending actions for given nonce

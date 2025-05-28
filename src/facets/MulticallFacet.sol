@@ -95,17 +95,19 @@ contract MulticallFacet is
     /**
      * @inheritdoc IMulticallFacet
      */
-    function vetoActions(uint256 actionsNonce) external override {
+    function vetoActions(uint256[] calldata actionsNonces) external {
         AccessControlLib.validateGuardian(msg.sender);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        if (ds.pendingActions[actionsNonce].pendingUntil == 0) {
-            revert NoSuchActions(actionsNonce);
-        }
+        for (uint256 i = 0; i < actionsNonces.length; i++) {
+            if (ds.pendingActions[actionsNonces[i]].pendingUntil == 0) {
+                revert NoSuchActions(actionsNonces[i]);
+            }
 
-        delete ds.pendingActions[actionsNonce];
-        emit ActionsVetoed(msg.sender, actionsNonce);
+            delete ds.pendingActions[actionsNonces[i]];
+            emit ActionsVetoed(msg.sender, actionsNonces[i]);
+        }
     }
 
     /**
