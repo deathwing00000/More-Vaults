@@ -59,6 +59,40 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             uint totalSupply = IERC20(lpToken).totalSupply();
             uint balance = IERC20(lpToken).balanceOf(address(this)) +
                 ds.staked[lpToken];
+
+            uint totalSupply = IERC20(lpToken).totalSupply();
+            uint balance = IERC20(lpToken).balanceOf(address(this)) +
+                ds.staked[lpToken];
+
+            // Subtract staked LP tokens by querying Curve gauges directly
+            EnumerableSet.AddressSet storage gauges = ds.stakingAddresses[
+                keccak256("CURVE_LIQUIDITY_GAUGES_V6_ID")
+            ];
+
+            for (uint256 j = 0; j < gauges.length(); ) {
+                ILiquidityGaugeV6 gauge = ILiquidityGaugeV6(gauges.at(j));
+                if (gauge.lp_token() == lpToken) {
+                    balance -= gauge.balanceOf(address(this));
+                }
+                unchecked {
+                    ++j;
+                }
+            }
+
+            // Subtract staked LP tokens by querying MultiRewards contracts directly
+            EnumerableSet.AddressSet storage multiRewards = ds.stakingAddresses[
+                keccak256("MULTI_REWARDS_STAKINGS_ID")
+            ];
+
+            for (uint256 j = 0; j < multiRewards.length(); ) {
+                IMultiRewards staking = IMultiRewards(multiRewards.at(j));
+                if (address(staking.stakingToken()) == lpToken) {
+                    balance -= staking.balanceOf(address(this));
+                }
+                unchecked {
+                    ++j;
+                }
+            }
             
             // Get token addresses from the pair
             address token0 = IUniswapV2Pair(lpToken).token0();
