@@ -47,6 +47,16 @@ contract CurveLiquidityGaugeV6Facet is
         return "CurveLiquidityGaugeV6Facet";
     }
 
+    function initialize(bytes calldata data) external initializerFacet {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[
+            type(ICurveLiquidityGaugeV6Facet).interfaceId
+        ] = true;
+        address facetAddress = abi.decode(data, (address));
+        ds.facetsForAccounting.push(facetAddress);
+    }
+
     function accountingCurveLiquidityGaugeV6Facet()
         external
         view
@@ -86,16 +96,6 @@ contract CurveLiquidityGaugeV6Facet is
                 ++i;
             }
         }
-    }
-
-    function initialize(bytes calldata data) external initializerFacet {
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        ds.supportedInterfaces[
-            type(ICurveLiquidityGaugeV6Facet).interfaceId
-        ] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
     }
 
     /**
