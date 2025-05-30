@@ -59,20 +59,31 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             uint totalSupply = IERC20(lpToken).totalSupply();
             uint balance = IERC20(lpToken).balanceOf(address(this)) +
                 ds.staked[lpToken];
-            (uint token0, uint token1, ) = IUniswapV2Pair(lpToken)
-                .getReserves();
-
-            token0 = token0.mulDiv(balance, totalSupply);
-            token1 = token1.mulDiv(balance, totalSupply);
-
-            sum += MoreVaultsLib.convertToUnderlying(
-                IUniswapV2Pair(lpToken).token0(),
-                token0
-            );
-            sum += MoreVaultsLib.convertToUnderlying(
-                IUniswapV2Pair(lpToken).token1(),
-                token1
-            );
+            
+            // Get token addresses from the pair
+            address token0 = IUniswapV2Pair(lpToken).token0();
+            address token1 = IUniswapV2Pair(lpToken).token1();
+            
+            // Get current reserves and k
+            (uint reserve0, uint reserve1, ) = IUniswapV2Pair(lpToken).getReserves();
+            uint k = reserve0 * reserve1;
+            
+            // Get prices from oracle
+            uint price0 = MoreVaultsLib.convertToUnderlying(token0, 1e18);
+            uint price1 = MoreVaultsLib.convertToUnderlying(token1, 1e18);
+            
+            // Calculate fair reserves
+            uint fairReserve0 = Math.sqrt(k * price1 / price0);
+            uint fairReserve1 = Math.sqrt(k * price0 / price1);
+            
+            // Calculate our share of the fair reserves
+            uint token0Amount = fairReserve0.mulDiv(balance, totalSupply);
+            uint token1Amount = fairReserve1.mulDiv(balance, totalSupply);
+            
+            // Convert both token amounts to underlying
+            sum += MoreVaultsLib.convertToUnderlying(token0, token0Amount);
+            sum += MoreVaultsLib.convertToUnderlying(token1, token1Amount);
+            
             unchecked {
                 ++i;
             }
