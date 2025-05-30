@@ -116,12 +116,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
 
             sum += MoreVaultsLib.convertToUnderlying(
                 ICurveViews(lpToken).coins(0),
-                (
-                    ICurveViews(lpToken).calc_withdraw_one_coin(
-                        lpTokenBalance,
-                        int128(0)
-                    )
-                )
+                ICurveViews(lpToken).get_virtual_price()
             );
 
             unchecked {

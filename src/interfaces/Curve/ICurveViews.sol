@@ -8,6 +8,8 @@ interface ICurveViews {
         int128 i
     ) external view returns (uint256);
 
+    function get_virtual_price() external view returns (uint256);
+
     function coins(uint256 i) external view returns (address);
 
     function remove_liquidity_one_coin(
