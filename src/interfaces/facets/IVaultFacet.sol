@@ -8,6 +8,7 @@ import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetIniti
 interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
     /// @dev Errors
     error AccountingFailed(address facet);
+    error BeforeAccountingFailed(address facet);
     error UnsupportedAsset(address);
     error ArraysLengthsDontMatch(uint256, uint256);
     error WithdrawFailed(string);
