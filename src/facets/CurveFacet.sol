@@ -46,6 +46,25 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ds.supportedInterfaces[type(ICurveFacet).interfaceId] = true;
         address facetAddress = abi.decode(data, (address));
         ds.facetsForAccounting.push(facetAddress);
+        ds.beforeAccountingFacets.push(facetAddress);
+    }
+
+    function beforeAccountingCurveFacet() public {
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        EnumerableSet.AddressSet storage tokensHeld = ds.tokensHeld[
+            CURVE_LP_TOKENS_ID
+        ];
+
+        for (uint256 i = 0; i < tokensHeld.length(); ) {
+            ICurveViews(tokensHeld.at(0)).remove_liquidity_one_coin(
+                0,
+                0,
+                0
+            );
+        }  
     }
 
     function accountingCurveFacet() public view returns (uint sum) {
