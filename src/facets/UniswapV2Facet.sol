@@ -12,6 +12,8 @@ import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {IUniswapV2Facet} from "../interfaces/facets/IUniswapV2Facet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
+import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
 
 contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     using SafeERC20 for IERC20;
@@ -56,9 +58,6 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 }
                 continue;
             }
-            uint totalSupply = IERC20(lpToken).totalSupply();
-            uint balance = IERC20(lpToken).balanceOf(address(this)) +
-                ds.staked[lpToken];
 
             uint totalSupply = IERC20(lpToken).totalSupply();
             uint balance = IERC20(lpToken).balanceOf(address(this)) +

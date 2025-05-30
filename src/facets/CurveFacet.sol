@@ -10,6 +10,8 @@ import {ICurveViews} from "../interfaces/Curve/ICurveViews.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
+import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
 
 /**
  * @title CurveFacet
@@ -61,8 +63,38 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 }
                 continue;
             }
-            uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
-                ds.staked[lpToken];
+            
+            // Get direct LP token balance
+            uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) + ds.staked[lpToken];
+            
+            // Subtract staked LP tokens by querying Curve gauges directly
+            EnumerableSet.AddressSet storage gauges = ds.stakingAddresses[
+                keccak256("CURVE_LIQUIDITY_GAUGES_V6_ID")
+            ];
+            for (uint256 j = 0; j < gauges.length(); ) {
+                ILiquidityGaugeV6 gauge = ILiquidityGaugeV6(gauges.at(j));
+                if (gauge.lp_token() == lpToken) {
+                    lpTokenBalance -= gauge.balanceOf(address(this));
+                }
+                unchecked {
+                    ++j;
+                }
+            }
+
+            // Subtract staked LP tokens by querying MultiRewards contracts directly
+            EnumerableSet.AddressSet storage multiRewards = ds.stakingAddresses[
+                keccak256("MULTI_REWARDS_STAKINGS_ID")
+            ];
+            for (uint256 j = 0; j < multiRewards.length(); ) {
+                IMultiRewards staking = IMultiRewards(multiRewards.at(j));
+                if (address(staking.stakingToken()) == lpToken) {
+                    lpTokenBalance -= staking.balanceOf(address(this));
+                }
+                unchecked {
+                    ++j;
+                }
+            }
+
             sum += MoreVaultsLib.convertToUnderlying(
                 ICurveViews(lpToken).coins(0),
                 (
