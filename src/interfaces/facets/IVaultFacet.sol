@@ -11,6 +11,7 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
     error UnsupportedAsset(address);
     error ArraysLengthsDontMatch(uint256, uint256);
     error WithdrawFailed(string);
+    error VaultDebtIsGreaterThanAssets();
 
     /// @dev Events
     event Deposit(

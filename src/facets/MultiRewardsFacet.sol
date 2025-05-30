@@ -39,7 +39,11 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         return "MultiRewardsFacet";
     }
 
-    function accountingMultiRewardsFacet() external view returns (uint256 sum) {
+    function accountingMultiRewardsFacet()
+        external
+        view
+        returns (uint256 sum, bool isPositive)
+    {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage stakings = ds.stakingAddresses[
@@ -72,6 +76,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
                 ++i;
             }
         }
+        isPositive = true;
     }
 
     function initialize(bytes calldata data) external initializerFacet {

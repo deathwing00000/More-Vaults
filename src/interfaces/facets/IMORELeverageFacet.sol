@@ -11,7 +11,10 @@ interface IMORELeverageFacet is IGenericMoreVaultFacetInitializable {
 
     function facetName() external pure returns (string memory);
 
-    function accountingMORELeverageFacet() external view returns (uint sum);
+    function accountingMORELeverageFacet()
+        external
+        view
+        returns (uint256 sum, bool isPositive);
 
     /**
      * @notice Invests with a token

@@ -47,7 +47,11 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ds.facetsForAccounting.push(facetAddress);
     }
 
-    function accountingCurveFacet() public view returns (uint sum) {
+    function accountingCurveFacet()
+        public
+        view
+        returns (uint256 sum, bool isPositive)
+    {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage tokensHeld = ds.tokensHeld[
@@ -79,6 +83,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 ++i;
             }
         }
+        isPositive = true;
     }
 
     /**

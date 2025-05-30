@@ -8,7 +8,10 @@ interface IUniswapV2Facet is IGenericMoreVaultFacetInitializable {
 
     function facetName() external pure returns (string memory);
 
-    function accountingUniswapV2Facet() external view returns (uint sum);
+    function accountingUniswapV2Facet()
+        external
+        view
+        returns (uint256 sum, bool isPositive);
 
     /**
      * @notice Add liquidity to a pool

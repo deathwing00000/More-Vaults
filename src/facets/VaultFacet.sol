@@ -132,6 +132,7 @@ contract VaultFacet is
             }
         }
 
+        uint256 _totalDebt;
         for (uint i; i < facets.length; ) {
             (bool success, bytes memory result) = address(this).staticcall(
                 abi.encodeWithSignature(
@@ -144,12 +145,24 @@ contract VaultFacet is
                 )
             );
             if (success) {
-                uint256 decodedAmount = abi.decode(result, (uint256));
-                _totalAssets += decodedAmount;
+                (uint256 decodedAmount, bool isPositive) = abi.decode(
+                    result,
+                    (uint256, bool)
+                );
+                if (isPositive) {
+                    _totalAssets += decodedAmount;
+                } else {
+                    _totalDebt += decodedAmount;
+                }
             } else revert AccountingFailed(facets[i]);
             unchecked {
                 ++i;
             }
+        }
+        if (_totalDebt > _totalAssets) {
+            _totalAssets = 0;
+        } else {
+            _totalAssets = _totalAssets - _totalDebt;
         }
     }
 
@@ -463,6 +476,8 @@ contract VaultFacet is
 
         uint256 feeShares;
         (feeShares, newTotalAssets) = _accruedFeeShares();
+        _checkVaultHealth(newTotalAssets, totalSupply());
+
         AccessControlLib.AccessControlStorage storage acs = AccessControlLib
             .accessControlStorage();
 
@@ -533,6 +548,15 @@ contract VaultFacet is
                 maxToDeposit = depositCapacity - newTotalAssets;
             }
             revert ERC4626ExceededMaxDeposit(receiver, newAssets, maxToDeposit);
+        }
+    }
+
+    function _checkVaultHealth(
+        uint256 _totalAssets,
+        uint256 _totalSupply
+    ) internal {
+        if (_totalAssets == 0 && _totalSupply > 0) {
+            revert VaultDebtIsGreaterThanAssets();
         }
     }
 

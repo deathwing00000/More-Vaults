@@ -5,7 +5,9 @@ import {IMultiRewards} from "../Curve/IMultiRewards.sol";
 import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetInitializable.sol";
 
 interface IMultiRewardsFacet is IGenericMoreVaultFacetInitializable {
-    function accountingMultiRewardsFacet() external returns (uint256);
+    function accountingMultiRewardsFacet()
+        external
+        returns (uint256 sum, bool isPositive);
 
     /**
      * @notice function that stakes tokens in the MultiRewards smart contract

@@ -45,7 +45,11 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = true;
     }
 
-    function accountingMORELeverageFacet() external view returns (uint sum) {
+    function accountingMORELeverageFacet()
+        external
+        view
+        returns (uint256 sum, bool isPositive)
+    {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage lovTokensHeld = ds.tokensHeld[
@@ -81,6 +85,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
                 ++i;
             }
         }
+        isPositive = true;
     }
 
     /**

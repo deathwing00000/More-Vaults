@@ -41,7 +41,11 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         return "UniswapV2Facet";
     }
 
-    function accountingUniswapV2Facet() public view returns (uint sum) {
+    function accountingUniswapV2Facet()
+        public
+        view
+        returns (uint256 sum, bool isPositive)
+    {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage tokensHeld = ds.tokensHeld[
@@ -79,6 +83,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 ++i;
             }
         }
+        isPositive = true;
     }
 
     /**

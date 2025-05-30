@@ -60,7 +60,7 @@ contract CurveLiquidityGaugeV6Facet is
     function accountingCurveLiquidityGaugeV6Facet()
         external
         view
-        returns (uint256 sum)
+        returns (uint256 sum, bool isPositive)
     {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -96,6 +96,7 @@ contract CurveLiquidityGaugeV6Facet is
                 ++i;
             }
         }
+        isPositive = true;
     }
 
     /**

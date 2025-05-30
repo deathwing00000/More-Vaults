@@ -12,7 +12,10 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     error UnsupportedAsset(address asset);
     error InvalidSwapType(uint256 indexOfSwap);
 
-    function accountingCurveFacet() external view returns (uint256);
+    function accountingCurveFacet()
+        external
+        view
+        returns (uint256 sum, bool isPositive);
 
     /// @notice Performs up to 5 swaps in a single transaction.
     /// it is mandatory that coin with index zero in the pool should be available asset in the vault

@@ -1335,6 +1335,87 @@ contract VaultFacetTest is Test {
         );
     }
 
+    function test_accrueInterest_ShouldRevertIfTotalAssetsIsZero() public {
+        // Setup initial deposit
+        uint256 depositAmount = 100 ether;
+
+        // Mock oracle calls for price increase
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("oracle()"),
+            abi.encode(aaveOracleProvider)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getDenominationAsset()"),
+            abi.encode(asset)
+        );
+        vm.mockCall(
+            aaveOracleProvider,
+            abi.encodeWithSignature("getSourceOfAsset(address)"),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("latestRoundData()"),
+            abi.encode(0, 1.1 ether, block.timestamp, block.timestamp, 0) // 10% price increase
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("decimals()"),
+            abi.encode(8)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+        vm.prank(user);
+        VaultFacet(facet).deposit(depositAmount, user);
+
+        // Move time forward to accrue interest
+        vm.warp(block.timestamp + 1 days);
+
+        // Mock oracle calls with no price change
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("oracle()"),
+            abi.encode(aaveOracleProvider)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("getDenominationAsset()"),
+            abi.encode(asset)
+        );
+        vm.mockCall(
+            aaveOracleProvider,
+            abi.encodeWithSignature("getSourceOfAsset(address)"),
+            abi.encode(oracle)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("latestRoundData()"),
+            abi.encode(0, 1 ether, block.timestamp, block.timestamp, 0) // No price change
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSignature("decimals()"),
+            abi.encode(8)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSignature("protocolFeeInfo(address)"),
+            abi.encode(address(0), 0)
+        );
+
+        MockERC20(asset).burn(facet, depositAmount);
+
+        // Trigger interest accrual
+        vm.prank(user);
+        vm.expectRevert(IVaultFacet.VaultDebtIsGreaterThanAssets.selector);
+        VaultFacet(facet).deposit(0, user);
+    }
+
     function test_setFee_ShouldUpdateFee() public {
         vm.startPrank(owner);
 

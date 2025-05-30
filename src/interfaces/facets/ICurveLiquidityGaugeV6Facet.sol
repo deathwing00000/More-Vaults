@@ -8,7 +8,7 @@ interface ICurveLiquidityGaugeV6Facet is IGenericMoreVaultFacetInitializable {
     function accountingCurveLiquidityGaugeV6Facet()
         external
         view
-        returns (uint256);
+        returns (uint256 sum, bool isPositive);
 
     /**
      * @notice deposits lp token into Curve's LiquidityGaugeV6 smart contract

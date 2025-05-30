@@ -9,7 +9,10 @@ interface IAaveV3Facet is IGenericMoreVaultFacetInitializable {
 
     function facetName() external pure returns (string memory);
 
-    function accountingAaveV3Facet() external view returns (uint sum);
+    function accountingAaveV3Facet()
+        external
+        view
+        returns (uint256 sum, bool isPositive);
 
     /**
      * @notice Supplies an asset to a pool

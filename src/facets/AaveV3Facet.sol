@@ -47,7 +47,11 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         return "AaveV3Facet";
     }
 
-    function accountingAaveV3Facet() public view returns (uint sum) {
+    function accountingAaveV3Facet()
+        public
+        view
+        returns (uint256 sum, bool isPositive)
+    {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         EnumerableSet.AddressSet storage mTokensHeld = ds.tokensHeld[
@@ -57,6 +61,8 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             MORE_DEBT_TOKENS_ID
         ];
 
+        uint256 sumCollateral;
+        uint256 sumDebt;
         for (uint i = 0; i < mTokensHeld.length(); ) {
             address mToken = mTokensHeld.at(i);
             if (ds.isAssetAvailable[mToken]) {
@@ -69,7 +75,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                 ds.staked[mToken];
             address underlyingOfMToken = IATokenExtended(mToken)
                 .UNDERLYING_ASSET_ADDRESS();
-            sum += MoreVaultsLib.convertToUnderlying(
+            sumCollateral += MoreVaultsLib.convertToUnderlying(
                 underlyingOfMToken,
                 balance,
                 Math.Rounding.Floor
@@ -91,7 +97,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                     }
                     continue;
                 }
-                sum += MoreVaultsLib.convertToUnderlying(
+                sumCollateral += MoreVaultsLib.convertToUnderlying(
                     rewards[j],
                     amounts[j],
                     Math.Rounding.Floor
@@ -110,7 +116,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             address underlyingOfDebtToken = IATokenExtended(debtToken)
                 .UNDERLYING_ASSET_ADDRESS();
 
-            sum -= MoreVaultsLib.convertToUnderlying(
+            sumDebt += MoreVaultsLib.convertToUnderlying(
                 underlyingOfDebtToken,
                 balance,
                 Math.Rounding.Ceil
@@ -118,6 +124,14 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             unchecked {
                 ++i;
             }
+        }
+
+        if (sumCollateral > sumDebt) {
+            isPositive = true;
+            sum = sumCollateral - sumDebt;
+        } else {
+            isPositive = false;
+            sum = sumDebt - sumCollateral;
         }
     }
 
