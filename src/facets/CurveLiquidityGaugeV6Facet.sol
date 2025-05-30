@@ -111,6 +111,7 @@ contract CurveLiquidityGaugeV6Facet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.stakingAddresses[CURVE_LIQUIDITY_GAUGES_V6_ID].add(gauge);
+        ds.stakingTokenToGauge[address(lpToken)] = gauge;
         ds.staked[address(lpToken)] += amount;
     }
 
