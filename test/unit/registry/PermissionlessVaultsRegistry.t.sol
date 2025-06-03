@@ -134,7 +134,7 @@ contract PermissionlessVaultsRegistryTest is Test {
         registry.removeFromWhitelist(vault);
     }
 
-    function test_isWhitelisted_ShouldReturnTrue() public {
+    function test_isWhitelisted_ShouldReturnTrue() public view {
         assertEq(
             registry.isWhitelisted(address(1)),
             true,

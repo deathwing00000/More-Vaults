@@ -518,7 +518,7 @@ contract VaultFacetTest is Test {
                 1000000 * 10 ** IERC20Metadata(asset).decimals()
             )
         );
-        uint256 assets = VaultFacet(facet).mint(mintAmount, user);
+        VaultFacet(facet).mint(mintAmount, user);
     }
 
     function test_withdraw_ShouldBurnShares() public {

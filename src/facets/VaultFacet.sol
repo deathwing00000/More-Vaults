@@ -406,7 +406,7 @@ contract VaultFacet is
         uint256 newTotalSupply,
         uint256 newTotalAssets,
         Math.Rounding rounding
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         return
             assets.mulDiv(
                 newTotalSupply + 10 ** _decimalsOffset(),
@@ -420,7 +420,7 @@ contract VaultFacet is
         uint256 newTotalSupply,
         uint256 newTotalAssets,
         Math.Rounding rounding
-    ) internal view returns (uint256) {
+    ) internal pure returns (uint256) {
         return
             shares.mulDiv(
                 newTotalAssets + 1,
@@ -554,7 +554,7 @@ contract VaultFacet is
     function _checkVaultHealth(
         uint256 _totalAssets,
         uint256 _totalSupply
-    ) internal {
+    ) internal pure {
         if (_totalAssets == 0 && _totalSupply > 0) {
             revert VaultDebtIsGreaterThanAssets();
         }

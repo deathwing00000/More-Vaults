@@ -263,8 +263,6 @@ contract CurveFacetTest is Test {
         uint256 minAmount = 0.9e18;
         swap_params_ng[0][2] = 5;
 
-        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
-
         IERC20(token1).approve(address(facet), amount);
 
         vm.expectRevert(

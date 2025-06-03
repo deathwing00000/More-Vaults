@@ -82,7 +82,7 @@ contract MoreVaultsDiamondTest is Test {
         );
     }
 
-    function test_Constructor_ShouldSetRegistry() public {
+    function test_Constructor_ShouldSetRegistry() public view {
         assertEq(
             MoreVaultsStorageHelper.getMoreVaultsRegistry(address(diamond)),
             registry,
@@ -147,6 +147,7 @@ contract MoreVaultsDiamondTest is Test {
         uint256 balanceBefore = address(diamond).balance;
         vm.expectRevert(MoreVaultsDiamond.NativeTokenNotAvailable.selector);
         (bool success, ) = address(diamond).call{value: 1 ether}("");
+        assertTrue(success);
         assertEq(
             address(diamond).balance,
             balanceBefore,

@@ -106,7 +106,6 @@ contract CurveLiquidityGaugeV6Facet is
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAddressWhitelisted(gauge);
         ILiquidityGaugeV6 _gauge = ILiquidityGaugeV6(gauge);
-        uint256 numberOfRewardTokens = _gauge.reward_count();
 
         IERC20 lpToken = IERC20(_gauge.lp_token());
         lpToken.forceApprove(gauge, amount);
@@ -139,7 +138,6 @@ contract CurveLiquidityGaugeV6Facet is
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAddressWhitelisted(gauge);
         ILiquidityGaugeV6 _gauge = ILiquidityGaugeV6(gauge);
-        uint256 numberOfRewardTokens = _gauge.reward_count();
 
         _gauge.claim_rewards(address(this), address(this));
 

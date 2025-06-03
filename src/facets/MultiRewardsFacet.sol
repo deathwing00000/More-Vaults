@@ -132,7 +132,6 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAddressWhitelisted(staking);
         IMultiRewards _staking = IMultiRewards(staking);
-        address[] memory rewardTokens = _staking.getRewardTokens();
         _staking.getReward();
 
         if (_staking.balanceOf(address(this)) == 0) {
