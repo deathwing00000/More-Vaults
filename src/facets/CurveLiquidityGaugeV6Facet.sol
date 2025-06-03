@@ -10,6 +10,7 @@ import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
 import {IMinter} from "../interfaces/Curve/IMinter.sol";
 import {ICurveLiquidityGaugeV6Facet} from "../interfaces/facets/ICurveLiquidityGaugeV6Facet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IMinter} from "../interfaces/Curve/IMinter.sol";
 
 /**
  * @title CurveLiquidityGaugeV6Facet
@@ -46,6 +47,46 @@ contract CurveLiquidityGaugeV6Facet is
         return "CurveLiquidityGaugeV6Facet";
     }
 
+    function initialize(bytes calldata data) external initializerFacet {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[
+            type(ICurveLiquidityGaugeV6Facet).interfaceId
+        ] = true;
+        address facetAddress = abi.decode(data, (address));
+        ds.facetsForAccounting.push(facetAddress);
+        ds.beforeAccountingFacets.push(facetAddress);
+    }
+
+    function beforeAccountingCurveLiquidityGaugeV6Facet() external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        EnumerableSet.AddressSet storage gauges = ds.stakingAddresses[
+            CURVE_LIQUIDITY_GAUGES_V6_ID
+        ];
+
+        address[] memory gaugesArray = gauges.values();
+        if (gaugesArray.length == 0) return;
+        IMinter minter = IMinter(ds.minter);
+
+        for (uint256 i = 0; i < gaugesArray.length;) {
+            address[8] memory gaugesArray8;
+            uint256 batchSize;
+            
+            for (uint256 j = 0; j < 8 && i + j < gaugesArray.length; j++) {
+                gaugesArray8[j] = gaugesArray[i + j];
+                batchSize++;
+            }
+
+            if (batchSize > 0) {
+                minter.mint_many(gaugesArray8);
+            }
+
+            i += batchSize;
+        }
+    }
+
     function accountingCurveLiquidityGaugeV6Facet()
         external
         view
@@ -77,16 +118,6 @@ contract CurveLiquidityGaugeV6Facet is
                 ++i;
             }
         }
-    }
-
-    function initialize(bytes calldata data) external initializerFacet {
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        ds.supportedInterfaces[
-            type(ICurveLiquidityGaugeV6Facet).interfaceId
-        ] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
     }
 
     /**

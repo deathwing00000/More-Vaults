@@ -49,7 +49,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ds.beforeAccountingFacets.push(facetAddress);
     }
 
-    function beforeAccountingCurveFacet() public {
+    function beforeAccountingCurveFacet() external {
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();

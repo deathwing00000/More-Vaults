@@ -589,7 +589,7 @@ contract E2EFlowTest is Test {
         // selectors for CurveLiquidityGaugeV6Facet
         bytes4[]
             memory functionSelectorsCurveLiquidityGaugeV6Facet = new bytes4[](
-                5
+                6
             );
         functionSelectorsCurveLiquidityGaugeV6Facet[
             0
@@ -608,6 +608,9 @@ contract E2EFlowTest is Test {
         functionSelectorsCurveLiquidityGaugeV6Facet[
             4
         ] = ICurveLiquidityGaugeV6Facet.mintCRV.selector;
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            5
+        ] = ICurveLiquidityGaugeV6Facet.beforeAccountingCurveLiquidityGaugeV6Facet.selector;
         bytes memory initDataCurveLiquidityGaugeV6Facet = abi.encode(
             address(curveGaugeV6)
         );

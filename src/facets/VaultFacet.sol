@@ -443,7 +443,7 @@ contract VaultFacet is
         }
 
         for (uint256 i; i < ds.beforeAccountingFacets.length; ) {
-            (bool success, bytes memory result) = address(this).staticcall(
+            (bool success,) = address(this).delegatecall(
                 abi.encodeWithSignature(
                     string.concat(
                         "beforeAccounting",

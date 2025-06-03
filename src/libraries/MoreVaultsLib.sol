@@ -100,6 +100,7 @@ library MoreVaultsLib {
         address[] beforeAccountingFacets;
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
+        address minter;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
