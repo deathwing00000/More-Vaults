@@ -53,9 +53,10 @@ contract CurveLiquidityGaugeV6Facet is
         ds.supportedInterfaces[
             type(ICurveLiquidityGaugeV6Facet).interfaceId
         ] = true;
-        address facetAddress = abi.decode(data, (address));
+        (address facetAddress, address minter) = abi.decode(data, (address, address));
         ds.facetsForAccounting.push(facetAddress);
         ds.beforeAccountingFacets.push(facetAddress);
+        ds.minter = minter;
     }
 
     function beforeAccountingCurveLiquidityGaugeV6Facet() external {
