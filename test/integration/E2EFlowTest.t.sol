@@ -32,6 +32,9 @@ import {ICurveFacet, CurveFacet} from "../../src/facets/CurveFacet.sol";
 import {IUniswapV3Facet, UniswapV3Facet} from "../../src/facets/UniswapV3Facet.sol";
 import {IMultiRewardsFacet, MultiRewardsFacet} from "../../src/facets/MultiRewardsFacet.sol";
 import {ICurveLiquidityGaugeV6Facet, CurveLiquidityGaugeV6Facet} from "../../src/facets/CurveLiquidityGaugeV6Facet.sol";
+import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {OracleRegistry} from "../../src/registry/OracleRegistry.sol";
+import {IOracleRegistry, IAggregatorV2V3Interface} from "../../src/interfaces/IOracleRegistry.sol";
 import {console} from "forge-std/console.sol";
 
 contract E2EFlowTest is Test {
@@ -94,6 +97,8 @@ contract E2EFlowTest is Test {
     MultiRewardsFacet multiRewards;
     CurveLiquidityGaugeV6Facet curveGaugeV6;
 
+    OracleRegistry oracleRegistry;
+
     // Mock tokens
     IERC20 usdce;
     IERC20 cbbtc;
@@ -134,9 +139,43 @@ contract E2EFlowTest is Test {
         multiRewards = new MultiRewardsFacet();
         curveGaugeV6 = new CurveLiquidityGaugeV6Facet();
 
+        address[] memory assets = new address[](4);
+        assets[0] = address(usdce);
+        assets[1] = address(cbbtc);
+        assets[2] = address(ankrflow);
+        assets[3] = address(wflow);
+        address[] memory sources = new address[](4);
+        sources[0] = IAaveOracle(AaveOracle).getSourceOfAsset(address(usdce));
+        sources[1] = IAaveOracle(AaveOracle).getSourceOfAsset(address(cbbtc));
+        sources[2] = IAaveOracle(AaveOracle).getSourceOfAsset(
+            address(ankrflow)
+        );
+        sources[3] = IAaveOracle(AaveOracle).getSourceOfAsset(address(wflow));
+        uint96[] memory confidence = new uint96[](4);
+        confidence[0] = 1000;
+        confidence[1] = 1000;
+        confidence[2] = 1000;
+        confidence[3] = 1000;
+
+        IOracleRegistry.OracleInfo[]
+            memory infos = new IOracleRegistry.OracleInfo[](4);
+        for (uint i; i < assets.length; ) {
+            infos[i] = IOracleRegistry.OracleInfo({
+                aggregator: IAggregatorV2V3Interface(sources[i]),
+                stalenessThreshold: confidence[i]
+            });
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Deploy oracle registry
+        oracleRegistry = new OracleRegistry();
+        oracleRegistry.initialize(assets, infos, address(0), 8);
+
         // Deploy registry
         registry = new VaultsRegistry();
-        registry.initialize(AaveOracle, USDCe);
+        registry.initialize(address(oracleRegistry), USDCe);
 
         bytes4[] memory functionSelectorsDiamondCutFacet = new bytes4[](1);
         functionSelectorsDiamondCutFacet[0] = IDiamondCut.diamondCut.selector;

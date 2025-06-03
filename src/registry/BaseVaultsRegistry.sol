@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -15,7 +15,7 @@ abstract contract BaseVaultsRegistry is
     AccessControlUpgradeable
 {
     /// @dev Aave price oracle address
-    IAaveOracle public oracle;
+    IOracleRegistry public oracle;
 
     /// @dev Mapping selector => facet address (показывает какому фасету принадлежит селектор)
     mapping(bytes4 => address) public selectorToFacet;
@@ -40,20 +40,20 @@ abstract contract BaseVaultsRegistry is
         if (_oracle == address(0)) revert ZeroAddress();
 
         __AccessControl_init();
-        oracle = IAaveOracle(_oracle);
+        oracle = IOracleRegistry(_oracle);
         usdStableTokenAddress = _usdStableTokenAddress;
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    function updateOracle(
-        address newOracle
+    function updateOracleRegistry(
+        address newOracleRegistry
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (newOracle == address(0)) revert ZeroAddress();
+        if (newOracleRegistry == address(0)) revert ZeroAddress();
 
-        address oldOracle = address(oracle);
-        oracle = IAaveOracle(newOracle);
+        address oldOracleRegistry = address(oracle);
+        oracle = IOracleRegistry(newOracleRegistry);
 
-        emit OracleUpdated(oldOracle, newOracle);
+        emit OracleRegistryUpdated(oldOracleRegistry, newOracleRegistry);
     }
 
     function setProtocolFeeInfo(

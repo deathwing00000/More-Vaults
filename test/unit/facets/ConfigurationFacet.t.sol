@@ -7,7 +7,7 @@ import {IConfigurationFacet} from "../../../src/interfaces/facets/IConfiguration
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IOracleRegistry} from "../../../src/interfaces/IOracleRegistry.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract ConfigurationFacetTest is Test {
@@ -57,19 +57,19 @@ contract ConfigurationFacetTest is Test {
         vm.mockCall(
             address(oracle),
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 asset1
             ),
-            abi.encode(address(1000))
+            abi.encode(address(1000), uint96(1000))
         );
 
         vm.mockCall(
             address(oracle),
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 asset2
             ),
-            abi.encode(address(1001))
+            abi.encode(address(1001), uint96(1001))
         );
     }
 
@@ -237,8 +237,11 @@ contract ConfigurationFacetTest is Test {
 
         vm.mockCall(
             address(oracle),
-            abi.encodeWithSelector(IAaveOracle.getSourceOfAsset.selector),
-            abi.encode(address(1000))
+            abi.encodeWithSelector(
+                IOracleRegistry.getOracleInfo.selector,
+                asset1
+            ),
+            abi.encode(address(1000), uint96(1000))
         );
 
         // Add asset first time

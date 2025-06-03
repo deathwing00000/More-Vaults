@@ -79,7 +79,7 @@ contract BaseVaultsRegistryTest is Test {
         vm.prank(admin);
         registry.initialize(address(oracle), address(usdc));
         vm.prank(admin);
-        registry.updateOracle(newOracle);
+        registry.updateOracleRegistry(newOracle);
 
         assertEq(address(registry.oracle()), newOracle, "Should update oracle");
     }
@@ -89,7 +89,7 @@ contract BaseVaultsRegistryTest is Test {
         registry.initialize(address(oracle), address(usdc));
         vm.expectRevert(IMoreVaultsRegistry.ZeroAddress.selector);
         vm.prank(admin);
-        registry.updateOracle(address(0));
+        registry.updateOracleRegistry(address(0));
     }
 
     function test_updateOracle_ShouldRevertWhenNotAdmin() public {
@@ -97,7 +97,7 @@ contract BaseVaultsRegistryTest is Test {
 
         vm.prank(user);
         vm.expectRevert();
-        registry.updateOracle(address(0));
+        registry.updateOracleRegistry(address(0));
     }
 
     function test_getDenominationAsset_ShouldReturnBaseCurrency() public {

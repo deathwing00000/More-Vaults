@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {AccessControlLib} from "./AccessControlLib.sol";
 import {IDiamondCut} from "../interfaces/facets/IDiamondCut.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IAggregatorV2V3Interface} from "../interfaces/Chainlink/IAggregatorV2V3Interface.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -176,20 +176,22 @@ library MoreVaultsLib {
         IMoreVaultsRegistry registry = IMoreVaultsRegistry(
             AccessControlLib.vaultRegistry()
         );
-        IAaveOracle oracle = registry.oracle();
+        IOracleRegistry oracle = registry.oracle();
         address oracleDenominationAsset = registry.getDenominationAsset();
         IAggregatorV2V3Interface aggregator = IAggregatorV2V3Interface(
-            oracle.getSourceOfAsset(_token)
+            oracle.getOracleInfo(_token).aggregator
         );
-        uint256 inputTokenPrice = getLatestPrice(aggregator);
+        uint256 inputTokenPrice = oracle.getAssetPrice(_token);
         uint8 inputTokenOracleDecimals = aggregator.decimals();
 
         uint256 finalPriceForConversion = inputTokenPrice;
         if (underlyingToken != oracleDenominationAsset) {
             aggregator = IAggregatorV2V3Interface(
-                oracle.getSourceOfAsset(underlyingToken)
+                oracle.getOracleInfo(underlyingToken).aggregator
             );
-            uint256 underlyingTokenPrice = getLatestPrice(aggregator);
+            uint256 underlyingTokenPrice = oracle.getAssetPrice(
+                underlyingToken
+            );
             uint8 underlyingTokenOracleDecimals = aggregator.decimals();
             uint256 inputToUnderlyingPrice = inputTokenPrice.mulDiv(
                 10 ** underlyingTokenOracleDecimals,
@@ -263,8 +265,8 @@ library MoreVaultsLib {
         IMoreVaultsRegistry registry = IMoreVaultsRegistry(
             acs.moreVaultsRegistry
         );
-        IAaveOracle oracle = registry.oracle();
-        if (oracle.getSourceOfAsset(asset) == address(0)) {
+        IOracleRegistry oracle = registry.oracle();
+        if (address(oracle.getOracleInfo(asset).aggregator) == address(0)) {
             revert NoOracleForAsset();
         }
 

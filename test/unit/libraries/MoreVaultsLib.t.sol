@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IOracleRegistry} from "../../../src/interfaces/IOracleRegistry.sol";
 import {IAggregatorV2V3Interface} from "../../../src/interfaces/Chainlink/IAggregatorV2V3Interface.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
@@ -173,27 +173,28 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 wrappedNative
             ),
-            abi.encode(aggregator1)
+            abi.encode(aggregator1, uint96(1000))
         );
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 token1
             ),
-            abi.encode(aggregator2)
+            abi.encode(aggregator2, uint96(1000))
         );
 
         // Mock aggregators with real ETH price
         vm.mockCall(
-            aggregator1,
+            oracle,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestRoundData.selector
+                IOracleRegistry.getAssetPrice.selector,
+                wrappedNative
             ),
-            abi.encode(0, ETH_PRICE, block.timestamp, block.timestamp, 0)
+            abi.encode(ETH_PRICE)
         );
         vm.mockCall(
             aggregator1,
@@ -201,11 +202,12 @@ contract MoreVaultsLibTest is Test {
             abi.encode(8)
         );
         vm.mockCall(
-            aggregator2,
+            oracle,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestRoundData.selector
+                IOracleRegistry.getAssetPrice.selector,
+                token1
             ),
-            abi.encode(0, USD_PRICE, block.timestamp, block.timestamp, 0)
+            abi.encode(USD_PRICE)
         );
         vm.mockCall(
             aggregator2,
@@ -265,27 +267,28 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 token2
             ),
-            abi.encode(aggregator1)
+            abi.encode(aggregator1, uint96(1000))
         );
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 token1
             ),
-            abi.encode(aggregator2)
+            abi.encode(aggregator2, uint96(1000))
         );
 
         // Mock aggregators with ~real SOL price
         vm.mockCall(
-            aggregator1,
+            oracle,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestRoundData.selector
+                IOracleRegistry.getAssetPrice.selector,
+                token1
             ),
-            abi.encode(0, SOL_PRICE, block.timestamp, block.timestamp, 0)
+            abi.encode(USD_PRICE)
         );
         vm.mockCall(
             aggregator1,
@@ -293,11 +296,12 @@ contract MoreVaultsLibTest is Test {
             abi.encode(8)
         );
         vm.mockCall(
-            aggregator2,
+            oracle,
             abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestRoundData.selector
+                IOracleRegistry.getAssetPrice.selector,
+                token2
             ),
-            abi.encode(0, USD_PRICE, block.timestamp, block.timestamp, 0)
+            abi.encode(SOL_PRICE)
         );
         vm.mockCall(
             aggregator2,
@@ -358,28 +362,20 @@ contract MoreVaultsLibTest is Test {
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 token2
             ),
-            abi.encode(aggregator1)
+            abi.encode(aggregator1, uint96(1000))
         );
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 token1
             ),
-            abi.encode(aggregator2)
+            abi.encode(aggregator2, uint96(1000))
         );
 
-        // Mock aggregators with ~real SOL price
-        vm.mockCall(
-            aggregator1,
-            abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestRoundData.selector
-            ),
-            abi.encode(0, SOL_PRICE, block.timestamp, block.timestamp, 0)
-        );
         vm.mockCall(
             aggregator1,
             abi.encodeWithSelector(IAggregatorV2V3Interface.decimals.selector),
@@ -387,15 +383,16 @@ contract MoreVaultsLibTest is Test {
         );
         vm.mockCall(
             aggregator2,
-            abi.encodeWithSelector(
-                IAggregatorV2V3Interface.latestRoundData.selector
-            ),
-            abi.encode(0, USD_PRICE, block.timestamp, block.timestamp, 0)
-        );
-        vm.mockCall(
-            aggregator2,
             abi.encodeWithSelector(IAggregatorV2V3Interface.decimals.selector),
             abi.encode(8)
+        );
+        vm.mockCall(
+            oracle,
+            abi.encodeWithSelector(
+                IOracleRegistry.getAssetPrice.selector,
+                token2
+            ),
+            abi.encode(SOL_PRICE)
         );
 
         // Mock token decimals

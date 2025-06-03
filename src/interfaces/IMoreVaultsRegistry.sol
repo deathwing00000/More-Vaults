@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IOracleRegistry} from "./IOracleRegistry.sol";
 
 /**
  * @title IVaultRegistry
@@ -32,11 +32,14 @@ interface IMoreVaultsRegistry {
     event FacetRemoved(address indexed facet);
 
     /**
-     * @dev Emitted when oracle address is updated
-     * @param oldOracle Previous oracle address
-     * @param newOracle New oracle address
+     * @dev Emitted when oracle registry address is updated
+     * @param oldOracleRegistry Previous oracle registry address
+     * @param newOracleRegistry New oracle registry address
      */
-    event OracleUpdated(address indexed oldOracle, address indexed newOracle);
+    event OracleRegistryUpdated(
+        address indexed oldOracleRegistry,
+        address indexed newOracleRegistry
+    );
 
     /**
      * @dev Emitted when protocol fee info is updated
@@ -75,9 +78,9 @@ interface IMoreVaultsRegistry {
 
     /**
      * @notice Update oracle address
-     * @param newOracle Address of new oracle
+     * @param newOracleRegistry Address of new oracle registry
      */
-    function updateOracle(address newOracle) external;
+    function updateOracleRegistry(address newOracleRegistry) external;
 
     /**
      * @notice Set protocol fee info
@@ -118,9 +121,9 @@ interface IMoreVaultsRegistry {
 
     /**
      * @notice Get oracle address
-     * @return IAaveOracle Oracle contract
+     * @return IOracleRegistry Oracle registry contract
      */
-    function oracle() external view returns (IAaveOracle);
+    function oracle() external view returns (IOracleRegistry);
 
     /**
      * @notice Get facet address for selector

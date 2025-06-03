@@ -19,7 +19,7 @@ import {MockERC20} from "../../mocks/MockERC20.sol";
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {ERC4626Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol";
-import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
+import {IOracleRegistry} from "../../../src/interfaces/IOracleRegistry.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
@@ -45,7 +45,7 @@ contract VaultFacetTest is Test {
     uint96 constant FEE = 1000; // 10%
     uint256 constant TIME_LOCK_PERIOD = 1 days;
     uint256 constant DEPOSIT_CAPACITY = 1000000 ether;
-    address public aaveOracleProvider = address(1001);
+    address public oracleRegistry = address(1001);
     address public oracle = address(1002);
 
     address public protocolFeeRecipient = address(1003);
@@ -79,16 +79,16 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             address(registry),
             abi.encodeWithSelector(IMoreVaultsRegistry.oracle.selector),
-            abi.encode(oracle)
+            abi.encode(oracleRegistry)
         );
 
         vm.mockCall(
-            address(oracle),
+            address(oracleRegistry),
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 asset
             ),
-            abi.encode(address(2000))
+            abi.encode(address(2000), uint96(1000))
         );
 
         VaultFacet(facet).initialize(initData);
@@ -196,7 +196,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -204,7 +204,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -268,7 +268,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -276,14 +276,20 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
-            abi.encodeWithSignature("getSourceOfAsset(address)"),
-            abi.encode(oracle)
+            oracleRegistry,
+            abi.encodeWithSelector(
+                IOracleRegistry.getOracleInfo.selector,
+                asset2
+            ),
+            abi.encode(oracle, uint96(1000))
         );
         vm.mockCall(
-            oracle,
-            abi.encodeWithSignature("latestRoundData()"),
-            abi.encode(0, 1 * 10 ** 8, block.timestamp, block.timestamp, 0)
+            oracleRegistry,
+            abi.encodeWithSelector(
+                IOracleRegistry.getAssetPrice.selector,
+                asset2
+            ),
+            abi.encode(1 * 10 ** 8)
         );
         vm.mockCall(
             oracle,
@@ -347,7 +353,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -355,14 +361,20 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
-            abi.encodeWithSignature("getSourceOfAsset(address)"),
-            abi.encode(oracle)
+            oracleRegistry,
+            abi.encodeWithSelector(
+                IOracleRegistry.getOracleInfo.selector,
+                asset2
+            ),
+            abi.encode(oracle, uint96(1000))
         );
         vm.mockCall(
-            oracle,
-            abi.encodeWithSignature("latestRoundData()"),
-            abi.encode(0, 1 * 10 ** 8, block.timestamp, block.timestamp, 0)
+            oracleRegistry,
+            abi.encodeWithSelector(
+                IOracleRegistry.getAssetPrice.selector,
+                asset2
+            ),
+            abi.encode(1 * 10 ** 8)
         );
         vm.mockCall(
             oracle,
@@ -419,7 +431,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -427,7 +439,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -469,7 +481,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -477,7 +489,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -514,7 +526,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -522,7 +534,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -552,7 +564,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -560,7 +572,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -596,7 +608,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -604,7 +616,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -634,7 +646,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -642,7 +654,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -713,7 +725,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -721,7 +733,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -789,7 +801,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -797,14 +809,20 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
-            abi.encodeWithSignature("getSourceOfAsset(address)"),
-            abi.encode(oracle)
+            oracleRegistry,
+            abi.encodeWithSelector(
+                IOracleRegistry.getOracleInfo.selector,
+                asset2
+            ),
+            abi.encode(oracle, uint96(1000))
         );
         vm.mockCall(
-            oracle,
-            abi.encodeWithSignature("latestRoundData()"),
-            abi.encode(0, 1 * 10 ** 8, block.timestamp, block.timestamp, 0)
+            oracleRegistry,
+            abi.encodeWithSelector(
+                IOracleRegistry.getAssetPrice.selector,
+                asset2
+            ),
+            abi.encode(1 * 10 ** 8)
         );
         vm.mockCall(
             oracle,
@@ -947,7 +965,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -955,7 +973,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -983,7 +1001,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -991,7 +1009,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1059,7 +1077,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1067,7 +1085,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1095,7 +1113,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1103,7 +1121,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1158,7 +1176,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1166,7 +1184,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1198,7 +1216,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1206,7 +1224,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1253,7 +1271,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1261,7 +1279,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1290,7 +1308,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1298,7 +1316,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1343,7 +1361,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1351,7 +1369,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );
@@ -1380,7 +1398,7 @@ contract VaultFacetTest is Test {
         vm.mockCall(
             registry,
             abi.encodeWithSignature("oracle()"),
-            abi.encode(aaveOracleProvider)
+            abi.encode(oracleRegistry)
         );
         vm.mockCall(
             registry,
@@ -1388,7 +1406,7 @@ contract VaultFacetTest is Test {
             abi.encode(asset)
         );
         vm.mockCall(
-            aaveOracleProvider,
+            oracleRegistry,
             abi.encodeWithSignature("getSourceOfAsset(address)"),
             abi.encode(oracle)
         );

@@ -6,7 +6,8 @@ import {IVaultsFactory, VaultsFactory} from "../../../src/factory/VaultsFactory.
 import {DiamondCutFacet} from "../../../src/facets/DiamondCutFacet.sol";
 import {IAccessControlFacet, AccessControlFacet} from "../../../src/facets/AccessControlFacet.sol";
 import {IDiamondCut} from "../../../src/interfaces/facets/IDiamondCut.sol";
-import {IMoreVaultsRegistry, IAaveOracle} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {IMoreVaultsRegistry, IOracleRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {IAggregatorV2V3Interface} from "../../../src/interfaces/Chainlink/IAggregatorV2V3Interface.sol";
 import {MockERC20} from "../../mocks/MockERC20.sol";
 import {VaultFacet} from "../../../src/facets/VaultFacet.sol";
 
@@ -291,13 +292,18 @@ contract VaultsFactoryTest is Test {
             abi.encode(oracle)
         );
 
+        // IOracleRegistry.AssetSource memory assetSource = IOracleRegistry
+        //     .AssetSource({
+        //         aggregator: IAggregatorV2V3Interface(asset),
+        //         stalenessThreshold: 1000
+        //     });
         vm.mockCall(
             oracle,
             abi.encodeWithSelector(
-                IAaveOracle.getSourceOfAsset.selector,
+                IOracleRegistry.getOracleInfo.selector,
                 asset
             ),
-            abi.encode(address(1000))
+            abi.encode(address(1000), uint96(1000))
         );
 
         bytes memory accessControlFacetInitData = abi.encode(
