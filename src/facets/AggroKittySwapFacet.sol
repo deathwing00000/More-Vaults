@@ -43,6 +43,7 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter.Trade calldata _trade
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(_router);
         MoreVaultsLib.validateAssetAvailable(_trade.path[0]);
         MoreVaultsLib.validateAssetAvailable(
             _trade.path[_trade.path.length - 1]
@@ -61,6 +62,7 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter.Trade calldata _trade
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(_router);
         MoreVaultsLib.validateAssetAvailable(address(0));
         MoreVaultsLib.validateAssetAvailable(
             _trade.path[_trade.path.length - 1]
@@ -79,6 +81,7 @@ contract AggroKittySwapFacet is IAggroKittySwapFacet, BaseFacetInitializer {
         IAggroKittyRouter.Trade calldata _trade
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(_router);
         MoreVaultsLib.validateAssetAvailable(_trade.path[0]);
         MoreVaultsLib.validateAssetAvailable(address(0));
 

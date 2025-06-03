@@ -104,6 +104,7 @@ contract CurveLiquidityGaugeV6Facet is
      */
     function depositCurveGaugeV6(address gauge, uint256 amount) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(gauge);
         ILiquidityGaugeV6 _gauge = ILiquidityGaugeV6(gauge);
         uint256 numberOfRewardTokens = _gauge.reward_count();
 
@@ -122,6 +123,7 @@ contract CurveLiquidityGaugeV6Facet is
      */
     function withdrawCurveGaugeV6(address gauge, uint256 amount) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(gauge);
         ILiquidityGaugeV6(gauge).withdraw(amount, false);
 
         IERC20 lpToken = IERC20(ILiquidityGaugeV6(gauge).lp_token());
@@ -135,6 +137,7 @@ contract CurveLiquidityGaugeV6Facet is
      */
     function claimRewardsCurveGaugeV6(address gauge) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(gauge);
         ILiquidityGaugeV6 _gauge = ILiquidityGaugeV6(gauge);
         uint256 numberOfRewardTokens = _gauge.reward_count();
 
@@ -152,6 +155,7 @@ contract CurveLiquidityGaugeV6Facet is
      */
     function mintCRV(address minterContract, address gauge) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(minterContract);
         IMinter minter = IMinter(minterContract);
         MoreVaultsLib.validateAssetAvailable(minter.token());
         minter.mint(gauge);

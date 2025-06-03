@@ -19,9 +19,7 @@ contract VaultsRegistry is BaseVaultsRegistry {
     uint96 private constant MAX_PROTOCOL_FEE = 5000; // 50%
 
     /**
-     * @notice Add new facet with its selectors or additional selector for existing facet
-     * @param facet Address of the facet contract
-     * @param selectors Array of function selectors
+     * @inheritdoc IMoreVaultsRegistry
      */
     function addFacet(
         address facet,
@@ -52,8 +50,7 @@ contract VaultsRegistry is BaseVaultsRegistry {
     }
 
     /**
-     * @notice Remove facet and all its selectors
-     * @param facet Address of the facet contract
+     * @inheritdoc IMoreVaultsRegistry
      */
     function removeFacet(
         address facet
@@ -89,10 +86,7 @@ contract VaultsRegistry is BaseVaultsRegistry {
     }
 
     /**
-     * @notice Set protocol fee info
-     * @param vault The address of the vault
-     * @param recipient The address of the recipient
-     * @param fee The fee
+     * @inheritdoc IMoreVaultsRegistry
      */
     function setProtocolFeeInfo(
         address vault,
@@ -111,10 +105,7 @@ contract VaultsRegistry is BaseVaultsRegistry {
     }
 
     /**
-     * @notice Get protocol fee info
-     * @param vault The address of the vault
-     * @return recipient The address of the recipient
-     * @return fee The fee
+     * @inheritdoc IMoreVaultsRegistry
      */
     function protocolFeeInfo(
         address vault
@@ -122,6 +113,38 @@ contract VaultsRegistry is BaseVaultsRegistry {
         return (_protocolFeeInfo[vault].recipient, _protocolFeeInfo[vault].fee);
     }
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function addToWhitelist(
+        address protocol
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setWhitelisted(protocol, true);
+    }
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function removeFromWhitelist(
+        address protocol
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setWhitelisted(protocol, false);
+    }
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function isWhitelisted(
+        address protocol
+    ) external view override returns (bool) {
+        return _isWhitelisted(protocol);
+    }
+
+    /**
+     * @notice Internal function to check if facet is allowed
+     * @param facet Address to check
+     * @return bool True if facet is allowed
+     */
     function _isFacetAllowed(
         address facet
     ) internal view override returns (bool) {

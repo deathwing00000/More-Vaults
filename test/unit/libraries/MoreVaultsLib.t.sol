@@ -11,6 +11,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract MoreVaultsLibTest is Test {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -480,5 +481,19 @@ contract MoreVaultsLibTest is Test {
             newCapacity,
             "Should set deposit capacity correctly"
         );
+    }
+
+    function test_validateAddressWhitelisted_ShouldNotRevertWhenAddressIsWhitelisted()
+        public
+    {
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                address(this)
+            ),
+            abi.encode(true)
+        );
+        MoreVaultsLib.validateAddressWhitelisted(address(this));
     }
 }

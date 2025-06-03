@@ -8,6 +8,7 @@ import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol"
 import {ISwapRouter} from "../../../src/interfaces/Uniswap/v3/ISwapRouter.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract UniswapV3FacetTest is Test {
     UniswapV3Facet public facet;
@@ -19,6 +20,7 @@ contract UniswapV3FacetTest is Test {
     address public token2 = address(5);
     address public zeroAddress = address(0);
     address public recipient = address(6);
+    address public registry = address(7);
 
     // Storage slot for AccessControlStorage struct
     bytes32 constant ACCESS_CONTROL_STORAGE_POSITION =
@@ -50,6 +52,7 @@ contract UniswapV3FacetTest is Test {
         assets[0] = token1;
         assets[1] = token2;
         MoreVaultsStorageHelper.setAvailableAssets(address(facet), assets);
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(address(facet), registry);
 
         // Setup path for swaps
         path = abi.encodePacked(token1, fee, token2);
@@ -61,6 +64,15 @@ contract UniswapV3FacetTest is Test {
         vm.mockCall(
             token1,
             abi.encodeWithSelector(IERC20.approve.selector),
+            abi.encode(true)
+        );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
             abi.encode(true)
         );
     }
@@ -143,6 +155,97 @@ contract UniswapV3FacetTest is Test {
             exactOutputSingleParams
         );
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV3Facet(facet).exactOutput(router, exactOutputParams);
+
+        vm.stopPrank();
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenCalledByNonWhitelistedRouter()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        ISwapRouter.ExactInputSingleParams
+            memory exactInputSingleParams = ISwapRouter.ExactInputSingleParams({
+                tokenIn: token1,
+                tokenOut: token2,
+                fee: fee,
+                recipient: recipient,
+                deadline: deadline,
+                amountIn: amountIn,
+                amountOutMinimum: amountOutMin,
+                sqrtPriceLimitX96: sqrtPriceLimitX96
+            });
+
+        ISwapRouter.ExactInputParams memory exactInputParams = ISwapRouter
+            .ExactInputParams({
+                path: path,
+                recipient: recipient,
+                deadline: deadline,
+                amountIn: amountIn,
+                amountOutMinimum: amountOutMin
+            });
+
+        ISwapRouter.ExactOutputSingleParams
+            memory exactOutputSingleParams = ISwapRouter
+                .ExactOutputSingleParams({
+                    tokenIn: token1,
+                    tokenOut: token2,
+                    fee: fee,
+                    recipient: recipient,
+                    deadline: deadline,
+                    amountOut: amountOut,
+                    amountInMaximum: amountInMax,
+                    sqrtPriceLimitX96: sqrtPriceLimitX96
+                });
+
+        ISwapRouter.ExactOutputParams memory exactOutputParams = ISwapRouter
+            .ExactOutputParams({
+                path: path,
+                recipient: recipient,
+                deadline: deadline,
+                amountOut: amountOut,
+                amountInMaximum: amountInMax
+            });
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(false)
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV3Facet(facet).exactInputSingle(router, exactInputSingleParams);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV3Facet(facet).exactInput(router, exactInputParams);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV3Facet(facet).exactOutputSingle(
+            router,
+            exactOutputSingleParams
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
         UniswapV3Facet(facet).exactOutput(router, exactOutputParams);
 
         vm.stopPrank();

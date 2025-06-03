@@ -113,4 +113,32 @@ contract PermissionlessVaultsRegistryTest is Test {
             "Should return USDC decimals"
         );
     }
+
+    function test_addToWhitelist_ShouldRevertForPermissionless() public {
+        vm.prank(admin);
+        vm.expectRevert(
+            PermissionlessVaultsRegistry
+                .AllProtocolsWhitelistedByDefault
+                .selector
+        );
+        registry.addToWhitelist(vault);
+    }
+
+    function test_removeFromWhitelist_ShouldRevertForPermissionless() public {
+        vm.prank(admin);
+        vm.expectRevert(
+            PermissionlessVaultsRegistry
+                .AllProtocolsWhitelistedByDefault
+                .selector
+        );
+        registry.removeFromWhitelist(vault);
+    }
+
+    function test_isWhitelisted_ShouldReturnTrue() public {
+        assertEq(
+            registry.isWhitelisted(address(1)),
+            true,
+            "Should be whitelisted by default"
+        );
+    }
 }

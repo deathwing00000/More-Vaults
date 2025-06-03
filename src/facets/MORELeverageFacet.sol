@@ -96,6 +96,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         IOrigamiInvestment.InvestQuoteData calldata quoteData
     ) external returns (uint256 investmentAmount) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(lovToken);
         address fromToken = quoteData.fromToken;
         MoreVaultsLib.validateAssetAvailable(fromToken);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -116,6 +117,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         IOrigamiInvestment.InvestQuoteData calldata quoteData
     ) external returns (uint256 investmentAmount) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(lovToken);
         MoreVaultsLib.validateAssetAvailable(quoteData.fromToken);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -133,6 +135,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) public returns (uint256 toTokenAmount) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(lovToken);
         MoreVaultsLib.validateAssetAvailable(quoteData.toToken);
 
         toTokenAmount = _exitTo(lovToken, quoteData, false);
@@ -146,6 +149,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         IOrigamiInvestment.ExitQuoteData calldata quoteData
     ) public returns (uint256 toTokenAmount) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(lovToken);
         MoreVaultsLib.validateAssetAvailable(address(0));
 
         toTokenAmount = _exitTo(lovToken, quoteData, true);
@@ -164,6 +168,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         uint128 maxNewAL
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(manager);
         IOrigamiLovTokenFlashAndBorrowManager.RebalanceUpParams
             memory params = IOrigamiLovTokenFlashAndBorrowManager
                 .RebalanceUpParams({
@@ -190,6 +195,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         uint128 maxNewAL
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(manager);
         IOrigamiLovTokenFlashAndBorrowManager.RebalanceUpParams
             memory params = IOrigamiLovTokenFlashAndBorrowManager
                 .RebalanceUpParams({
@@ -215,6 +221,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         uint128 maxNewAL
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(manager);
         IOrigamiLovTokenFlashAndBorrowManager.RebalanceDownParams
             memory params = IOrigamiLovTokenFlashAndBorrowManager
                 .RebalanceDownParams({
@@ -239,6 +246,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         uint128 maxNewAL
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(manager);
         IOrigamiLovTokenFlashAndBorrowManager.RebalanceDownParams
             memory params = IOrigamiLovTokenFlashAndBorrowManager
                 .RebalanceDownParams({

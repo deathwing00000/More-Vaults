@@ -6,6 +6,7 @@ import {BaseFacetInitializer, IMultiRewardsFacet, MultiRewardsFacet, IMultiRewar
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract MultiRewardsFacetTest is Test {
     MultiRewardsFacet public facet;
@@ -14,6 +15,7 @@ contract MultiRewardsFacetTest is Test {
     address public lpToken = address(1111);
     address public staking = address(2222);
     address public rewardToken = address(3333);
+    address public registry = address(4444);
 
     function setUp() public {
         // Deploy facet
@@ -24,6 +26,16 @@ contract MultiRewardsFacetTest is Test {
         MoreVaultsStorageHelper.setAvailableAssets(
             address(facet),
             rewardTokens
+        );
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(address(facet), registry);
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                staking
+            ),
+            abi.encode(true)
         );
     }
 
@@ -146,6 +158,31 @@ contract MultiRewardsFacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_stake_ShouldRevertIfStakingAddressIsNotWhitelisted() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                staking
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                staking
+            )
+        );
+        facet.stake(staking, amount);
+
+        vm.stopPrank();
+    }
+
     function test_withdraw_ShouldPerformWithdraw() public {
         vm.startPrank(address(facet));
 
@@ -172,6 +209,33 @@ contract MultiRewardsFacetTest is Test {
         facet.withdraw(staking, amount);
 
         assertEq(MoreVaultsStorageHelper.getStaked(address(facet), lpToken), 0);
+
+        vm.stopPrank();
+    }
+
+    function test_withdraw_ShouldRevertIfStakingAddressIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                staking
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                staking
+            )
+        );
+        facet.withdraw(staking, amount);
 
         vm.stopPrank();
     }
@@ -295,6 +359,54 @@ contract MultiRewardsFacetTest is Test {
             staking,
             "Stored staking should be equal to staking address"
         );
+
+        vm.stopPrank();
+    }
+
+    function test_getReward_ShouldRevertIfStakingAddressIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                staking
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                staking
+            )
+        );
+        facet.getReward(staking);
+
+        vm.stopPrank();
+    }
+
+    function test_exit_ShouldRevertIfStakingAddressIsNotWhitelisted() public {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                staking
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                staking
+            )
+        );
+        facet.exit(staking);
 
         vm.stopPrank();
     }

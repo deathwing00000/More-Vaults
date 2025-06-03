@@ -145,6 +145,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint16 referralCode
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -163,8 +164,9 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         address asset,
         uint256 amount
     ) external returns (uint256 withdrawnAmount) {
-        MoreVaultsLib.validateAssetAvailable(asset);
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(pool);
+        MoreVaultsLib.validateAssetAvailable(asset);
 
         return _withdraw(pool, asset, amount, address(this));
     }
@@ -181,6 +183,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         address onBehalfOf
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -218,7 +221,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint256 interestRateMode
     ) external virtual returns (uint256 repaidAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -258,7 +261,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint256 interestRateMode
     ) external returns (uint256 repaidAmount) {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -299,7 +302,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint256 interestRateMode
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -331,7 +334,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         address user
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         IPool(pool).rebalanceStableBorrowRate(asset, user);
@@ -346,7 +349,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         bool useAsCollateral
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
         IPool(pool).setUserUseReserveAsCollateral(asset, useAsCollateral);
     }
@@ -365,7 +368,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint16 referralCode
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         IPool(pool).flashLoan(
             receiverAddress,
             assets,
@@ -417,7 +420,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint16 referralCode
     ) public {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         IPool(pool).flashLoanSimple(
@@ -434,7 +437,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
      */
     function setUserEMode(address pool, uint8 categoryId) external {
         AccessControlLib.validateDiamond(msg.sender);
-
+        MoreVaultsLib.validateAddressWhitelisted(pool);
         IPool(pool).setUserEMode(categoryId);
     }
 
@@ -449,6 +452,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         returns (address[] memory rewardsList, uint256[] memory claimedAmounts)
     {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(rewardsController);
         for (uint i; i < assets.length; ) {
             MoreVaultsLib.validateAssetAvailable(assets[i]);
             unchecked {

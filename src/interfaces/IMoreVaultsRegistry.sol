@@ -54,6 +54,13 @@ interface IMoreVaultsRegistry {
     );
 
     /**
+     * @dev Emitted when protocol is whitelisted
+     * @param protocol Address of the protocol
+     * @param whitelisted True if protocol is whitelisted, false otherwise
+     */
+    event AddressWhitelisted(address indexed protocol, bool whitelisted);
+
+    /**
      * @notice Initialize the registry
      * @param _oracle Address of the oracle
      * @param _usdStableTokenAddress Address of the USD stable token
@@ -157,4 +164,23 @@ interface IMoreVaultsRegistry {
      * @return bool True if facet is allowed
      */
     function isFacetAllowed(address facet) external view returns (bool);
+
+    /**
+     * @notice Add protocol to whitelist
+     * @param protocol Address of the protocol
+     */
+    function addToWhitelist(address protocol) external;
+
+    /**
+     * @notice Remove protocol from whitelist
+     * @param protocol Address of the protocol
+     */
+    function removeFromWhitelist(address protocol) external;
+
+    /**
+     * @notice Check if protocol is whitelisted
+     * @param protocol Address of the protocol
+     * @return bool True if protocol is whitelisted
+     */
+    function isWhitelisted(address protocol) external view returns (bool);
 }

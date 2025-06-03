@@ -100,6 +100,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountA, uint amountB, uint liquidity) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(tokenA);
         MoreVaultsLib.validateAssetAvailable(tokenB);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -145,6 +146,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountToken, uint amountETH, uint liquidity) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -185,6 +187,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountA, uint amountB) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(tokenA);
         MoreVaultsLib.validateAssetAvailable(tokenB);
         (amountA, amountB) = _removeLiquidity(
@@ -210,6 +213,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountToken, uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -235,6 +239,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[0]);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
@@ -260,6 +265,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[0]);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
@@ -285,6 +291,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -309,6 +316,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[0]);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -336,6 +344,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[0]);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -362,6 +371,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint[] memory amounts) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -384,6 +394,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external returns (uint amountETH) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(token);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -420,6 +431,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[0]);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
 
@@ -445,6 +457,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[path.length - 1]);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -467,6 +480,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
         uint deadline
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         MoreVaultsLib.validateAssetAvailable(path[0]);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();

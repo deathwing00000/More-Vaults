@@ -36,6 +36,7 @@ library MoreVaultsLib {
     error NoOracleForAsset();
     error FacetHasBalance(address facet);
     error AccountingFailed(address facet);
+    error UnsupportedProtocol(address protocol);
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using Math for uint256;
@@ -133,6 +134,14 @@ library MoreVaultsLib {
         assembly {
             $.slot := ERC4626StorageLocation
         }
+    }
+
+    function validateAddressWhitelisted(address protocol) internal view {
+        AccessControlLib.AccessControlStorage storage acs = AccessControlLib
+            .accessControlStorage();
+        if (
+            !IMoreVaultsRegistry(acs.moreVaultsRegistry).isWhitelisted(protocol)
+        ) revert UnsupportedProtocol(protocol);
     }
 
     function validateAssetAvailable(address asset) internal view {

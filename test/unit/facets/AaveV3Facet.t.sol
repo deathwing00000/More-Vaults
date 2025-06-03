@@ -16,6 +16,7 @@ import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.s
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 
 contract AaveV3FacetTest is Test {
     // Test addresses
@@ -110,6 +111,15 @@ contract AaveV3FacetTest is Test {
             ),
             abi.encode(token1)
         );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                pool
+            ),
+            abi.encode(true)
+        );
     }
 
     function test_facetName_ShouldReturnCorrectName() public view {
@@ -196,6 +206,137 @@ contract AaveV3FacetTest is Test {
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
         AaveV3Facet(facet).setUserEMode(pool, 1);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        AaveV3Facet(facet).claimAllRewards(rewardsController, new address[](1));
+
+        vm.stopPrank();
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenCalledToNonWhitelistedPool()
+        public
+    {
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                pool
+            ),
+            abi.encode(false)
+        );
+        vm.startPrank(facet);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).supply(pool, token1, 1e18, 0);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).borrow(pool, token1, 1e18, 1, 0, address(this));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).repay(pool, token1, 1e18, 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).repayWithATokens(pool, token1, 1e18, 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).swapBorrowRateMode(pool, token1, 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).rebalanceStableBorrowRate(
+            pool,
+            token1,
+            address(this)
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).setUserUseReserveAsCollateral(pool, token1, true);
+
+        bytes memory params = "";
+        address[] memory assets = new address[](1);
+        assets[0] = token1;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18;
+        uint256[] memory interestRateModes = new uint256[](1);
+        interestRateModes[0] = 1;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).flashLoan(
+            pool,
+            address(this),
+            assets,
+            amounts,
+            interestRateModes,
+            address(this),
+            params,
+            0
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).flashLoanSimple(
+            pool,
+            address(this),
+            token1,
+            1e18,
+            params,
+            0
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                pool
+            )
+        );
+        AaveV3Facet(facet).setUserEMode(pool, 1);
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                rewardsController
+            ),
+            abi.encode(false)
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                rewardsController
+            )
+        );
         AaveV3Facet(facet).claimAllRewards(rewardsController, new address[](1));
 
         vm.stopPrank();
@@ -882,6 +1023,15 @@ contract AaveV3FacetTest is Test {
             abi.encode(rewardsList, claimedAmounts)
         );
 
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                rewardsController
+            ),
+            abi.encode(true)
+        );
+
         vm.prank(facet);
         (
             address[] memory actualRewardsList,
@@ -901,6 +1051,15 @@ contract AaveV3FacetTest is Test {
     function test_claimAllRewards_ShouldRevertWithUnsupportedAsset() public {
         address[] memory assets = new address[](1);
         assets[0] = address(0x123); // Unsupported asset
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                rewardsController
+            ),
+            abi.encode(true)
+        );
 
         vm.prank(facet);
         vm.expectRevert(

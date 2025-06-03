@@ -8,6 +8,7 @@ import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol"
 import {ISwap} from "../../../src/interfaces/iZUMi/ISwap.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract IzumiSwapFacetTest is Test {
     IzumiSwapFacet public facet;
@@ -19,6 +20,7 @@ contract IzumiSwapFacetTest is Test {
     address public token2 = address(5);
     address public zeroAddress = address(0);
     address public recipient = address(6);
+    address public registry = address(7);
 
     // Storage slot for AccessControlStorage struct
     bytes32 constant ACCESS_CONTROL_STORAGE_POSITION =
@@ -48,6 +50,10 @@ contract IzumiSwapFacetTest is Test {
         assets[0] = token1;
         assets[1] = token2;
         MoreVaultsStorageHelper.setAvailableAssets(address(facet), assets);
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(
+            address(facet),
+            address(registry)
+        );
 
         // Setup path for swaps
         path = abi.encodePacked(token1, token2);
@@ -72,6 +78,14 @@ contract IzumiSwapFacetTest is Test {
             swapContract,
             abi.encodeWithSelector(ISwap.swapDesire.selector),
             abi.encode(maxPayed, desiredAmount)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                swapContract
+            ),
+            abi.encode(true)
         );
     }
 
@@ -121,6 +135,56 @@ contract IzumiSwapFacetTest is Test {
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
         IzumiSwapFacet(facet).swapAmount(swapContract, swapAmountParams);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        IzumiSwapFacet(facet).swapDesire(swapContract, swapDesireParams);
+
+        vm.stopPrank();
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenSwapContractIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        ISwap.SwapAmountParams memory swapAmountParams = ISwap
+            .SwapAmountParams({
+                path: path,
+                recipient: recipient,
+                amount: uint128(amount),
+                minAcquired: minAcquire,
+                deadline: deadline
+            });
+
+        ISwap.SwapDesireParams memory swapDesireParams = ISwap
+            .SwapDesireParams({
+                path: path,
+                recipient: recipient,
+                desire: uint128(desiredAmount),
+                maxPayed: maxPayed,
+                deadline: deadline
+            });
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                swapContract
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                swapContract
+            )
+        );
+        IzumiSwapFacet(facet).swapAmount(swapContract, swapAmountParams);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                swapContract
+            )
+        );
         IzumiSwapFacet(facet).swapDesire(swapContract, swapDesireParams);
 
         vm.stopPrank();

@@ -10,6 +10,8 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 
 contract AggroKittySwapFacetTest is Test {
     // Test addresses
@@ -21,6 +23,7 @@ contract AggroKittySwapFacetTest is Test {
     address public token2 = address(3);
     address public wrappedNative = address(4);
     address public recipient = address(9);
+    address public registry = address(10);
 
     // Test amounts
     uint256 constant AMOUNT = 1e18;
@@ -46,6 +49,7 @@ contract AggroKittySwapFacetTest is Test {
         MoreVaultsStorageHelper.setWrappedNative(facet, wrappedNative);
         MoreVaultsStorageHelper.setAvailableAssets(facet, availableAssets);
         MoreVaultsStorageHelper.setCurator(facet, curator);
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, registry);
 
         // Mock token approvals
         vm.mockCall(
@@ -75,6 +79,14 @@ contract AggroKittySwapFacetTest is Test {
             abi.encode(MIN_AMOUNT)
         );
 
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(true)
+        );
         vm.deal(facet, 100000 ether);
     }
 
@@ -122,6 +134,57 @@ contract AggroKittySwapFacetTest is Test {
         AggroKittySwapFacet(facet).swapNoSplitFromNative(router, trade);
 
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        AggroKittySwapFacet(facet).swapNoSplitToNative(router, trade);
+
+        vm.stopPrank();
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenCalledToNonWhitelistedRouter()
+        public
+    {
+        vm.startPrank(facet);
+
+        address[] memory path = new address[](2);
+        path[0] = token1;
+        path[1] = token2;
+        IAggroKittyRouter.Trade memory trade = IAggroKittyRouter.Trade({
+            amountIn: AMOUNT,
+            amountOut: MIN_AMOUNT,
+            path: path,
+            adapters: new address[](0)
+        });
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        AggroKittySwapFacet(facet).swapNoSplit(router, trade);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        AggroKittySwapFacet(facet).swapNoSplitFromNative(router, trade);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
         AggroKittySwapFacet(facet).swapNoSplitToNative(router, trade);
 
         vm.stopPrank();

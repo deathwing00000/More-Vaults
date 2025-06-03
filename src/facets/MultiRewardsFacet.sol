@@ -92,6 +92,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
      */
     function stake(address staking, uint256 amount) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(staking);
         IMultiRewards _staking = IMultiRewards(staking);
         address[] memory rewardTokens = _staking.getRewardTokens();
         for (uint256 i; i < rewardTokens.length; ) {
@@ -115,6 +116,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
      */
     function withdraw(address staking, uint256 amount) public {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(staking);
         IMultiRewards(staking).withdraw(amount);
 
         IERC20 stakingToken = IMultiRewards(staking).stakingToken();
@@ -128,6 +130,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
      */
     function getReward(address staking) public {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(staking);
         IMultiRewards _staking = IMultiRewards(staking);
         address[] memory rewardTokens = _staking.getRewardTokens();
         _staking.getReward();
@@ -144,6 +147,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
      */
     function exit(address staking) external {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(staking);
         withdraw(staking, IMultiRewards(staking).balanceOf(address(this)));
         getReward(staking);
     }

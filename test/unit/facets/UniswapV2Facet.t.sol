@@ -10,6 +10,8 @@ import {IUniswapV2Factory} from "../../../src/interfaces/Uniswap/v2/IUniswapV2Fa
 import {IUniswapV2Pair} from "../../../src/interfaces/Uniswap/v2/IUniswapV2Pair.sol";
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 
 contract UniswapV2FacetTest is Test {
     // Test addresses
@@ -22,6 +24,7 @@ contract UniswapV2FacetTest is Test {
     address public pair = address(6);
     address public curator = address(7);
     address public user = address(8);
+    address public registry = address(9);
     uint256 public deadline = block.timestamp + 1 hours;
 
     // Test amounts
@@ -44,6 +47,7 @@ contract UniswapV2FacetTest is Test {
         MoreVaultsStorageHelper.setWrappedNative(facet, wrappedNative);
         MoreVaultsStorageHelper.setAvailableAssets(facet, availableAssets);
         MoreVaultsStorageHelper.setCurator(facet, curator);
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, registry);
 
         // Mock factory and pair
         vm.mockCall(
@@ -69,7 +73,14 @@ contract UniswapV2FacetTest is Test {
             ),
             abi.encode(pair)
         );
-
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(true)
+        );
         vm.deal(facet, 100000 ether);
     }
 
@@ -197,6 +208,195 @@ contract UniswapV2FacetTest is Test {
             deadline
         );
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        UniswapV2Facet(facet).swapTokensForExactTokens(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.stopPrank();
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenCalledByNonWhitelistedRouter()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        address[] memory path = new address[](2);
+        path[0] = token1;
+        path[1] = token2;
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).addLiquidity(
+            router,
+            token1,
+            token2,
+            AMOUNT,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).addLiquidityETH(
+            router,
+            token1,
+            AMOUNT,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).removeLiquidity(
+            router,
+            token1,
+            token2,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).removeLiquidityETH(
+            router,
+            token1,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).removeLiquidityETHSupportingFeeOnTransferTokens(
+            router,
+            token1,
+            AMOUNT,
+            MIN_AMOUNT,
+            MIN_AMOUNT,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet)
+            .swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                router,
+                AMOUNT,
+                MIN_AMOUNT,
+                path,
+                deadline
+            );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet)
+            .swapExactETHForTokensSupportingFeeOnTransferTokens(
+                router,
+                AMOUNT,
+                MIN_AMOUNT,
+                path,
+                deadline
+            );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet)
+            .swapExactTokensForETHSupportingFeeOnTransferTokens(
+                router,
+                AMOUNT,
+                MIN_AMOUNT,
+                path,
+                deadline
+            );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).swapExactETHForTokens(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).swapExactTokensForETH(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
+        UniswapV2Facet(facet).swapExactTokensForTokens(
+            router,
+            AMOUNT,
+            MIN_AMOUNT,
+            path,
+            deadline
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
+            )
+        );
         UniswapV2Facet(facet).swapTokensForExactTokens(
             router,
             AMOUNT,

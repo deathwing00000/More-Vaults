@@ -97,6 +97,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         uint256 _min_dy
     ) external payable returns (uint256) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(curveRouter);
         address inputToken = _route[0];
         (
             uint256 index,
@@ -158,6 +159,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         address[5] calldata _pools
     ) external payable returns (uint256) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(curveRouter);
         address inputToken = _route[0];
         (
             uint256 index,

@@ -10,6 +10,7 @@ import {BaseVaultsRegistry} from "./BaseVaultsRegistry.sol";
 contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
     error AllFacetsAllowedByDefault();
     error FeeCannotBeSet();
+    error AllProtocolsWhitelistedByDefault();
 
     function _isFacetAllowed(address) internal pure override returns (bool) {
         return true;
@@ -47,5 +48,26 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
         address
     ) external pure override returns (address, uint96) {
         return (address(0), 0);
+    }
+
+    /**
+     * @notice This function is disabled in PermissionlessVaultsRegistry as protocol fee cannot be set
+     */
+    function addToWhitelist(address) external pure override {
+        revert AllProtocolsWhitelistedByDefault();
+    }
+
+    /**
+     * @notice This function is disabled in PermissionlessVaultsRegistry as protocol fee cannot be set
+     */
+    function removeFromWhitelist(address) external pure override {
+        revert AllProtocolsWhitelistedByDefault();
+    }
+
+    /**
+     * @notice This function always returns true in PermissionlessVaultsRegistry as all protocols are whitelisted by default
+     */
+    function isWhitelisted(address) external pure override returns (bool) {
+        return true;
     }
 }

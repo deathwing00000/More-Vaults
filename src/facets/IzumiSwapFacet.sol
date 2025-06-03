@@ -50,6 +50,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         ISwap.SwapAmountParams memory params
     ) external payable returns (uint256 cost, uint256 acquire) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(swapContract);
         address inputToken = _getInputTokenAddress(params.path);
         address outputToken = _getOutputTokenAddress(params.path);
         if (params.recipient != address(this)) {
@@ -70,6 +71,7 @@ contract IzumiSwapFacet is IIzumiSwapFacet, BaseFacetInitializer {
         ISwap.SwapDesireParams memory params
     ) external payable returns (uint256 cost, uint256 acquire) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(swapContract);
         address inputToken = _getInputTokenAddress(params.path);
         address outputToken = _getOutputTokenAddress(params.path);
         if (params.recipient != address(this)) {

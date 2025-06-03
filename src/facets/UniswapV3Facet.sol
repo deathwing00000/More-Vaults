@@ -7,7 +7,6 @@ import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 import {IUniswapV3Facet, ISwapRouter} from "../interfaces/facets/IUniswapV3Facet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
-import {console} from "forge-std/console.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -50,6 +49,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         ISwapRouter.ExactInputSingleParams memory params
     ) external payable returns (uint256 amountOut) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
@@ -68,6 +68,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         ISwapRouter.ExactInputParams memory params
     ) external payable returns (uint256 amountOut) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
@@ -88,6 +89,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         ISwapRouter.ExactOutputSingleParams memory params
     ) external payable returns (uint256 amountIn) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
@@ -106,6 +108,7 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         ISwapRouter.ExactOutputParams memory params
     ) external payable returns (uint256 amountIn) {
         AccessControlLib.validateDiamond(msg.sender);
+        MoreVaultsLib.validateAddressWhitelisted(router);
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }

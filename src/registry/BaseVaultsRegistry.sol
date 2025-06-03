@@ -32,6 +32,9 @@ abstract contract BaseVaultsRegistry is
     /// @dev Protocol fee info
     mapping(address => ProtocolFeeInfo) internal _protocolFeeInfo;
 
+    /// @dev Whitelisted addresses of protocols that vault can interact with
+    mapping(address => bool) private _whitelisted;
+
     /// @dev Initialize function
     function initialize(
         address _oracle,
@@ -45,6 +48,9 @@ abstract contract BaseVaultsRegistry is
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function updateOracleRegistry(
         address newOracleRegistry
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -56,31 +62,49 @@ abstract contract BaseVaultsRegistry is
         emit OracleRegistryUpdated(oldOracleRegistry, newOracleRegistry);
     }
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function setProtocolFeeInfo(
         address vault,
         address recipient,
         uint96 fee
     ) external virtual;
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function getFacetSelectors(
         address facet
     ) external view returns (bytes4[] memory) {
         return facetSelectors[facet];
     }
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function getAllowedFacets() external view returns (address[] memory) {
         return facetsList;
     }
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function protocolFeeInfo(
         address vault
     ) external view virtual returns (address, uint96);
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function getDenominationAsset() external view returns (address) {
         if (oracle.BASE_CURRENCY() == address(0)) return usdStableTokenAddress;
         return oracle.BASE_CURRENCY();
     }
 
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function getDenominationAssetDecimals() external view returns (uint8) {
         address denominationAsset = oracle.BASE_CURRENCY();
         if (denominationAsset == address(0))
@@ -89,12 +113,62 @@ abstract contract BaseVaultsRegistry is
     }
 
     /**
-     * @notice Check if facet is allowed
-     * @param facet Address to check
-     * @return bool True if facet is allowed
+     * @inheritdoc IMoreVaultsRegistry
      */
     function isFacetAllowed(address facet) external view returns (bool) {
         return _isFacetAllowed(facet);
+    }
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function addFacet(
+        address facet,
+        bytes4[] calldata selectors
+    ) external virtual;
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function removeFacet(address facet) external virtual;
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function addToWhitelist(address protocol) external virtual;
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function removeFromWhitelist(address protocol) external virtual;
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function isWhitelisted(
+        address protocol
+    ) external view virtual returns (bool);
+
+    /**
+     * @notice Set whitelisted status for protocol
+     * @param protocol Address of the protocol
+     * @param whitelisted True if protocol is whitelisted, false otherwise
+     */
+    function _setWhitelisted(
+        address protocol,
+        bool whitelisted
+    ) internal onlyRole(DEFAULT_ADMIN_ROLE) {
+        _whitelisted[protocol] = whitelisted;
+        emit AddressWhitelisted(protocol, whitelisted);
+    }
+
+    /**
+     * @notice Check if protocol is whitelisted
+     * @param protocol Address of the protocol
+     * @return True if protocol is whitelisted, false otherwise
+     */
+    function _isWhitelisted(address protocol) internal view returns (bool) {
+        return _whitelisted[protocol];
     }
 
     /**
@@ -105,20 +179,4 @@ abstract contract BaseVaultsRegistry is
     function _isFacetAllowed(
         address facet
     ) internal view virtual returns (bool);
-
-    /**
-     * @notice Add new facet with its selectors
-     * @param facet Address of the facet contract
-     * @param selectors Array of function selectors
-     */
-    function addFacet(
-        address facet,
-        bytes4[] calldata selectors
-    ) external virtual;
-
-    /**
-     * @notice Remove facet and all its selectors
-     * @param facet Address of the facet contract
-     */
-    function removeFacet(address facet) external virtual;
 }

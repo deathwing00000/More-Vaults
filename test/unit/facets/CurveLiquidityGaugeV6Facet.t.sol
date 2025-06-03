@@ -6,6 +6,7 @@ import {BaseFacetInitializer, ICurveLiquidityGaugeV6Facet, CurveLiquidityGaugeV6
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract CurveLiquidityGaugeV6FacetTest is Test {
     CurveLiquidityGaugeV6Facet public facet;
@@ -15,6 +16,7 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
     address public gauge = address(2222);
     address public crvMinter = address(2223);
     address public rewardToken = address(3333);
+    address public registry = address(4444);
 
     function setUp() public {
         // Deploy facet
@@ -25,6 +27,16 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
         MoreVaultsStorageHelper.setAvailableAssets(
             address(facet),
             rewardTokens
+        );
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(address(facet), registry);
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                gauge
+            ),
+            abi.encode(true)
         );
     }
 
@@ -115,6 +127,31 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_depositCurveGaugeV6_ShouldRevertIfGaugeIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                gauge
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                gauge
+            )
+        );
+        facet.depositCurveGaugeV6(gauge, 1e18);
+
+        vm.stopPrank();
+    }
+
     function test_withdrawCurveGaugeV6_ShouldPerformWithdraw() public {
         vm.startPrank(address(facet));
 
@@ -144,6 +181,31 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
         facet.withdrawCurveGaugeV6(gauge, amount);
 
         assertEq(MoreVaultsStorageHelper.getStaked(address(facet), lpToken), 0);
+
+        vm.stopPrank();
+    }
+
+    function test_withdrawCurveGaugeV6_ShouldRevertIfGaugeIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                gauge
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                gauge
+            )
+        );
+        facet.withdrawCurveGaugeV6(gauge, 1e18);
 
         vm.stopPrank();
     }
@@ -303,6 +365,31 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_claimRewardsCurveGaugeV6_ShouldRevertIfGaugeIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                gauge
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                gauge
+            )
+        );
+        facet.claimRewardsCurveGaugeV6(gauge);
+
+        vm.stopPrank();
+    }
+
     function test_mintCRV_ShouldPerformMint() public {
         vm.startPrank(address(facet));
 
@@ -316,6 +403,14 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
             crvMinter,
             abi.encodeWithSelector(IMinter.token.selector),
             abi.encode(rewardToken)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                crvMinter
+            ),
+            abi.encode(true)
         );
         facet.mintCRV(crvMinter, gauge);
 
@@ -342,6 +437,39 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
             abi.encodeWithSelector(
                 MoreVaultsLib.UnsupportedAsset.selector,
                 unsupportedToken
+            )
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                crvMinter
+            ),
+            abi.encode(true)
+        );
+        facet.mintCRV(crvMinter, gauge);
+
+        vm.stopPrank();
+    }
+
+    function test_mintCRV_ShouldRevertIfMinterContractIsNotWhitelisted()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                crvMinter
+            ),
+            abi.encode(false)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                crvMinter
             )
         );
         facet.mintCRV(crvMinter, gauge);

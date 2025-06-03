@@ -9,6 +9,8 @@ import {IOrigamiInvestment} from "../../../src/interfaces/Origami/IOrigamiInvest
 import {IOrigamiLovTokenFlashAndBorrowManager} from "../../../src/interfaces/Origami/IOrigamiLovTokenFlashAndBorrowManager.sol";
 import {BaseFacetInitializer} from "../../../src/facets/BaseFacetInitializer.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
+import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract MORELeverageFacetTest is Test {
     // Test addresses
@@ -19,6 +21,7 @@ contract MORELeverageFacetTest is Test {
     address public manager = address(5);
     address public curator = address(7);
     address public user = address(8);
+    address public registry = address(9);
     uint256 public deadline = block.timestamp + 1 hours;
 
     // Test amounts
@@ -45,6 +48,24 @@ contract MORELeverageFacetTest is Test {
         MoreVaultsStorageHelper.setAvailableAssets(facet, availableAssets);
         MoreVaultsStorageHelper.setCurator(facet, curator);
         MoreVaultsStorageHelper.setWrappedNative(facet, address(toToken));
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, address(registry));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                manager
+            ),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                lovToken
+            ),
+            abi.encode(true)
+        );
 
         vm.deal(facet, 100000 ether);
     }
@@ -99,6 +120,72 @@ contract MORELeverageFacetTest is Test {
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
         MORELeverageFacet(facet).exitToToken(lovToken, exitQuoteData);
         vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        MORELeverageFacet(facet).exitToNative(lovToken, exitQuoteData);
+
+        vm.stopPrank();
+    }
+
+    function test_allNonViewFunctions_ShouldRevertWhenCalledByNonWhitelistedAddress()
+        public
+    {
+        vm.startPrank(address(facet));
+        IOrigamiInvestment.InvestQuoteData
+            memory investQuoteData = IOrigamiInvestment.InvestQuoteData({
+                fromToken: fromToken,
+                fromTokenAmount: AMOUNT,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedInvestmentAmount: AMOUNT,
+                minInvestmentAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+        IOrigamiInvestment.ExitQuoteData
+            memory exitQuoteData = IOrigamiInvestment.ExitQuoteData({
+                investmentTokenAmount: AMOUNT,
+                toToken: toToken,
+                maxSlippageBps: MAX_SLIPPAGE_BPS,
+                deadline: deadline,
+                expectedToTokenAmount: AMOUNT,
+                minToTokenAmount: AMOUNT,
+                underlyingInvestmentQuoteData: ""
+            });
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                manager
+            ),
+            abi.encode(false)
+        );
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                lovToken
+            ),
+            abi.encode(false)
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                lovToken
+            )
+        );
+        MORELeverageFacet(facet).investWithToken(lovToken, investQuoteData);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                lovToken
+            )
+        );
+        MORELeverageFacet(facet).exitToToken(lovToken, exitQuoteData);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                lovToken
+            )
+        );
         MORELeverageFacet(facet).exitToNative(lovToken, exitQuoteData);
 
         vm.stopPrank();

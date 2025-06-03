@@ -23,6 +23,12 @@ contract TestBaseVaultsRegistry is BaseVaultsRegistry {
     function protocolFeeInfo(
         address
     ) external view override returns (address, uint96) {}
+
+    function addToWhitelist(address) external override {}
+
+    function removeFromWhitelist(address) external override {}
+
+    function isWhitelisted(address) external view override returns (bool) {}
 }
 
 contract BaseVaultsRegistryTest is Test {

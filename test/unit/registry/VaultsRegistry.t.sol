@@ -332,4 +332,71 @@ contract VaultsRegistryTest is Test {
         );
         vm.stopPrank();
     }
+
+    function test_addToWhitelist_ShouldWhitelistProtocol() public {
+        assertFalse(
+            registry.isWhitelisted(vault),
+            "Should not be whitelisted by default"
+        );
+
+        vm.prank(admin);
+        registry.addToWhitelist(vault);
+
+        assertTrue(
+            registry.isWhitelisted(vault),
+            "Should be whitelisted after add"
+        );
+    }
+
+    function test_removeFromWhitelist_ShouldRemoveProtocolFromWhitelist()
+        public
+    {
+        vm.prank(admin);
+        registry.addToWhitelist(vault);
+        assertTrue(
+            registry.isWhitelisted(vault),
+            "Should be whitelisted after add"
+        );
+
+        vm.prank(admin);
+        registry.removeFromWhitelist(vault);
+
+        assertFalse(
+            registry.isWhitelisted(vault),
+            "Should not be whitelisted after remove"
+        );
+    }
+
+    function test_addToWhitelist_ShouldRevertWhenNotAdmin() public {
+        vm.prank(user);
+        vm.expectRevert();
+        registry.addToWhitelist(vault);
+    }
+
+    function test_removeFromWhitelist_ShouldRevertWhenNotAdmin() public {
+        vm.prank(admin);
+        registry.addToWhitelist(vault);
+
+        vm.prank(user);
+        vm.expectRevert();
+        registry.removeFromWhitelist(vault);
+    }
+
+    function test_isWhitelisted_ShouldReturnCorrectValue() public {
+        assertEq(
+            registry.isWhitelisted(address(1)),
+            false,
+            "Should not be whitelisted by default"
+        );
+        vm.prank(admin);
+        registry.addToWhitelist(address(1));
+        assertTrue(registry.isWhitelisted(address(1)), "Should be whitelisted");
+
+        vm.prank(admin);
+        registry.removeFromWhitelist(address(1));
+        assertFalse(
+            registry.isWhitelisted(address(1)),
+            "Should not be whitelisted after remove"
+        );
+    }
 }

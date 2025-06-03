@@ -176,6 +176,7 @@ contract E2EFlowTest is Test {
         // Deploy registry
         registry = new VaultsRegistry();
         registry.initialize(address(oracleRegistry), USDCe);
+        registry.addToWhitelist(MORE_MARKETS_POOL);
 
         bytes4[] memory functionSelectorsDiamondCutFacet = new bytes4[](1);
         functionSelectorsDiamondCutFacet[0] = IDiamondCut.diamondCut.selector;

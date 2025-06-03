@@ -6,6 +6,7 @@ import {BaseFacetInitializer, ICurveFacet, CurveFacet, ICurveRouter, ICurveViews
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
 
 contract CurveFacetTest is Test {
     CurveFacet public facet;
@@ -18,6 +19,7 @@ contract CurveFacetTest is Test {
     address public token2 = address(5);
     address public recipient = address(6);
     address public pool = address(7);
+    address public registry = address(8);
 
     address[11] public route;
     uint256[5][5] public swap_params;
@@ -43,6 +45,7 @@ contract CurveFacetTest is Test {
         assets[0] = token1;
         assets[1] = token2;
         MoreVaultsStorageHelper.setAvailableAssets(address(facet), assets);
+        MoreVaultsStorageHelper.setMoreVaultsRegistry(address(facet), registry);
 
         // Mock token approvals
         vm.mockCall(
@@ -65,6 +68,15 @@ contract CurveFacetTest is Test {
         swap_params_ng[0][1] = 1; // index of the second token in the pool
         swap_params_ng[0][2] = 1; // default swap
         swap_params_ng[0][3] = 1; // stable pool
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(true)
+        );
     }
 
     function test_facetName_ShouldReturnCorrectName() public view {
@@ -177,6 +189,31 @@ contract CurveFacetTest is Test {
             abi.encodeWithSelector(
                 MoreVaultsLib.UnsupportedAsset.selector,
                 unsupportedToken
+            )
+        );
+        facet.exchangeNg(router, route, swap_params_ng, amount, minAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_exchangeNg_ShouldRevertIfRouterIsNotWhitelisted() public {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(false)
+        );
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
             )
         );
         facet.exchangeNg(router, route, swap_params_ng, amount, minAmount);
@@ -450,6 +487,33 @@ contract CurveFacetTest is Test {
             abi.encodeWithSelector(
                 MoreVaultsLib.UnsupportedAsset.selector,
                 unsupportedToken
+            )
+        );
+        facet.exchange(router, route, swap_params, amount, minAmount, pools);
+
+        vm.stopPrank();
+    }
+
+    function test_exchange_ShouldRevertIfRouterIsNotWhitelisted() public {
+        vm.startPrank(address(facet));
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                router
+            ),
+            abi.encode(false)
+        );
+
+        uint256 amount = 1e18;
+        uint256 minAmount = 0.9e18;
+        address[5] memory pools; // Array of pools for swaps via zap contracts. This parameter is only needed for swap_type = 3.
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MoreVaultsLib.UnsupportedProtocol.selector,
+                router
             )
         );
         facet.exchange(router, route, swap_params, amount, minAmount, pools);
