@@ -11,6 +11,8 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     /// @param asset Address of the unsupported asset
     error UnsupportedAsset(address asset);
 
+    function beforeAccountingCurveFacet() external;
+
     function accountingCurveFacet() external view returns (uint256);
 
     /// @notice Performs up to 5 swaps in a single transaction.
