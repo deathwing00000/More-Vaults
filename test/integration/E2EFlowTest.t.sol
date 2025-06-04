@@ -38,7 +38,7 @@ import {IOracleRegistry, IAggregatorV2V3Interface} from "../../src/interfaces/IO
 import {console} from "forge-std/console.sol";
 
 contract MockMinter {
-    function token() external view returns (address) {
+    function token() external pure returns (address) {
         return address(0);
     }
 }
