@@ -53,7 +53,10 @@ contract CurveLiquidityGaugeV6Facet is
         ds.supportedInterfaces[
             type(ICurveLiquidityGaugeV6Facet).interfaceId
         ] = true;
-        (address facetAddress, address minter) = abi.decode(data, (address, address));
+        (address facetAddress, address minter) = abi.decode(
+            data,
+            (address, address)
+        );
         ds.facetsForAccounting.push(facetAddress);
         ds.beforeAccountingFacets.push(facetAddress);
         ds.minter = minter;
@@ -74,10 +77,10 @@ contract CurveLiquidityGaugeV6Facet is
         address[] memory gaugesArray = gauges.values();
         if (gaugesArray.length == 0) return;
 
-        for (uint256 i = 0; i < gaugesArray.length;) {
+        for (uint256 i = 0; i < gaugesArray.length; ) {
             address[8] memory gaugesArray8;
             uint256 batchSize;
-            
+
             for (uint256 j = 0; j < 8 && i + j < gaugesArray.length; j++) {
                 gaugesArray8[j] = gaugesArray[i + j];
                 batchSize++;

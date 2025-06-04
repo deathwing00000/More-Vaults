@@ -29,6 +29,7 @@ library MoreVaultsStorageHelper {
     uint256 constant TIME_LOCK_PERIOD = 15;
     uint256 constant STAKING_ADDRESSES = 16;
     uint256 constant STAKED = 17;
+    uint256 constant MINTER = 18;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -871,5 +872,15 @@ library MoreVaultsStorageHelper {
                     bytes32(uint256(uint160(tokenAddress)))
                 )
             );
+    }
+
+    function setMinter(address contractAddress, address minter) internal {
+        setStorageAddress(contractAddress, MINTER, minter);
+    }
+
+    function getMinter(
+        address contractAddress
+    ) internal view returns (address) {
+        return getStorageAddress(contractAddress, MINTER);
     }
 }

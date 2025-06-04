@@ -96,11 +96,11 @@ library MoreVaultsLib {
         // TODO: refactor staking addresses approach
         mapping(bytes32 => EnumerableSet.AddressSet) stakingAddresses;
         mapping(address => uint256) staked;
+        address minter;
         uint256 nativeBalanceForAccounting;
         address[] beforeAccountingFacets;
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
-        address minter;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
