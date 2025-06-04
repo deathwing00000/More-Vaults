@@ -123,7 +123,7 @@ contract VaultFacet is
             if (wrappedNative == asset) {
                 _totalAssets += MoreVaultsLib.convertToUnderlying(
                     wrappedNative,
-                    ds.nativeBalanceForAccounting,
+                    _getNativeBalance(),
                     Math.Rounding.Floor
                 );
             }
@@ -344,6 +344,9 @@ contract VaultFacet is
     ) external payable whenNotPaused returns (uint256 shares) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        if (msg.value > 0) {
+            ds.isNativeDeposit = true;
+        }
         uint256 newTotalAssets = _accrueInterest();
 
         ds.lastTotalAssets = newTotalAssets;
@@ -383,7 +386,9 @@ contract VaultFacet is
         _deposit(_msgSender(), receiver, tokens, assets, shares);
 
         ds.lastTotalAssets = ds.lastTotalAssets + totalConvertedAmount;
-        ds.nativeBalanceForAccounting = address(this).balance;
+        if (ds.isNativeDeposit) {
+            ds.isNativeDeposit = false;
+        }
     }
 
     /**
@@ -401,6 +406,15 @@ contract VaultFacet is
         MoreVaultsLib._setFee(_fee);
     }
 
+    /**
+     * @notice Convert assets to shares
+     * @dev Convert assets to shares
+     * @param assets The assets to convert
+     * @param newTotalSupply The total supply of the vault
+     * @param newTotalAssets The total assets of the vault
+     * @param rounding The rounding mode
+     * @return The shares
+     */
     function _convertToSharesWithTotals(
         uint256 assets,
         uint256 newTotalSupply,
@@ -415,6 +429,15 @@ contract VaultFacet is
             );
     }
 
+    /**
+     * @notice Convert shares to assets
+     * @dev Convert shares to assets
+     * @param shares The shares to convert
+     * @param newTotalSupply The total supply of the vault
+     * @param newTotalAssets The total assets of the vault
+     * @param rounding The rounding mode
+     * @return The assets
+     */
     function _convertToAssetsWithTotals(
         uint256 shares,
         uint256 newTotalSupply,
@@ -429,6 +452,14 @@ contract VaultFacet is
             );
     }
 
+    /**
+     * @notice Deposit assets to the vault
+     * @dev Deposit assets to the vault and mint the shares
+     * @param caller The address of the caller
+     * @param receiver The address of the receiver
+     * @param assets The assets to deposit
+     * @param shares The shares to mint
+     */
     function _deposit(
         address caller,
         address receiver,
@@ -442,6 +473,15 @@ contract VaultFacet is
         ds.lastTotalAssets = ds.lastTotalAssets + assets;
     }
 
+    /**
+     * @notice Deposit assets to the vault
+     * @dev Deposit assets to the vault and mint the shares
+     * @param caller The address of the caller
+     * @param receiver The address of the receiver
+     * @param tokens The tokens to deposit
+     * @param assets The assets to deposit
+     * @param shares The shares to mint
+     */
     function _deposit(
         address caller,
         address receiver,
@@ -465,14 +505,14 @@ contract VaultFacet is
         emit Deposit(caller, receiver, tokens, assets, shares);
     }
 
+    /**
+     * @notice Accrue the interest of the vault
+     * @dev Calculate the interest of the vault and mint the fee shares
+     * @return newTotalAssets The new total assets of the vault
+     */
     function _accrueInterest() internal returns (uint256 newTotalAssets) {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        if (msg.value > 0) {
-            ds.nativeBalanceForAccounting = address(this).balance - msg.value;
-        } else {
-            ds.nativeBalanceForAccounting = address(this).balance;
-        }
 
         uint256 feeShares;
         (feeShares, newTotalAssets) = _accruedFeeShares();
@@ -503,6 +543,12 @@ contract VaultFacet is
         emit AccrueInterest(newTotalAssets, feeShares);
     }
 
+    /**
+     * @notice Accrue the interest of the vault
+     * @dev Calculate the interest of the vault and the fee shares
+     * @return feeShares The fee shares
+     * @return newTotalAssets The new total assets of the vault
+     */
     function _accruedFeeShares()
         internal
         view
@@ -531,6 +577,13 @@ contract VaultFacet is
         }
     }
 
+    /**
+     * @notice Validate the capacity of the vault
+     * @dev If the deposit capacity is 0, the vault is not limited by the deposit capacity
+     * @param receiver The address of the receiver
+     * @param newTotalAssets The total assets of the vault
+     * @param newAssets The assets to deposit
+     */
     function _validateCapacity(
         address receiver,
         uint256 newTotalAssets,
@@ -551,6 +604,13 @@ contract VaultFacet is
         }
     }
 
+    /**
+     * @notice Check if the vault is healthy
+     * @dev If the total assets is 0 and the total supply is greater than 0, then the debt is greater than
+     * the assets and the vault is unhealthy
+     * @param _totalAssets The total assets of the vault
+     * @param _totalSupply The total supply of the vault
+     */
     function _checkVaultHealth(
         uint256 _totalAssets,
         uint256 _totalSupply
@@ -560,6 +620,27 @@ contract VaultFacet is
         }
     }
 
+    /**
+     * @notice Get the native balance of the vault
+     * @dev If the vault in process of native deposit, the balance is the balance of the vault minus the msg.value
+     * @dev If the vault is not in process of native deposit, the balance is the balance of the vault
+     * @return The native balance of the vault
+     */
+    function _getNativeBalance() internal view returns (uint256) {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        if (ds.isNativeDeposit) {
+            return address(this).balance - msg.value;
+        } else {
+            return address(this).balance;
+        }
+    }
+
+    /**
+     * @notice Get the decimals offset
+     * @dev Get the decimals offset
+     * @return The decimals offset
+     */
     function _decimalsOffset() internal pure override returns (uint8) {
         return 2;
     }
