@@ -67,9 +67,12 @@ contract CurveLiquidityGaugeV6Facet is
             CURVE_LIQUIDITY_GAUGES_V6_ID
         ];
 
+        IMinter minter = IMinter(ds.minter);
+        address token = IMinter(minter).token();
+        if (!ds.isAssetAvailable[token]) return;
+
         address[] memory gaugesArray = gauges.values();
         if (gaugesArray.length == 0) return;
-        IMinter minter = IMinter(ds.minter);
 
         for (uint256 i = 0; i < gaugesArray.length;) {
             address[8] memory gaugesArray8;
