@@ -99,7 +99,6 @@ library MoreVaultsLib {
         uint256 timeLockPeriod;
         mapping(bytes32 => EnumerableSet.AddressSet) stakingAddresses;
         mapping(address => uint256) staked;
-        uint256 nativeBalanceForAccounting;
         bool isNativeDeposit;
     }
 
