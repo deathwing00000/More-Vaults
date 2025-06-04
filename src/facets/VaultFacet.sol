@@ -514,6 +514,25 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
+        for (uint256 i; i < ds.beforeAccountingFacets.length; ) {
+            (bool success,) = address(this).delegatecall(
+                abi.encodeWithSignature(
+                    string.concat(
+                        "beforeAccounting",
+                        IGenericMoreVaultFacet(ds.beforeAccountingFacets[i]).facetName(),
+                        "()"
+                    ),
+                    ""
+                )
+            );
+            if (!success) {
+                revert BeforeAccountingFailed(ds.beforeAccountingFacets[i]);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        
         uint256 feeShares;
         (feeShares, newTotalAssets) = _accruedFeeShares();
         _checkVaultHealth(newTotalAssets, totalSupply());

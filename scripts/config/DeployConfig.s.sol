@@ -385,11 +385,14 @@ contract DeployConfig {
             .selector;
 
         // selectors for curve
-        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](3);
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](4);
         functionSelectorsCurveFacet[0] = ICurveFacet.exchangeNg.selector;
         functionSelectorsCurveFacet[1] = ICurveFacet.exchange.selector;
         functionSelectorsCurveFacet[2] = ICurveFacet
             .accountingCurveFacet
+            .selector;
+        functionSelectorsCurveFacet[3] = ICurveFacet
+            .beforeAccountingCurveFacet
             .selector;
         bytes memory initDataCurveFacet = abi.encode(facetAddresses.curve);
 

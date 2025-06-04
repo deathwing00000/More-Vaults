@@ -11,6 +11,8 @@ import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
+import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
 
 /**
  * @title CurveFacet
@@ -45,6 +47,20 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ds.supportedInterfaces[type(ICurveFacet).interfaceId] = true;
         address facetAddress = abi.decode(data, (address));
         ds.facetsForAccounting.push(facetAddress);
+        ds.beforeAccountingFacets.push(facetAddress);
+    }
+
+    function beforeAccountingCurveFacet() external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        EnumerableSet.AddressSet storage tokensHeld = ds.tokensHeld[
+            CURVE_LP_TOKENS_ID
+        ];
+
+        for (uint256 i = 0; i < tokensHeld.length(); ) {
+            ICurveViews(tokensHeld.at(0)).remove_liquidity_one_coin(0, 0, 0);
+        }
     }
 
     function accountingCurveFacet()
@@ -66,16 +82,23 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 }
                 continue;
             }
+
+            uint256 gaugeBalance = ILiquidityGaugeV6(
+                ds.stakingTokenToGauge[lpToken]
+            ).balanceOf(address(this));
+            uint256 multiRewardsBalance = IMultiRewards(
+                ds.stakingTokenToMultiRewards[lpToken]
+            ).balanceOf(address(this));
+
+            // Get direct LP token balance
             uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
-                ds.staked[lpToken];
+                gaugeBalance +
+                multiRewardsBalance;
+
             sum += MoreVaultsLib.convertToUnderlying(
                 ICurveViews(lpToken).coins(0),
-                (
-                    ICurveViews(lpToken).calc_withdraw_one_coin(
-                        lpTokenBalance,
-                        int128(0)
-                    )
-                ),
+                (ICurveViews(lpToken).get_virtual_price() * lpTokenBalance) /
+                    1e18,
                 Math.Rounding.Floor
             );
 
