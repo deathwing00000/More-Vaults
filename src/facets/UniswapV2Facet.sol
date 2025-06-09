@@ -153,6 +153,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
 
         ds.tokensHeld[UNISWAP_V2_LP_TOKENS_ID].add(liquidityToken);
 
+        MoreVaultsLib.checkGasLimitOverflow();
+
         return
             IUniswapV2Router02(router).addLiquidity(
                 tokenA,
@@ -195,6 +197,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 .createPair(token, ds.wrappedNative);
         }
         ds.tokensHeld[UNISWAP_V2_LP_TOKENS_ID].add(liquidityToken);
+
+        MoreVaultsLib.checkGasLimitOverflow();
 
         return
             IUniswapV2Router02(router).addLiquidityETH{value: amountETHDesired}(

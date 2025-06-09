@@ -154,6 +154,8 @@ contract CurveLiquidityGaugeV6Facet is
         ds.stakingAddresses[CURVE_LIQUIDITY_GAUGES_V6_ID].add(gauge);
         ds.stakingTokenToGauge[address(lpToken)] = gauge;
         ds.staked[address(lpToken)] += amount;
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

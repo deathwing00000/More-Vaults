@@ -18,6 +18,9 @@ bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000
 bytes32 constant ACCOUNTING_FAILED_ERROR = 0x712f778400000000000000000000000000000000000000000000000000000000;
 bytes32 constant BALANCE_OF_SELECTOR = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 bytes32 constant NESTED_UPDATE_FAILED = 0x7cf01f1f00000000000000000000000000000000000000000000000000000000;
+bytes32 constant TOTAL_ASSETS_SELECTOR = 0x01e1d11400000000000000000000000000000000000000000000000000000000;
+bytes32 constant TOTAL_ASSETS_RUN_FAILED = 0xb5a7047700000000000000000000000000000000000000000000000000000000;
+uint256 constant ALLOWED_GAS_FOR_ACCOUNTING = 2_500_000;
 
 library MoreVaultsLib {
     error InitializationFunctionReverted(
@@ -686,6 +689,19 @@ library MoreVaultsLib {
         }
         if (answer < 0) {
             revert OraclePriceIsNegative();
+        }
+    }
+
+    function checkGasLimitOverflow() internal view {
+        assembly {
+            let freePtr := mload(0x40)
+            mstore(freePtr, TOTAL_ASSETS_SELECTOR)
+            let res := staticcall(ALLOWED_GAS_FOR_ACCOUNTING, address(), freePtr, 4, 0, 0)
+
+            if iszero(res) {
+                mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
+                revert(freePtr, 4)
+            }
         }
     }
 }

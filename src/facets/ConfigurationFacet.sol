@@ -58,6 +58,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     function addAvailableAsset(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib._addAvailableAsset(asset);
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**
@@ -72,6 +74,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
                 ++i;
             }
         }
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

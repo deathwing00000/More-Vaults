@@ -107,6 +107,8 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
             quoteData
         );
         ds.tokensHeld[ORIGAMI_VAULT_TOKENS_ID].add(lovToken);
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**
@@ -125,6 +127,8 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
             value: quoteData.fromTokenAmount
         }(quoteData);
         ds.tokensHeld[ORIGAMI_VAULT_TOKENS_ID].add(lovToken);
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**
