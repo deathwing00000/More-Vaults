@@ -11,11 +11,13 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
+import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
 
 bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
 bytes32 constant ACCOUNTING_FAILED_ERROR = 0x712f778400000000000000000000000000000000000000000000000000000000;
 bytes32 constant BALANCE_OF_SELECTOR = 0x70a0823100000000000000000000000000000000000000000000000000000000;
+bytes32 constant NESTED_UPDATE_FAILED = 0x7cf01f1f00000000000000000000000000000000000000000000000000000000;
 
 library MoreVaultsLib {
     error InitializationFunctionReverted(
@@ -110,6 +112,8 @@ library MoreVaultsLib {
         address[] beforeAccountingFacets;
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
+        address[] nestedVaults;
+        address factory;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -289,10 +293,17 @@ library MoreVaultsLib {
             revert NoOracleForAsset();
         }
 
+        emit AssetToManageAdded(asset);
+
+        if (ds.factory != address(0)) {
+            if(IVaultsFactory(ds.factory).isVault(asset)) {
+                ds.nestedVaults.push(asset);
+                return;
+            }
+        }
+
         ds.isAssetAvailable[asset] = true;
         ds.availableAssets.push(asset);
-
-        emit AssetToManageAdded(asset);
     }
 
     function _enableAssetToDeposit(address asset) internal {

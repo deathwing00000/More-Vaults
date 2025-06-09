@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {MoreVaultsLib, BEFORE_ACCOUNTING_SELECTOR, BEFORE_ACCOUNTING_FAILED_ERROR, ACCOUNTING_FAILED_ERROR, BALANCE_OF_SELECTOR} from "../libraries/MoreVaultsLib.sol";
+import {MoreVaultsLib, NESTED_UPDATE_FAILED, BEFORE_ACCOUNTING_SELECTOR, BEFORE_ACCOUNTING_FAILED_ERROR, ACCOUNTING_FAILED_ERROR, BALANCE_OF_SELECTOR} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -99,8 +99,17 @@ contract VaultFacet is
         _unpause();
     }
 
-    function _beforeAccounting(address[] storage _baf) private {
+    /**
+        Locks external protocals for a reentrancy protection
+        Mints rewards to this vault for more precise accounting
+        Calls nested vaults before accounting hook
+    */
+    function _beforeAccounting(
+        address[] storage _baf,
+        address[] storage _nv
+    ) private {
         assembly {
+            // process before accounting facets
             let freePtr := mload(0x40)
             let length := sload(_baf.slot)
             mstore(0, _baf.slot)
@@ -113,6 +122,20 @@ contract VaultFacet is
                 if iszero(res) {
                     mstore(freePtr, BEFORE_ACCOUNTING_FAILED_ERROR)
                     mstore(add(freePtr, 0x04), facet)
+                    revert(freePtr, 0x24)
+                }
+            }
+            // process nested vaults
+            length := sload(_nv.slot)
+            mstore(0, _nv.slot)
+            slot := keccak256(0, 0x20)
+            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+                let vault := sload(add(slot, i))
+                let res := call(gas(), vault, 0, freePtr, 4, 0, 0) // call facets for acounting, ignore return values
+                // if delegatecall fails, revert with the error
+                if iszero(res) {
+                    mstore(freePtr, NESTED_UPDATE_FAILED)
+                    mstore(add(freePtr, 0x04), vault)
                     revert(freePtr, 0x24)
                 }
             }
@@ -251,11 +274,11 @@ contract VaultFacet is
         Public hook for updating revenue from strategies with a complex flow.
         Trigger before totalAssets() to get a precise value for total assets.
     */
-    function prepareForAccounting() external {
+    function beforeAccounting() external {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        _beforeAccounting(ds.beforeAccountingFacets);
+        _beforeAccounting(ds.beforeAccountingFacets, ds.nestedVaults);
     }
 
     /**
@@ -606,7 +629,7 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        _beforeAccounting(ds.beforeAccountingFacets);
+        _beforeAccounting(ds.beforeAccountingFacets, ds.nestedVaults);
 
         uint256 feeShares;
         (feeShares, newTotalAssets) = _accruedFeeShares();

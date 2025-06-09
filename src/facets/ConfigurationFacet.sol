@@ -20,9 +20,11 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         return "ConfigurationFacet";
     }
 
-    function initialize(bytes calldata) external initializerFacet {
+    function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        address factory = abi.decode(data, (address));
+        ds.factory = factory;
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
     }
 
