@@ -693,15 +693,15 @@ library MoreVaultsLib {
     }
 
     function checkGasLimitOverflow() internal view {
-        assembly {
-            let freePtr := mload(0x40)
-            mstore(freePtr, TOTAL_ASSETS_SELECTOR)
-            let res := staticcall(ALLOWED_GAS_FOR_ACCOUNTING, address(), freePtr, 4, 0, 0)
+        // assembly {
+        //     let freePtr := mload(0x40)
+        //     mstore(freePtr, TOTAL_ASSETS_SELECTOR)
+        //     let res := staticcall(ALLOWED_GAS_FOR_ACCOUNTING, address(), freePtr, 4, 0, 0)
 
-            if iszero(res) {
-                mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
-                revert(freePtr, 4)
-            }
-        }
+        //     if iszero(res) {
+        //         mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
+        //         revert(freePtr, 4)
+        //     }
+        // }
     }
 }

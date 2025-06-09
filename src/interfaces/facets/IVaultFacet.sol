@@ -93,4 +93,6 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
      * @param fee New fee amount (in basis points, max 10000 = 100%)
      */
     function setFee(uint96 fee) external;
+
+    function curator() external view returns (address);
 }

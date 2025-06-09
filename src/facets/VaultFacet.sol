@@ -34,6 +34,10 @@ contract VaultFacet is
         return "VaultFacet";
     }
 
+    function curator() external view returns (address) {
+        return AccessControlLib.vaultCurator();
+    }
+
     function initialize(
         bytes calldata data
     ) external initializerFacet initializer {
