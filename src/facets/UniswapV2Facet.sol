@@ -35,8 +35,8 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
     }
 
     function facetName() public pure returns (string memory) {

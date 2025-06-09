@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
+import {MoreVaultsLib, BEFORE_ACCOUNTING_SELECTOR, BEFORE_ACCOUNTING_FAILED_ERROR, ACCOUNTING_FAILED_ERROR, BALANCE_OF_SELECTOR} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -99,6 +99,131 @@ contract VaultFacet is
         _unpause();
     }
 
+    function _beforeAccounting(address[] storage _baf) private {
+        assembly {
+            let freePtr := mload(0x40)
+            let length := sload(_baf.slot)
+            mstore(0, _baf.slot)
+            let slot := keccak256(0, 0x20)
+            mstore(freePtr, BEFORE_ACCOUNTING_SELECTOR)
+            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+                let facet := sload(add(slot, i))
+                let res := delegatecall(gas(), facet, freePtr, 4, 0, 0) // call facets for acounting, ignore return values
+                // if delegatecall fails, revert with the error
+                if iszero(res) {
+                    mstore(freePtr, BEFORE_ACCOUNTING_FAILED_ERROR)
+                    mstore(add(freePtr, 0x04), facet)
+                    revert(freePtr, 0x24)
+                }
+            }
+        }
+    }
+
+    function _accountAvailableAssets(
+        address[] storage _assets,
+        mapping(address => uint256) storage _staked,
+        address _wrappedNative,
+        bool _isNativeDeposit,
+        uint256 _freePtr
+    ) private view returns (uint256 _totalAssets) {
+        assembly {
+            mstore(_freePtr, BALANCE_OF_SELECTOR)
+        }
+        for (uint i; i < _assets.length; ) {
+            address asset;
+            uint256 toConvert;
+            assembly {
+                // compute slot of the assets
+                mstore(0, _assets.slot)
+                let slot := keccak256(0, 0x20)
+                asset := sload(add(slot, i))
+                mstore(add(_freePtr, 0x04), address())
+                let retOffset := add(_freePtr, 0x24)
+                let res := staticcall(gas(), asset, _freePtr, 0x24, retOffset, 0x20)
+                if iszero(res) {
+                    mstore(_freePtr, ACCOUNTING_FAILED_ERROR)
+                    mstore(add(_freePtr, 0x04), asset)
+                    revert(retOffset, 0x24)
+                }
+                toConvert  := mload(retOffset)
+                
+                // compute staked value slot for asset
+                mstore(0, _staked.slot)
+                mstore(0x20, asset)
+                slot := keccak256(0, 0x40)
+                toConvert := add(toConvert, sload(slot))
+                // if the asset is the wrapped native, add the native balance
+                if eq(_wrappedNative, asset) {
+                    // if the vault processes native deposits, make sure to exclude msg.value
+                    switch iszero(_isNativeDeposit)
+                        case 1 {
+                            toConvert := add(toConvert, selfbalance())
+                        }
+                        default {
+                            toConvert := add(toConvert, sub(selfbalance(), callvalue()))
+                        }
+                }
+            }
+            // convert to underlying
+            // this function will use new free mem ptr
+            _totalAssets += MoreVaultsLib.convertToUnderlying(
+                asset,
+                toConvert,
+                Math.Rounding.Floor
+            );
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _accountFacets(
+        bytes32[] storage _selectors,
+        uint256 _totalAssets,
+        uint256 _freePtr
+    ) private view returns (uint256 totalAssets_) {
+        assembly {
+            // put a debt variable on the stack
+            let debt := 0
+            // load facets length
+            let length := sload(_selectors.slot)
+            // calc beginning of the array
+            mstore(0, _selectors.slot)
+            let slot := keccak256(0, 0x20)
+            // set return offset
+            let retOffset := add(_freePtr, 0x04)
+            // loop through facets
+            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+                // read facet selector and execute staticcall
+                let selector := sload(add(slot, i))
+                mstore(_freePtr, selector)
+                let res := staticcall(gas(), address(), _freePtr, 4, retOffset, 0x40)
+                // if staticcall fails, revert with the error
+                if iszero(res) {
+                    mstore(_freePtr, ACCOUNTING_FAILED_ERROR)
+                    mstore(add(_freePtr, 0x04), selector)
+                    revert(_freePtr, 0x24)
+                }
+                // decode return values
+                let decodedAmount := mload(retOffset)
+                let isPositive := mload(add(retOffset, 0x20))
+                // if the amount is positive, add it to the total assets else add to debt
+                if iszero(isPositive) {
+                    _totalAssets := add(_totalAssets, decodedAmount)
+                }
+                if isPositive {
+                    debt := add(debt, decodedAmount)
+                }
+            }
+
+            // after accounting is done check if total assets are greater than debt
+            // else leave totalAssets unassigned as "lower" and "equal" should return 0
+            if gt(_totalAssets, debt) {
+                totalAssets_ := sub(_totalAssets, debt)
+            }
+        }
+    }
+
     /**
      * @inheritdoc IVaultFacet
      */
@@ -110,60 +235,16 @@ contract VaultFacet is
     {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address[] memory facets = ds.facetsForAccounting;
-        address wrappedNative = ds.wrappedNative;
 
-        for (uint i; i < ds.availableAssets.length; ) {
-            address asset = ds.availableAssets[i];
-            _totalAssets += MoreVaultsLib.convertToUnderlying(
-                asset,
-                IERC20(asset).balanceOf(address(this)) + ds.staked[asset],
-                Math.Rounding.Floor
-            );
-            if (wrappedNative == asset) {
-                _totalAssets += MoreVaultsLib.convertToUnderlying(
-                    wrappedNative,
-                    _getNativeBalance(),
-                    Math.Rounding.Floor
-                );
-            }
-            unchecked {
-                ++i;
-            }
+        // get free mem ptr for efficient calls
+        uint256 freePtr;
+        assembly {
+            freePtr := mload(0x40)
         }
-
-        uint256 _totalDebt;
-        for (uint i; i < facets.length; ) {
-            (bool success, bytes memory result) = address(this).staticcall(
-                abi.encodeWithSignature(
-                    string.concat(
-                        "accounting",
-                        IGenericMoreVaultFacet(facets[i]).facetName(),
-                        "()"
-                    ),
-                    ""
-                )
-            );
-            if (success) {
-                (uint256 decodedAmount, bool isPositive) = abi.decode(
-                    result,
-                    (uint256, bool)
-                );
-                if (isPositive) {
-                    _totalAssets += decodedAmount;
-                } else {
-                    _totalDebt += decodedAmount;
-                }
-            } else revert AccountingFailed(facets[i]);
-            unchecked {
-                ++i;
-            }
-        }
-        if (_totalDebt > _totalAssets) {
-            _totalAssets = 0;
-        } else {
-            _totalAssets = _totalAssets - _totalDebt;
-        }
+        // account available assets
+        _totalAssets = _accountAvailableAssets(ds.availableAssets, ds.staked, ds.wrappedNative, ds.isNativeDeposit, freePtr);
+        // account facets
+        _totalAssets = _accountFacets(ds.facetsForAccounting, _totalAssets, freePtr);
     }
 
     /**
@@ -514,25 +595,8 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        for (uint256 i; i < ds.beforeAccountingFacets.length; ) {
-            (bool success,) = address(this).delegatecall(
-                abi.encodeWithSignature(
-                    string.concat(
-                        "beforeAccounting",
-                        IGenericMoreVaultFacet(ds.beforeAccountingFacets[i]).facetName(),
-                        "()"
-                    ),
-                    ""
-                )
-            );
-            if (!success) {
-                revert BeforeAccountingFailed(ds.beforeAccountingFacets[i]);
-            }
-            unchecked {
-                ++i;
-            }
-        }
-        
+        _beforeAccounting(ds.beforeAccountingFacets);
+
         uint256 feeShares;
         (feeShares, newTotalAssets) = _accruedFeeShares();
         _checkVaultHealth(newTotalAssets, totalSupply());
@@ -548,18 +612,23 @@ contract VaultFacet is
         ) = IMoreVaultsRegistry(acs.moreVaultsRegistry).protocolFeeInfo(
                 address(this)
             );
-        if (feeShares != 0) {
-            if (protocolFee != 0) {
-                uint256 protocolFeeShares = feeShares.mulDiv(
-                    protocolFee,
-                    MoreVaultsLib.FEE_BASIS_POINT
-                );
-                _mint(protocolFeeRecipient, protocolFeeShares);
-                _mint(ds.feeRecipient, feeShares - protocolFeeShares);
-            } else _mint(ds.feeRecipient, feeShares);
+        
+        emit AccrueInterest(newTotalAssets, feeShares);
+
+        if (feeShares == 0) return newTotalAssets;
+
+        if (protocolFee !=0) {
+            uint256 protocolFeeShares = feeShares.mulDiv(
+                protocolFee,
+                MoreVaultsLib.FEE_BASIS_POINT
+            );
+            _mint(protocolFeeRecipient, protocolFeeShares);
+            unchecked {
+                feeShares -= protocolFeeShares;
+            }
         }
 
-        emit AccrueInterest(newTotalAssets, feeShares);
+        _mint(ds.feeRecipient, feeShares);
     }
 
     /**
@@ -636,22 +705,6 @@ contract VaultFacet is
     ) internal pure {
         if (_totalAssets == 0 && _totalSupply > 0) {
             revert VaultDebtIsGreaterThanAssets();
-        }
-    }
-
-    /**
-     * @notice Get the native balance of the vault
-     * @dev If the vault in process of native deposit, the balance is the balance of the vault minus the msg.value
-     * @dev If the vault is not in process of native deposit, the balance is the balance of the vault
-     * @return The native balance of the vault
-     */
-    function _getNativeBalance() internal view returns (uint256) {
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-        if (ds.isNativeDeposit) {
-            return address(this).balance - msg.value;
-        } else {
-            return address(this).balance;
         }
     }
 

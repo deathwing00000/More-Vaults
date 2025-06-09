@@ -45,12 +45,12 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(ICurveFacet).interfaceId] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        (address facetAddress, bytes32 facetSelector) = abi.decode(data, (address, bytes32));
+        ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
     }
 
-    function beforeAccountingCurveFacet() external {
+    function beforeAccounting() external {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 

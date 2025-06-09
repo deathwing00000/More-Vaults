@@ -50,18 +50,22 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        CurveLiquidityGaugeV6Facet(facet).initialize(abi.encode(facet, minter));
-        address[] memory facets = MoreVaultsStorageHelper
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingCurveLiquidityGaugeV6Facet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        CurveLiquidityGaugeV6Facet(facet).initialize(abi.encode(facet, minter, facetSelector));
+        bytes32[] memory facets = MoreVaultsStorageHelper
             .getFacetsForAccounting(address(facet));
         assertEq(
             facets.length,
             1,
             "Facets for accounting length should be equal to 1"
         );
-        assertEq(
-            facets[0],
-            address(facet),
-            "Facet stored should be equal to facet address"
+        assertEq32(
+            bytes32(facets[0]),
+            bytes32(facetSelector),
+            "Facet stored should be equal to facet selector"
         );
         assertEq(
             MoreVaultsStorageHelper.getSupportedInterface(

@@ -266,21 +266,11 @@ library MoreVaultsStorageHelper {
 
     function getFacetsForAccounting(
         address contractAddress
-    ) internal view returns (address[] memory) {
+    ) internal view returns (bytes32[] memory) {
         uint256 length = getArrayLength(contractAddress, FACETS_FOR_ACCOUNTING);
-        address[] memory facets = new address[](length);
+        bytes32[] memory facets = new bytes32[](length);
         for (uint256 i = 0; i < length; ) {
-            facets[i] = address(
-                uint160(
-                    uint256(
-                        getArrayElement(
-                            contractAddress,
-                            FACETS_FOR_ACCOUNTING,
-                            i
-                        )
-                    )
-                )
-            );
+            facets[i] = getArrayElement(contractAddress, FACETS_FOR_ACCOUNTING, i);
             unchecked {
                 ++i;
             }

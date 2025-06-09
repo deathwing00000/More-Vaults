@@ -75,17 +75,25 @@ contract MORELeverageFacetTest is Test {
     }
 
     function test_initialize_ShouldSetFacetAddress() public {
-        MORELeverageFacet(facet).initialize(abi.encode(facet));
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingMORELeverageFacet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        MORELeverageFacet(facet).initialize(abi.encode(facetSelector));
         MoreVaultsStorageHelper.getStorageValue(facet, 0); // Verify storage was updated
     }
 
     function test_initialize_ShouldRevertWhenAlreadyInitialized() public {
         // First initialization
-        MORELeverageFacet(facet).initialize(abi.encode(facet));
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingMORELeverageFacet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        MORELeverageFacet(facet).initialize(abi.encode(facetSelector));
 
         // Try to initialize again
         vm.expectRevert(BaseFacetInitializer.AlreadyInitialized.selector);
-        MORELeverageFacet(facet).initialize(abi.encode(facet));
+        MORELeverageFacet(facet).initialize(abi.encode(facetSelector));
     }
 
     function test_allNonViewFunctions_ShouldRevertWhenCalledByNonDiamond()

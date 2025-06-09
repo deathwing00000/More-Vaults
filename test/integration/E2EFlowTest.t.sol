@@ -521,7 +521,8 @@ contract E2EFlowTest is Test {
             .swapExactTokensForETHSupportingFeeOnTransferTokens
             .selector;
 
-        bytes memory initDataUniswapV2Facet = abi.encode(address(uniswapV2));
+        bytes32 facetSelectorUniswapV2 = bytes4(keccak256(abi.encodePacked("accountingUniswapV2Facet()")));
+        bytes memory initDataUniswapV2Facet = abi.encode(facetSelectorUniswapV2);
 
         // selectors for origami
         bytes4[] memory functionSelectorsMORELeverageFacet = new bytes4[](9);
@@ -553,7 +554,8 @@ contract E2EFlowTest is Test {
             .forceRebalanceDown
             .selector;
 
-        bytes memory initDataMORELeverageFacet = abi.encode(address(origami));
+        bytes32 facetSelectorMORELeverage = bytes4(keccak256(abi.encodePacked("accountingMORELeverageFacet()")));
+        bytes memory initDataMORELeverageFacet = abi.encode(facetSelectorMORELeverage);
 
         // selectors for more markets
         bytes4[] memory functionSelectorsAaveV3Facet = new bytes4[](13);
@@ -585,7 +587,8 @@ contract E2EFlowTest is Test {
             .claimAllRewards
             .selector;
 
-        bytes memory initDataAaveV3Facet = abi.encode(address(moreMarkets));
+        bytes32 facetSelectorAaveV3 = bytes4(keccak256(abi.encodePacked("accountingAaveV3Facet()")));
+        bytes memory initDataAaveV3Facet = abi.encode(facetSelectorAaveV3);
 
         // selectors for izumi swap
         bytes4[] memory functionSelectorsIzumiSwapFacet = new bytes4[](2);
@@ -609,16 +612,15 @@ contract E2EFlowTest is Test {
             .selector;
 
         // selectors for curve
-        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](4);
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](3);
         functionSelectorsCurveFacet[0] = ICurveFacet.exchangeNg.selector;
         functionSelectorsCurveFacet[1] = ICurveFacet.exchange.selector;
         functionSelectorsCurveFacet[2] = ICurveFacet
             .accountingCurveFacet
             .selector;
-        functionSelectorsCurveFacet[3] = ICurveFacet
-            .beforeAccountingCurveFacet
-            .selector;
-        bytes memory initDataCurveFacet = abi.encode(address(curve));
+        
+        bytes32 facetSelectorCurve = bytes4(keccak256(abi.encodePacked("accountingCurveFacet()")));
+        bytes memory initDataCurveFacet = abi.encode(address(curve), facetSelectorCurve);
 
         // selectors for UniswapV3
         bytes4[] memory functionSelectorsUniswapV3Facet = new bytes4[](4);
@@ -652,14 +654,15 @@ contract E2EFlowTest is Test {
         functionSelectorsMultiRewardsFacet[4] = IMultiRewardsFacet
             .exit
             .selector;
+        bytes32 facetSelectorMultiRewards = bytes4(keccak256(abi.encodePacked("accountingMultiRewardsFacet()")));
         bytes memory initDataMultiRewardsFacet = abi.encode(
-            address(multiRewards)
+            facetSelectorMultiRewards
         );
 
         // selectors for CurveLiquidityGaugeV6Facet
         bytes4[]
             memory functionSelectorsCurveLiquidityGaugeV6Facet = new bytes4[](
-                6
+                5
             );
         functionSelectorsCurveLiquidityGaugeV6Facet[
             0
@@ -678,14 +681,12 @@ contract E2EFlowTest is Test {
         functionSelectorsCurveLiquidityGaugeV6Facet[
             4
         ] = ICurveLiquidityGaugeV6Facet.mintCRV.selector;
-        functionSelectorsCurveLiquidityGaugeV6Facet[
-            5
-        ] = ICurveLiquidityGaugeV6Facet
-            .beforeAccountingCurveLiquidityGaugeV6Facet
-            .selector;
+        
+        bytes32 facetSelectorCurveLiquidityGaugeV6 = bytes4(keccak256(abi.encodePacked("accountingCurveLiquidityGaugeV6Facet()")));
         bytes memory initDataCurveLiquidityGaugeV6Facet = abi.encode(
             address(curveGaugeV6),
-            address(mockMinter)
+            address(mockMinter),
+            facetSelectorCurveLiquidityGaugeV6
         );
 
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](14);

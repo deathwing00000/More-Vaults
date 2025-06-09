@@ -48,8 +48,12 @@ contract MultiRewardsFacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        MultiRewardsFacet(facet).initialize(abi.encode(facet));
-        address[] memory facets = MoreVaultsStorageHelper
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingMultiRewardsFacet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        MultiRewardsFacet(facet).initialize(abi.encode(facetSelector));
+        bytes32[] memory facets = MoreVaultsStorageHelper
             .getFacetsForAccounting(address(facet));
         assertEq(
             facets.length,
@@ -57,9 +61,9 @@ contract MultiRewardsFacetTest is Test {
             "Facets for accounting length should be equal to 1"
         );
         assertEq(
-            facets[0],
-            address(facet),
-            "Facet stored should be equal to facet address"
+            bytes32(facets[0]),
+            bytes32(facetSelector),
+            "Facet stored should be equal to facet selector"
         );
         assertEq(
             MoreVaultsStorageHelper.getSupportedInterface(

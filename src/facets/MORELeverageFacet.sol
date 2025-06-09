@@ -40,8 +40,8 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
         ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = true;
     }
 

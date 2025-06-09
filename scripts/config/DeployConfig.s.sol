@@ -392,7 +392,7 @@ contract DeployConfig {
             .accountingCurveFacet
             .selector;
         functionSelectorsCurveFacet[3] = ICurveFacet
-            .beforeAccountingCurveFacet
+            .beforeAccounting
             .selector;
         bytes memory initDataCurveFacet = abi.encode(facetAddresses.curve);
 
