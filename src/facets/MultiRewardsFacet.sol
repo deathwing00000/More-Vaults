@@ -83,8 +83,8 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IMultiRewardsFacet).interfaceId] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
     }
 
     /**
@@ -110,6 +110,8 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].add(staking);
         ds.stakingTokenToMultiRewards[address(stakingToken)] = staking;
         ds.staked[address(stakingToken)] += amount;
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

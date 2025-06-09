@@ -20,9 +20,11 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         return "ConfigurationFacet";
     }
 
-    function initialize(bytes calldata) external initializerFacet {
+    function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        address factory = abi.decode(data, (address));
+        ds.factory = factory;
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
     }
 
@@ -56,6 +58,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     function addAvailableAsset(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib._addAvailableAsset(asset);
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**
@@ -70,6 +74,8 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
                 ++i;
             }
         }
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

@@ -89,6 +89,8 @@ contract MulticallFacet is
         _multicall(actions.actionsData);
         delete ds.pendingActions[actionsNonce];
 
+        // TODO add balances check for slippage protection
+
         emit ActionsExecuted(msg.sender, actionsNonce);
     }
 

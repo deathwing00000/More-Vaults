@@ -54,16 +54,16 @@ contract CurveLiquidityGaugeV6Facet is
         ds.supportedInterfaces[
             type(ICurveLiquidityGaugeV6Facet).interfaceId
         ] = true;
-        (address facetAddress, address minter) = abi.decode(
+        (address facetAddress, address minter, bytes32 facetSelector) = abi.decode(
             data,
-            (address, address)
+            (address, address, bytes32)
         );
-        ds.facetsForAccounting.push(facetAddress);
+        ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
         ds.minter = minter;
     }
 
-    function beforeAccountingCurveLiquidityGaugeV6Facet() external {
+    function beforeAccounting() external {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
@@ -154,6 +154,8 @@ contract CurveLiquidityGaugeV6Facet is
         ds.stakingAddresses[CURVE_LIQUIDITY_GAUGES_V6_ID].add(gauge);
         ds.stakingTokenToGauge[address(lpToken)] = gauge;
         ds.staked[address(lpToken)] += amount;
+
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

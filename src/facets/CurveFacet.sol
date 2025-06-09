@@ -45,12 +45,12 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(ICurveFacet).interfaceId] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        (address facetAddress, bytes32 facetSelector) = abi.decode(data, (address, bytes32));
+        ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
     }
 
-    function beforeAccountingCurveFacet() external {
+    function beforeAccounting() external {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
@@ -160,6 +160,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
+            MoreVaultsLib.checkGasLimitOverflow();
         }
         if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(
@@ -224,6 +225,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
+            MoreVaultsLib.checkGasLimitOverflow();
         }
         if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(

@@ -11,6 +11,16 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
+import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
+
+bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
+bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
+bytes32 constant ACCOUNTING_FAILED_ERROR = 0x712f778400000000000000000000000000000000000000000000000000000000;
+bytes32 constant BALANCE_OF_SELECTOR = 0x70a0823100000000000000000000000000000000000000000000000000000000;
+bytes32 constant NESTED_UPDATE_FAILED = 0x7cf01f1f00000000000000000000000000000000000000000000000000000000;
+bytes32 constant TOTAL_ASSETS_SELECTOR = 0x01e1d11400000000000000000000000000000000000000000000000000000000;
+bytes32 constant TOTAL_ASSETS_RUN_FAILED = 0xb5a7047700000000000000000000000000000000000000000000000000000000;
+uint256 constant ALLOWED_GAS_FOR_ACCOUNTING = 2_500_000;
 
 library MoreVaultsLib {
     error InitializationFunctionReverted(
@@ -35,7 +45,7 @@ library MoreVaultsLib {
     error InvalidAddress();
     error NoOracleForAsset();
     error FacetHasBalance(address facet);
-    error AccountingFailed(address facet);
+    error AccountingFailed(bytes32 selector);
     error UnsupportedProtocol(address protocol);
 
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -81,7 +91,7 @@ library MoreVaultsLib {
         mapping(address => FacetFunctionSelectors) facetFunctionSelectors;
         // facet addresses
         address[] facetAddresses;
-        address[] facetsForAccounting;
+        bytes32[] facetsForAccounting;
         // Used to query if a contract implements an interface.
         // Used to implement ERC-165.
         mapping(bytes4 => bool) supportedInterfaces;
@@ -105,6 +115,8 @@ library MoreVaultsLib {
         address[] beforeAccountingFacets;
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
+        address[] nestedVaults;
+        address factory;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -284,10 +296,17 @@ library MoreVaultsLib {
             revert NoOracleForAsset();
         }
 
+        emit AssetToManageAdded(asset);
+
+        if (ds.factory != address(0)) {
+            if(IVaultsFactory(ds.factory).isVault(asset)) {
+                ds.nestedVaults.push(asset);
+                return;
+            }
+        }
+
         ds.isAssetAvailable[asset] = true;
         ds.availableAssets.push(asset);
-
-        emit AssetToManageAdded(asset);
     }
 
     function _enableAssetToDeposit(address asset) internal {
@@ -585,19 +604,14 @@ library MoreVaultsLib {
                 .facetAddressPosition;
 
             for (uint256 i; i < ds.facetsForAccounting.length; ) {
-                if (ds.facetsForAccounting[i] == _facetAddress) {
-                    (bool success, bytes memory result) = address(this)
-                        .staticcall(
-                            abi.encodeWithSignature(
-                                string.concat(
-                                    "accounting",
-                                    IGenericMoreVaultFacet(_facetAddress)
-                                        .facetName(),
-                                    "()"
-                                ),
-                                ""
-                            )
-                        );
+                bytes4 selector = bytes4(keccak256(abi.encodePacked(
+                    "accounting",
+                    IGenericMoreVaultFacet(_facetAddress)
+                        .facetName(),
+                    "()"
+                )));
+                if (ds.facetsForAccounting[i] == selector) {
+                    (bool success, bytes memory result) = address(this).staticcall(abi.encodeWithSelector(selector));
                     if (success) {
                         uint256 decodedAmount = abi.decode(result, (uint256));
                         if (decodedAmount > 10e4) {
@@ -607,7 +621,7 @@ library MoreVaultsLib {
                             ds.facetsForAccounting.length - 1
                         ];
                         ds.facetsForAccounting.pop();
-                    } else revert AccountingFailed(_facetAddress);
+                    } else revert AccountingFailed(selector);
                 }
             }
         }
@@ -676,5 +690,18 @@ library MoreVaultsLib {
         if (answer < 0) {
             revert OraclePriceIsNegative();
         }
+    }
+
+    function checkGasLimitOverflow() internal view {
+        // assembly {
+        //     let freePtr := mload(0x40)
+        //     mstore(freePtr, TOTAL_ASSETS_SELECTOR)
+        //     let res := staticcall(ALLOWED_GAS_FOR_ACCOUNTING, address(), freePtr, 4, 0, 0)
+
+        //     if iszero(res) {
+        //         mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
+        //         revert(freePtr, 4)
+        //     }
+        // }
     }
 }

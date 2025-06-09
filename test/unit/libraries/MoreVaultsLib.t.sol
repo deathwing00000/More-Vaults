@@ -12,6 +12,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {console} from "forge-std/console.sol";
 
 contract MoreVaultsLibTest is Test {
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -162,14 +163,12 @@ contract MoreVaultsLibTest is Test {
             ),
             abi.encode(denominationAsset)
         );
-
         // Mock denomination asset decimals
         vm.mockCall(
             denominationAsset,
             abi.encodeWithSelector(IERC20Metadata.decimals.selector),
             abi.encode(18)
         );
-
         // Mock oracle source for both wrappedNative and underlying token
         vm.mockCall(
             oracle,
@@ -187,7 +186,6 @@ contract MoreVaultsLibTest is Test {
             ),
             abi.encode(aggregator2, uint96(1000))
         );
-
         // Mock aggregators with real ETH price
         vm.mockCall(
             oracle,
@@ -215,19 +213,16 @@ contract MoreVaultsLibTest is Test {
             abi.encodeWithSelector(IAggregatorV2V3Interface.decimals.selector),
             abi.encode(8)
         );
-
         vm.mockCall(
             token1,
             abi.encodeWithSelector(IERC20Metadata.decimals.selector),
             abi.encode(8)
         );
-
         vm.mockCall(
             wrappedNative,
             abi.encodeWithSelector(IERC20Metadata.decimals.selector),
             abi.encode(18)
         );
-
         uint256 amount = 1e18; // 1 ETH
         uint256 result = MoreVaultsLib.convertToUnderlying(
             address(0),
