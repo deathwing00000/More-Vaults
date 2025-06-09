@@ -248,6 +248,17 @@ contract VaultFacet is
     }
 
     /**
+        Public hook for updating revenue from strategies with a complex flow.
+        Trigger before totalAssets() to get a precise value for total assets.
+    */
+    function prepareForAccounting() external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        _beforeAccounting(ds.beforeAccountingFacets);
+    }
+
+    /**
      * @notice override maxDeposit to check if the deposit capacity is exceeded
      * @dev Warning: the returned value can be slightly higher since accrued fee are not included.
      */
