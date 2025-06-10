@@ -5,18 +5,51 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {BaseVaultsRegistry} from "./BaseVaultsRegistry.sol";
+import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
+import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title VaultsRegistry
  * @notice Registry contract that stores information about allowed facets and their selectors
  */
 contract VaultsRegistry is BaseVaultsRegistry {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     error InvalidFee();
+    error NotFactoryVault(address);
 
     /// @dev Mapping of facet address => is allowed
     mapping(address => bool) private _allowedFacets;
+    mapping(address => EnumerableSet.AddressSet) private _facetToVaults;
+    address public factory;
 
     uint96 private constant MAX_PROTOCOL_FEE = 5000; // 50%
+
+    function pauseAffectedVaults(address _facet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        address[] memory vaults = _facetToVaults[_facet].values();
+        for (uint i = 0; i < vaults.length; ) {
+            IVaultFacet(vaults[i]).pause();
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function linkFacet(address facet) external {
+        if (!IVaultsFactory(factory).isFactoryVault(msg.sender)) {
+            revert NotFactoryVault(msg.sender);
+        }
+
+        _facetToVaults[facet].add(msg.sender);
+    }
+
+    function unlinkFacet(address facet) external {
+        if (!IVaultsFactory(factory).isFactoryVault(msg.sender)) {
+            revert NotFactoryVault(msg.sender);
+        }
+        _facetToVaults[facet].remove(msg.sender);
+    }
 
     /**
      * @inheritdoc IMoreVaultsRegistry
@@ -129,6 +162,10 @@ contract VaultsRegistry is BaseVaultsRegistry {
         address protocol
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         _setWhitelisted(protocol, false);
+    }
+
+    function setFactoryAddress(address _factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        factory = _factory;
     }
 
     /**

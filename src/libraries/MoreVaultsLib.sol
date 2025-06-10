@@ -11,7 +11,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
-import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
+import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
+
 
 bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
@@ -137,6 +138,7 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
         address[] nestedVaults;
+        address registry;
         address factory;
         WithdrawableShares withdrawableShares;
         mapping(address => WithdrawRequest) withdrawalRequests;
@@ -414,6 +416,11 @@ library MoreVaultsLib {
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
+                initializeAfterAddition(
+                    _diamondCut[facetIndex].facetAddress,
+                    _diamondCut[facetIndex].initData
+                );
+                
             } else if (action == IDiamondCut.FacetCutAction.Replace) {
                 replaceFunctions(
                     _diamondCut[facetIndex].facetAddress,
@@ -426,12 +433,6 @@ library MoreVaultsLib {
                 );
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
-            }
-            if (action == IDiamondCut.FacetCutAction.Add) {
-                initializeAfterAddition(
-                    _diamondCut[facetIndex].facetAddress,
-                    _diamondCut[facetIndex].initData
-                );
             }
             unchecked {
                 ++facetIndex;
@@ -779,5 +780,16 @@ library MoreVaultsLib {
             block.timestamp >= requestTimestamp &&
             block.timestamp <= _windowEndsAt &&
             requestTimestamp < _windowTimestamp;
+    }
+
+    function addNestedVault(address vault) internal {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        ds.nestedVaults.push(vault);
+
+        uint256 gasBefore = gasleft();
+        IVaultFacet(vault).beforeAccounting();
+        IVaultFacet(vault).totalAssets();
+        uint256 gasAfter = gasleft();
+        ds.gasLimit.nestedVaultsGas += uint48(gasBefore - gasAfter);
     }
 }

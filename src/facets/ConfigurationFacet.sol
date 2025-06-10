@@ -5,8 +5,11 @@ import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IConfigurationFacet} from "../interfaces/facets/IConfigurationFacet.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
+import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
 
 contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
+    error NotFactoryVault();
+
     function INITIALIZABLE_STORAGE_SLOT()
         internal
         pure
@@ -23,8 +26,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address factory = abi.decode(data, (address));
-        ds.factory = factory;
+        (ds.factory, ds.registry) = abi.decode(data, (address, address));
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
     }
 
@@ -77,7 +79,15 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     function addAvailableAsset(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib._addAvailableAsset(asset);
+        MoreVaultsLib.checkGasLimitOverflow();
+    }
 
+    function addVault(address vault) external {
+        AccessControlLib.validateCurator(msg.sender);
+        if (IVaultsFactory(MoreVaultsLib.moreVaultsStorage().factory).isVault(vault)) {
+            revert NotFactoryVault();
+        }
+        MoreVaultsLib.addNestedVault(vault);
         MoreVaultsLib.checkGasLimitOverflow();
     }
 

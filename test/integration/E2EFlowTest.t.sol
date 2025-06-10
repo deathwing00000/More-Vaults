@@ -706,7 +706,7 @@ contract E2EFlowTest is Test {
             facetAddress: address(configuration),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsConfigurationFacet,
-            initData: abi.encode(factory)
+            initData: abi.encode(factory, registry)
         });
         cuts[3] = IDiamondCut.FacetCut({
             facetAddress: address(multicall),

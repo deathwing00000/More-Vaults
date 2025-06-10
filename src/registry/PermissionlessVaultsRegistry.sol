@@ -70,4 +70,12 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
     function isWhitelisted(address) external pure override returns (bool) {
         return true;
     }
+
+    function linkFacet(address) external pure override {
+        revert AllFacetsAllowedByDefault();
+    }
+
+    function unlinkFacet(address) external pure override {
+        revert AllFacetsAllowedByDefault();
+    }
 }

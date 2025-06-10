@@ -95,4 +95,6 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
     function setFee(uint96 fee) external;
 
     function curator() external view returns (address);
+
+    function beforeAccounting() external;
 }

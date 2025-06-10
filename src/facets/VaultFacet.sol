@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {MoreVaultsLib, NESTED_UPDATE_FAILED, BEFORE_ACCOUNTING_SELECTOR, BEFORE_ACCOUNTING_FAILED_ERROR, ACCOUNTING_FAILED_ERROR, BALANCE_OF_SELECTOR} from "../libraries/MoreVaultsLib.sol";
+import {
+    MoreVaultsLib,
+    NESTED_UPDATE_FAILED,
+    BEFORE_ACCOUNTING_SELECTOR,
+    BEFORE_ACCOUNTING_FAILED_ERROR,
+    ACCOUNTING_FAILED_ERROR,
+    BALANCE_OF_SELECTOR,
+    TOTAL_ASSETS_SELECTOR,
+    TOTAL_ASSETS_RUN_FAILED
+} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -98,7 +107,12 @@ contract VaultFacet is
      * @inheritdoc IVaultFacet
      */
     function pause() external {
-        AccessControlLib.validateOwner(msg.sender);
+        if (
+            msg.sender != AccessControlLib.vaultOwner() && 
+            msg.sender != MoreVaultsLib.moreVaultsStorage().registry
+        ) {
+            revert AccessControlLib.UnauthorizedAccess();
+        }
         _pause();
     }
 
@@ -106,7 +120,12 @@ contract VaultFacet is
      * @inheritdoc IVaultFacet
      */
     function unpause() external {
-        AccessControlLib.validateOwner(msg.sender);
+        if (
+            msg.sender != AccessControlLib.vaultOwner() && 
+            msg.sender != MoreVaultsLib.moreVaultsStorage().registry
+        ) {
+            revert AccessControlLib.UnauthorizedAccess();
+        }
         _unpause();
     }
 
@@ -258,6 +277,40 @@ contract VaultFacet is
         }
     }
 
+    function _accountNestedVaults(
+        address[] storage _vaults,
+        uint256 _totalAssets,
+        uint256 _freePtr
+    ) private view returns (uint256) {
+        assembly {
+            // put function selector in the free memory slot
+            mstore(_freePtr, TOTAL_ASSETS_SELECTOR)
+            // load vaults length
+            let length := sload(_vaults.slot)
+            // calc beginning of the array
+            mstore(0, _vaults.slot)
+            let slot := keccak256(0, 0x20)
+            // move return value offset to the end of function call data
+            let retOffset := add(_freePtr, 4)
+            // loop through vaults
+            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+                // read vault and execute staticcall
+                let vault := sload(add(slot, i))
+                // perform totalAssets() call
+                let res := staticcall(gas(), vault, _freePtr, 4, retOffset, 0x20)
+                // if call failed, revert with error
+                if iszero(res) {
+                    mstore(_freePtr, TOTAL_ASSETS_RUN_FAILED)
+                    mstore(add(_freePtr, 0x04), vault)
+                    revert(_freePtr, 0x24)
+                }
+                // add nested vault total assets
+                _totalAssets := add(_totalAssets, mload(retOffset))
+            }
+        }
+        return _totalAssets;
+    }
+
     /**
      * @inheritdoc IVaultFacet
      */
@@ -279,6 +332,8 @@ contract VaultFacet is
         _totalAssets = _accountAvailableAssets(ds.availableAssets, ds.staked, ds.wrappedNative, ds.isNativeDeposit, freePtr);
         // account facets
         _totalAssets = _accountFacets(ds.facetsForAccounting, _totalAssets, freePtr);
+        // account nested vaults
+        _totalAssets = _accountNestedVaults(ds.nestedVaults, _totalAssets, freePtr);
     }
 
     /**
