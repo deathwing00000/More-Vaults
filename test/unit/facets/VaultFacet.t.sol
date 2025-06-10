@@ -522,6 +522,8 @@ contract VaultFacetTest is Test {
     }
 
     function test_withdraw_ShouldBurnShares() public {
+        vm.prank(curator);
+        VaultFacet(facet).updateTimelockDuration(110);
         // Mock oracle call
         vm.mockCall(
             registry,
@@ -589,6 +591,12 @@ contract VaultFacetTest is Test {
 
         uint256 withdrawAmount = 50 ether;
         vm.prank(user);
+        VaultFacet(facet).requestWithdraw(withdrawAmount);
+        vm.warp(block.timestamp + 100);
+        vm.prank(curator);
+        VaultFacet(facet).updateWithdrawableShares(block.timestamp + 1, 5_000 ether);
+        vm.warp(block.timestamp + 100);
+        vm.prank(user);
         VaultFacet(facet).withdraw(withdrawAmount, user, user);
 
         assertEq(
@@ -604,6 +612,8 @@ contract VaultFacetTest is Test {
     }
 
     function test_redeem_ShouldBurnShares() public {
+        vm.prank(curator);
+        VaultFacet(facet).updateTimelockDuration(110);
         // Mock oracle call
         vm.mockCall(
             registry,
@@ -671,6 +681,12 @@ contract VaultFacetTest is Test {
 
         uint256 redeemAmount = 50 ether;
         uint256 balanceBefore = IERC20(asset).balanceOf(user);
+        vm.prank(user);
+        VaultFacet(facet).requestRedeem(redeemAmount);
+        vm.warp(block.timestamp + 100);
+        vm.prank(curator);
+        VaultFacet(facet).updateWithdrawableShares(block.timestamp + 1, 100 ether);
+        vm.warp(block.timestamp + 100);
         vm.prank(user);
         uint256 assets = VaultFacet(facet).redeem(redeemAmount, user, user);
 

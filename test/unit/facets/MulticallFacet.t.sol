@@ -52,7 +52,7 @@ contract MulticallFacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        MulticallFacet(facet).initialize(abi.encode(timeLockPeriod));
+        MulticallFacet(facet).initialize(abi.encode(timeLockPeriod, 10_000));
         assertEq(
             MoreVaultsStorageHelper.getTimeLockPeriod(address(facet)),
             timeLockPeriod,

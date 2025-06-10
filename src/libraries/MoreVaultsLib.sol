@@ -715,6 +715,9 @@ library MoreVaultsLib {
         MoreVaultsStorage storage ds = moreVaultsStorage();
 
         GasLimit storage gl = ds.gasLimit;
+
+        if (gl.value == 0) return;
+
         bytes32[] memory heldIds = ds.held_ids.values();
 
         uint256 tokensHeldLength;
@@ -770,11 +773,11 @@ library MoreVaultsLib {
             return false;
         }
 
-        uint256 requestTimestamp_ = _windowEndsAt - _windowDuration;
+        uint256 requestTimestamp = _windowEndsAt - _windowDuration;
 
         return
-            block.timestamp >= requestTimestamp_ &&
+            block.timestamp >= requestTimestamp &&
             block.timestamp <= _windowEndsAt &&
-            requestTimestamp_ < _windowTimestamp;
+            requestTimestamp < _windowTimestamp;
     }
 }

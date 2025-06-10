@@ -426,7 +426,7 @@ contract E2EFlowTest is Test {
         functionSelectorsMulticallFacet[4] = MulticallFacet
             .getCurrentNonce
             .selector;
-        bytes memory initDataMulticallFacet = abi.encode(0);
+        bytes memory initDataMulticallFacet = abi.encode(0, 10_000);
 
         // selectors for vault
         bytes4[] memory functionSelectorsVaultFacet = new bytes4[](30);
