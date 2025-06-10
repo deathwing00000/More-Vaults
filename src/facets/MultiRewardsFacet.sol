@@ -110,8 +110,6 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].add(staking);
         ds.stakingTokenToMultiRewards[address(stakingToken)] = staking;
         ds.staked[address(stakingToken)] += amount;
-
-        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

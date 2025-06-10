@@ -47,8 +47,10 @@ library MoreVaultsLib {
     error FacetHasBalance(address facet);
     error AccountingFailed(bytes32 selector);
     error UnsupportedProtocol(address protocol);
+    error AccountingGasLimitExceeded(uint256 limit, uint256 consumption);
 
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
     using Math for uint256;
 
     // 32 bytes keccak hash of a string to use as a diamond storage location.
@@ -94,6 +96,14 @@ library MoreVaultsLib {
         uint256 shares;
     }
 
+    struct GasLimit {
+        uint48 availableTokenAccountingGas;
+        uint48 heldTokenAccountingGas;
+        uint48 facetAccountingGas;
+        uint48 nestedVaultsGas;
+        uint48 value;
+    }
+
     struct MoreVaultsStorage {
         // maps function selector to the facet address and
         // the position of the selector in the facetFunctionSelectors.selectors array
@@ -130,6 +140,9 @@ library MoreVaultsLib {
         address factory;
         WithdrawableShares withdrawableShares;
         mapping(address => WithdrawRequest) withdrawalRequests;
+        uint256 maxSlippagePercent;
+        GasLimit gasLimit;
+        EnumerableSet.Bytes32Set held_ids;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -310,13 +323,6 @@ library MoreVaultsLib {
         }
 
         emit AssetToManageAdded(asset);
-
-        if (ds.factory != address(0)) {
-            if(IVaultsFactory(ds.factory).isVault(asset)) {
-                ds.nestedVaults.push(asset);
-                return;
-            }
-        }
 
         ds.isAssetAvailable[asset] = true;
         ds.availableAssets.push(asset);
@@ -706,16 +712,30 @@ library MoreVaultsLib {
     }
 
     function checkGasLimitOverflow() internal view {
-        // assembly {
-        //     let freePtr := mload(0x40)
-        //     mstore(freePtr, TOTAL_ASSETS_SELECTOR)
-        //     let res := staticcall(ALLOWED_GAS_FOR_ACCOUNTING, address(), freePtr, 4, 0, 0)
+        MoreVaultsStorage storage ds = moreVaultsStorage();
 
-        //     if iszero(res) {
-        //         mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
-        //         revert(freePtr, 4)
-        //     }
-        // }
+        GasLimit storage gl = ds.gasLimit;
+        bytes32[] memory heldIds = ds.held_ids.values();
+
+        uint256 tokensHeldLength;
+        for (uint256 i = 0; i < heldIds.length;) {
+            unchecked {
+                tokensHeldLength += ds.tokensHeld[heldIds[i]].length();
+                ++i;
+            }
+        }
+
+        uint256 consumption;
+        unchecked {
+            consumption = tokensHeldLength * gl.heldTokenAccountingGas +
+                ds.availableAssets.length * gl.availableTokenAccountingGas +
+                ds.facetsForAccounting.length * gl.facetAccountingGas +
+                gl.nestedVaultsGas;
+        }
+
+        if (consumption > ds.gasLimit.value) {
+            revert AccountingGasLimitExceeded(ds.gasLimit.value, consumption);
+        }
     }
 
     function withdrawFromRequest(

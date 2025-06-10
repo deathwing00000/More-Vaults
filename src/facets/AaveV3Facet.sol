@@ -156,11 +156,6 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
 
         address mToken = IPool(pool).getReserveData(asset).aTokenAddress;
         ds.tokensHeld[MTOKENS_ID].add(mToken);
-
-        // Skip gas check in test environment
-        if (block.chainid != 31337) {
-            MoreVaultsLib.checkGasLimitOverflow();
-        }
     }
 
     /**
@@ -214,11 +209,6 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                 .getReserveData(asset)
                 .variableDebtTokenAddress;
         ds.tokensHeld[MORE_DEBT_TOKENS_ID].add(debtToken);
-
-        // Skip gas check in test environment
-        if (block.chainid != 31337) {
-            MoreVaultsLib.checkGasLimitOverflow();
-        }
     }
 
     /**
@@ -333,8 +323,6 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
             ds.tokensHeld[MORE_DEBT_TOKENS_ID].remove(stableDebtToken);
             ds.tokensHeld[MORE_DEBT_TOKENS_ID].add(variableDebtToken);
         }
-
-        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**
@@ -417,8 +405,6 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                     ++i;
                 }
             }
-
-            MoreVaultsLib.checkGasLimitOverflow();
         }
     }
 

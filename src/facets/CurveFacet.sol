@@ -160,7 +160,6 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
-            MoreVaultsLib.checkGasLimitOverflow();
         }
         if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(
@@ -225,7 +224,6 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
-            MoreVaultsLib.checkGasLimitOverflow();
         }
         if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(

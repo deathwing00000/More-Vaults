@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
+import {MoreVaultsLib, TOTAL_ASSETS_RUN_FAILED, TOTAL_ASSETS_SELECTOR} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
@@ -15,6 +15,8 @@ contract MulticallFacet is
     ContextUpgradeable,
     ReentrancyGuard
 {
+    error SlippageExceeded(uint256 slippagePercent, uint256 maxSlippagePercent);
+
     function INITIALIZABLE_STORAGE_SLOT()
         internal
         pure
@@ -29,13 +31,14 @@ contract MulticallFacet is
     }
 
     function initialize(bytes calldata data) external initializerFacet {
-        uint256 timeLockPeriod = abi.decode(data, (uint256));
+        (uint256 timeLockPeriod, uint256 maxSlippage) = abi.decode(data, (uint256, uint256));
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IMulticallFacet).interfaceId] = true;
 
         MoreVaultsLib._setTimeLockPeriod(timeLockPeriod);
+        ds.maxSlippagePercent = maxSlippage;
     }
 
     /**
@@ -86,11 +89,50 @@ contract MulticallFacet is
             revert ActionsStillPending(actionsNonce);
         }
 
+        uint256 freePtr;
+        uint256 totalBefore;
+        uint256 totalAfter;
+        assembly {
+            freePtr := mload(0x40)
+            mstore(freePtr, TOTAL_ASSETS_SELECTOR)
+            let retOffset := add(freePtr, 4)
+            let res := staticcall(gas(), address(), freePtr, 4, retOffset, 0x20)
+
+            if iszero(res) {
+                mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
+                revert(freePtr, 4)
+            }
+            totalBefore := mload(retOffset)
+            mstore(0x40, add(freePtr, 4)) // leave the function signature for 2nd call
+        }
+
         _multicall(actions.actionsData);
         delete ds.pendingActions[actionsNonce];
 
-        // TODO add balances check for slippage protection
-        // TODO add gas check
+        assembly {
+            mstore(freePtr, TOTAL_ASSETS_SELECTOR)
+            let retOffset := add(freePtr, 4)
+            let res := staticcall(gas(), address(), freePtr, 4, retOffset, 0x20)
+
+            if iszero(res) {
+                mstore(freePtr, TOTAL_ASSETS_RUN_FAILED)
+                revert(freePtr, 4)
+            }
+            totalAfter := mload(retOffset)
+        }
+
+        uint256 slippagePercent;
+        if (totalAfter > totalBefore) {
+            slippagePercent = ((totalAfter - totalBefore) * 10_000) / totalBefore;
+        } else {
+            slippagePercent = ((totalBefore - totalAfter) * 10_000) / totalBefore;
+        }
+
+        if (slippagePercent > ds.maxSlippagePercent) {
+            revert SlippageExceeded(slippagePercent, ds.maxSlippagePercent);
+        }
+
+        MoreVaultsLib.checkGasLimitOverflow();
 
         emit ActionsExecuted(msg.sender, actionsNonce);
     }

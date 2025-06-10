@@ -28,6 +28,25 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
     }
 
+    function setMaxSlippagePercent(uint256 _newSlippagePercent) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.moreVaultsStorage().maxSlippagePercent = _newSlippagePercent;
+    }
+
+    function setGasLimitForAccounting(
+        uint48 _availableTokenAccountingGas,
+        uint48 _heldTokenAccountingGas,
+        uint48 _facetAccountingGas,
+        uint48 _newLimit
+    ) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.GasLimit storage gl = MoreVaultsLib.moreVaultsStorage().gasLimit;
+        gl.availableTokenAccountingGas = _availableTokenAccountingGas;
+        gl.heldTokenAccountingGas = _heldTokenAccountingGas;
+        gl.facetAccountingGas = _facetAccountingGas;
+        gl.value = _newLimit;
+    }
+
     /**
      * @inheritdoc IConfigurationFacet
      */
