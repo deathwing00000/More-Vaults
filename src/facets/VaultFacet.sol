@@ -34,8 +34,11 @@ contract VaultFacet is
     error InvalidSharesAmount();
     error InvalidAssetsAmount();
     event WithdrawableSharesUpdated(uint256 timestamp, uint256 shares);
-    error SharesAmountExceedsBalance();
     error CantProcessWithdrawRequest();
+    error CanNotExecuteWithdraw();
+
+    event WithdrawRequestCreated(address requester, uint256 sharesAmount, uint256 endsAt);
+    event WithdrawRequestFulfilled(address requester, address receiver, uint256 sharesAmount, uint256 assetAmount);
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -456,8 +459,9 @@ contract VaultFacet is
             revert InvalidSharesAmount();
         }
 
-        if (_shares > maxRedeem(msg.sender)) {
-            revert SharesAmountExceedsBalance();
+        uint256 maxRedeem_ = maxRedeem(msg.sender);
+        if (_shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(msg.sender, _shares, maxRedeem_);
         }
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -465,7 +469,10 @@ contract VaultFacet is
 
         MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
         request.shares = _shares;
-        request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        request.timelockEndsAt = endsAt;
+
+        emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
     }
 
     function requestWithdraw(uint256 _assets) external {
@@ -486,8 +493,9 @@ contract VaultFacet is
             revert InvalidSharesAmount();
         }
 
-        if (shares > maxRedeem(msg.sender)) {
-            revert SharesAmountExceedsBalance();
+        uint256 maxRedeem_ = maxRedeem(msg.sender);
+        if (shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(msg.sender, shares, maxRedeem_);
         }
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -495,7 +503,10 @@ contract VaultFacet is
 
         MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
         request.shares = shares;
+        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
         request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+
+        emit WithdrawRequestCreated(msg.sender, shares, endsAt);
     }
 
     /**
@@ -527,8 +538,14 @@ contract VaultFacet is
             revert CantProcessWithdrawRequest();
         }
 
-        if (shares > maxRedeem(owner)) {
-            revert SharesAmountExceedsBalance();
+        uint256 maxRedeem_ = maxRedeem(owner);
+        if (shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
+        }
+
+        uint256 maxMint_ = maxMint(receiver);
+        if (shares > maxMint_) {
+            revert ERC4626ExceededMaxMint(receiver, shares, maxMint_);
         }
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -538,6 +555,8 @@ contract VaultFacet is
             : 0;
 
         _withdraw(_msgSender(), receiver, owner, assets, shares);
+
+        emit WithdrawRequestFulfilled(owner, receiver, shares, assets);
     }
 
     /**
@@ -553,7 +572,7 @@ contract VaultFacet is
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
         returns (uint256 assets)
-    {
+    {   
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
@@ -563,8 +582,14 @@ contract VaultFacet is
             revert CantProcessWithdrawRequest();
         }
 
-        if (shares > maxRedeem(owner)) {
-            revert SharesAmountExceedsBalance();
+        uint256 maxRedeem_ = maxRedeem(owner);
+        if (shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
+        }
+
+        uint256 maxMint_ = maxMint(receiver);
+        if (shares > maxMint_) {
+            revert ERC4626ExceededMaxMint(receiver, shares, maxMint_);
         }
 
         uint256 newTotalAssets = _accrueInterest();
@@ -581,6 +606,8 @@ contract VaultFacet is
             : 0;
 
         _withdraw(_msgSender(), receiver, owner, assets, shares);
+
+        emit WithdrawRequestFulfilled(owner, receiver, shares, assets);
     }
 
     /**
