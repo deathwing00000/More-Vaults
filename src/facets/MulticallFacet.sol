@@ -90,6 +90,7 @@ contract MulticallFacet is
         delete ds.pendingActions[actionsNonce];
 
         // TODO add balances check for slippage protection
+        // TODO add gas check
 
         emit ActionsExecuted(msg.sender, actionsNonce);
     }

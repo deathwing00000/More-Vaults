@@ -83,6 +83,17 @@ library MoreVaultsLib {
         uint256 pendingUntil;
     }
 
+    struct WithdrawableShares {
+        uint64 timelockDuration;
+        uint64 windowTimestamp;
+        uint256 amount;
+    }
+
+    struct WithdrawRequest {
+        uint256 timelockEndsAt;    
+        uint256 shares;
+    }
+
     struct MoreVaultsStorage {
         // maps function selector to the facet address and
         // the position of the selector in the facetFunctionSelectors.selectors array
@@ -117,6 +128,8 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToMultiRewards;
         address[] nestedVaults;
         address factory;
+        WithdrawableShares withdrawableShares;
+        mapping(address => WithdrawRequest) withdrawalRequests;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -703,5 +716,45 @@ library MoreVaultsLib {
         //         revert(freePtr, 4)
         //     }
         // }
+    }
+
+    function withdrawFromRequest(
+        address _requester,
+        uint256 _shares
+    ) internal returns (bool) {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
+        WithdrawRequest storage request = ds.withdrawalRequests[_requester];
+
+        if (
+            isWithdrawableRequest(
+                request.timelockEndsAt,
+                withdrawableShares.timelockDuration,
+                withdrawableShares.windowTimestamp
+            ) && request.shares >= _shares
+        ) {
+            request.shares -= _shares;
+            withdrawableShares.amount -= _shares;
+            return true;
+        }
+
+        return false;
+    }
+
+    function isWithdrawableRequest(
+        uint256 _windowEndsAt,
+        uint256 _windowDuration,
+        uint256 _windowTimestamp
+    ) private view returns (bool) {
+        if (_windowEndsAt < _windowDuration) {
+            return false;
+        }
+
+        uint256 requestTimestamp_ = _windowEndsAt - _windowDuration;
+
+        return
+            block.timestamp >= requestTimestamp_ &&
+            block.timestamp <= _windowEndsAt &&
+            requestTimestamp_ < _windowTimestamp;
     }
 }

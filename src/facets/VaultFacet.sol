@@ -21,6 +21,13 @@ contract VaultFacet is
 {
     using Math for uint256;
 
+    error WithdrawSchedulerInvalidTimestamp(uint256 timestamp);
+    error InvalidSharesAmount();
+    error InvalidAssetsAmount();
+    event WithdrawableSharesUpdated(uint256 timestamp, uint256 shares);
+    error SharesAmountExceedsBalance();
+    error CantProcessWithdrawRequest();
+
     function INITIALIZABLE_STORAGE_SLOT()
         internal
         pure
@@ -389,6 +396,53 @@ contract VaultFacet is
         _deposit(_msgSender(), receiver, assets, shares);
     }
 
+    function requestRedeem(uint256 _shares) external {
+        if (_shares == 0) {
+            revert InvalidSharesAmount();
+        }
+
+        if (_shares > maxRedeem(msg.sender)) {
+            revert SharesAmountExceedsBalance();
+        }
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        request.shares = _shares;
+        request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+    }
+
+    function requestWithdraw(uint256 _assets) external {
+        if (_assets == 0) {
+            revert InvalidAssetsAmount();
+        }
+
+        uint256 newTotalAssets = _accrueInterest();
+
+        uint256 shares = _convertToSharesWithTotals(
+            _assets,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Ceil
+        );
+
+        if (shares == 0) {
+            revert InvalidSharesAmount();
+        }
+
+        if (shares > maxRedeem(msg.sender)) {
+            revert SharesAmountExceedsBalance();
+        }
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        request.shares = shares;
+        request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+    }
+
     /**
      * @inheritdoc IVaultFacet
      */
@@ -411,6 +465,16 @@ contract VaultFacet is
             newTotalAssets,
             Math.Rounding.Ceil
         );
+
+        bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
+
+        if(!isWithdrawable) {
+            revert CantProcessWithdrawRequest();
+        }
+
+        if (shares > maxRedeem(owner)) {
+            revert SharesAmountExceedsBalance();
+        }
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -435,6 +499,19 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 assets)
     {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
+
+        if(!isWithdrawable) {
+            revert CantProcessWithdrawRequest();
+        }
+
+        if (shares > maxRedeem(owner)) {
+            revert SharesAmountExceedsBalance();
+        }
+
         uint256 newTotalAssets = _accrueInterest();
 
         assets = _convertToAssetsWithTotals(
@@ -444,8 +521,6 @@ contract VaultFacet is
             Math.Rounding.Floor
         );
 
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
         ds.lastTotalAssets = newTotalAssets > assets
             ? newTotalAssets - assets
             : 0;
@@ -523,6 +598,35 @@ contract VaultFacet is
         ds.lastTotalAssets = newTotalAssets;
 
         MoreVaultsLib._setFee(_fee);
+    }
+
+    function updateWithdrawableShares(uint256 _timestamp, uint256 _shares) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        if (block.timestamp >= _timestamp) revert WithdrawSchedulerInvalidTimestamp(_timestamp);
+
+        MoreVaultsLib.WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
+
+        uint256 lastUnlockTimestamp = withdrawableShares.windowTimestamp;
+
+        if (lastUnlockTimestamp > _timestamp) {
+            revert WithdrawSchedulerInvalidTimestamp(_timestamp);
+        }
+
+        withdrawableShares.windowTimestamp = uint64(_timestamp);
+        withdrawableShares.amount = _shares;
+
+        emit WithdrawableSharesUpdated(_timestamp, _shares);
+    }
+
+    function updateTimelockDuration(uint64 _duration) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.withdrawableShares.timelockDuration = _duration;
     }
 
     /**
