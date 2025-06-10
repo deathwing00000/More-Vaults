@@ -184,7 +184,8 @@ contract MulticallFacet is
     ) internal virtual returns (bytes[] memory results) {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; ) {
-            (bool success, bytes memory result) = address(this).call(data[i]);
+            (address target, bytes memory callData) = abi.decode(data[i], (address, bytes));
+            (bool success, bytes memory result) = target.call(callData);
             if (!success) {
                 revert MulticallFailed(i, result);
             }

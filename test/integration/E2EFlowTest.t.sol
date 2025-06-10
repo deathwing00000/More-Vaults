@@ -284,13 +284,14 @@ contract E2EFlowTest is Test {
         }
         vm.startPrank(CURATOR);
         bytes[] memory actions = new bytes[](1);
-        actions[0] = abi.encodeWithSelector(
+        bytes memory callData = abi.encodeWithSelector(
             IAaveV3Facet.supply.selector,
             MORE_MARKETS_POOL,
             address(WFLOW),
             DEPOSIT_AMOUNT,
             0
         );
+        actions[0] = abi.encode(address(vaultAddress), callData);
 
         IMulticallFacet(vaultAddress).submitActions(actions);
         assertEq(wflow.balanceOf(address(vaultAddress)), 0);
