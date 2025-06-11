@@ -184,7 +184,7 @@ interface IMoreVaultsRegistry {
      */
     function isWhitelisted(address protocol) external view returns (bool);
 
-    function linkFacet(address) external;
+    // function linkFacet(address) external;
 
-    function unlinkFacet(address) external;
+    // function unlinkFacet(address) external;
 }

@@ -30,9 +30,9 @@ contract TestBaseVaultsRegistry is BaseVaultsRegistry {
 
     function isWhitelisted(address) external view override returns (bool) {}
 
-    function linkFacet(address) external override {}
+    // function linkFacet(address) external override {}
 
-    function unlinkFacet(address) external override {}
+    // function unlinkFacet(address) external override {}
 }
 
 contract BaseVaultsRegistryTest is Test {

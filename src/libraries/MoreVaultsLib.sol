@@ -93,7 +93,7 @@ library MoreVaultsLib {
     }
 
     struct WithdrawRequest {
-        uint256 timelockEndsAt;    
+        uint256 timelockEndsAt;
         uint256 shares;
     }
 
@@ -420,19 +420,25 @@ library MoreVaultsLib {
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].initData
                 );
-                IMoreVaultsRegistry(registry).linkFacet(_diamondCut[facetIndex].facetAddress);
+                // IMoreVaultsRegistry(registry).linkFacet(
+                //     _diamondCut[facetIndex].facetAddress
+                // );
             } else if (action == IDiamondCut.FacetCutAction.Replace) {
                 replaceFunctions(
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
-                IMoreVaultsRegistry(registry).linkFacet(_diamondCut[facetIndex].facetAddress);
+                // IMoreVaultsRegistry(registry).linkFacet(
+                //     _diamondCut[facetIndex].facetAddress
+                // );
             } else if (action == IDiamondCut.FacetCutAction.Remove) {
                 removeFunctions(
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
-                IMoreVaultsRegistry(registry).unlinkFacet(_diamondCut[facetIndex].facetAddress);
+                // IMoreVaultsRegistry(registry).unlinkFacet(
+                //     _diamondCut[facetIndex].facetAddress
+                // );
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
             }
@@ -626,14 +632,18 @@ library MoreVaultsLib {
                 .facetAddressPosition;
 
             for (uint256 i; i < ds.facetsForAccounting.length; ) {
-                bytes4 selector = bytes4(keccak256(abi.encodePacked(
-                    "accounting",
-                    IGenericMoreVaultFacet(_facetAddress)
-                        .facetName(),
-                    "()"
-                )));
+                bytes4 selector = bytes4(
+                    keccak256(
+                        abi.encodePacked(
+                            "accounting",
+                            IGenericMoreVaultFacet(_facetAddress).facetName(),
+                            "()"
+                        )
+                    )
+                );
                 if (ds.facetsForAccounting[i] == selector) {
-                    (bool success, bytes memory result) = address(this).staticcall(abi.encodeWithSelector(selector));
+                    (bool success, bytes memory result) = address(this)
+                        .staticcall(abi.encodeWithSelector(selector));
                     if (success) {
                         uint256 decodedAmount = abi.decode(result, (uint256));
                         if (decodedAmount > 10e4) {
@@ -724,7 +734,7 @@ library MoreVaultsLib {
         bytes32[] memory heldIds = ds.held_ids.values();
 
         uint256 tokensHeldLength;
-        for (uint256 i = 0; i < heldIds.length;) {
+        for (uint256 i = 0; i < heldIds.length; ) {
             unchecked {
                 tokensHeldLength += ds.tokensHeld[heldIds[i]].length();
                 ++i;
@@ -733,9 +743,13 @@ library MoreVaultsLib {
 
         uint256 consumption;
         unchecked {
-            consumption = tokensHeldLength * gl.heldTokenAccountingGas +
-                ds.availableAssets.length * gl.availableTokenAccountingGas +
-                ds.facetsForAccounting.length * gl.facetAccountingGas +
+            consumption =
+                tokensHeldLength *
+                gl.heldTokenAccountingGas +
+                ds.availableAssets.length *
+                gl.availableTokenAccountingGas +
+                ds.facetsForAccounting.length *
+                gl.facetAccountingGas +
                 gl.nestedVaultsGas;
         }
 

@@ -71,11 +71,11 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
         return true;
     }
 
-    function linkFacet(address) external pure override {
-        revert AllFacetsAllowedByDefault();
-    }
+    // function linkFacet(address) external pure override {
+    //     revert AllFacetsAllowedByDefault();
+    // }
 
-    function unlinkFacet(address) external pure override {
-        revert AllFacetsAllowedByDefault();
-    }
+    // function unlinkFacet(address) external pure override {
+    //     revert AllFacetsAllowedByDefault();
+    // }
 }

@@ -1,16 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {
-    MoreVaultsLib,
-    NESTED_UPDATE_FAILED,
-    BEFORE_ACCOUNTING_SELECTOR,
-    BEFORE_ACCOUNTING_FAILED_ERROR,
-    ACCOUNTING_FAILED_ERROR,
-    BALANCE_OF_SELECTOR,
-    TOTAL_ASSETS_SELECTOR,
-    TOTAL_ASSETS_RUN_FAILED
-} from "../libraries/MoreVaultsLib.sol";
+import {MoreVaultsLib, NESTED_UPDATE_FAILED, BEFORE_ACCOUNTING_SELECTOR, BEFORE_ACCOUNTING_FAILED_ERROR, ACCOUNTING_FAILED_ERROR, BALANCE_OF_SELECTOR, TOTAL_ASSETS_SELECTOR, TOTAL_ASSETS_RUN_FAILED} from "../libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -21,6 +12,7 @@ import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
+import {console} from "forge-std/console.sol";
 
 contract VaultFacet is
     ERC4626Upgradeable,
@@ -37,8 +29,17 @@ contract VaultFacet is
     error CantProcessWithdrawRequest();
     error CanNotExecuteWithdraw();
 
-    event WithdrawRequestCreated(address requester, uint256 sharesAmount, uint256 endsAt);
-    event WithdrawRequestFulfilled(address requester, address receiver, uint256 sharesAmount, uint256 assetAmount);
+    event WithdrawRequestCreated(
+        address requester,
+        uint256 sharesAmount,
+        uint256 endsAt
+    );
+    event WithdrawRequestFulfilled(
+        address requester,
+        address receiver,
+        uint256 sharesAmount,
+        uint256 assetAmount
+    );
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -111,7 +112,7 @@ contract VaultFacet is
      */
     function pause() external {
         if (
-            msg.sender != AccessControlLib.vaultOwner() && 
+            msg.sender != AccessControlLib.vaultOwner() &&
             msg.sender != MoreVaultsLib.moreVaultsStorage().registry
         ) {
             revert AccessControlLib.UnauthorizedAccess();
@@ -124,7 +125,7 @@ contract VaultFacet is
      */
     function unpause() external {
         if (
-            msg.sender != AccessControlLib.vaultOwner() && 
+            msg.sender != AccessControlLib.vaultOwner() &&
             msg.sender != MoreVaultsLib.moreVaultsStorage().registry
         ) {
             revert AccessControlLib.UnauthorizedAccess();
@@ -148,7 +149,11 @@ contract VaultFacet is
             mstore(0, _baf.slot)
             let slot := keccak256(0, 0x20)
             mstore(freePtr, BEFORE_ACCOUNTING_SELECTOR)
-            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 1)
+            } {
                 let facet := sload(add(slot, i))
                 let res := delegatecall(gas(), facet, freePtr, 4, 0, 0) // call facets for acounting, ignore return values
                 // if delegatecall fails, revert with the error
@@ -162,7 +167,11 @@ contract VaultFacet is
             length := sload(_nv.slot)
             mstore(0, _nv.slot)
             slot := keccak256(0, 0x20)
-            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 1)
+            } {
                 let vault := sload(add(slot, i))
                 let res := call(gas(), vault, 0, freePtr, 4, 0, 0) // call facets for acounting, ignore return values
                 // if delegatecall fails, revert with the error
@@ -195,14 +204,21 @@ contract VaultFacet is
                 asset := sload(add(slot, i))
                 mstore(add(_freePtr, 0x04), address())
                 let retOffset := add(_freePtr, 0x24)
-                let res := staticcall(gas(), asset, _freePtr, 0x24, retOffset, 0x20)
+                let res := staticcall(
+                    gas(),
+                    asset,
+                    _freePtr,
+                    0x24,
+                    retOffset,
+                    0x20
+                )
                 if iszero(res) {
                     mstore(_freePtr, ACCOUNTING_FAILED_ERROR)
                     mstore(add(_freePtr, 0x04), asset)
                     revert(retOffset, 0x24)
                 }
-                toConvert  := mload(retOffset)
-                
+                toConvert := mload(retOffset)
+
                 // compute staked value slot for asset
                 mstore(0, _staked.slot)
                 mstore(0x20, asset)
@@ -212,12 +228,15 @@ contract VaultFacet is
                 if eq(_wrappedNative, asset) {
                     // if the vault processes native deposits, make sure to exclude msg.value
                     switch iszero(_isNativeDeposit)
-                        case 1 {
-                            toConvert := add(toConvert, selfbalance())
-                        }
-                        default {
-                            toConvert := add(toConvert, sub(selfbalance(), callvalue()))
-                        }
+                    case 1 {
+                        toConvert := add(toConvert, selfbalance())
+                    }
+                    default {
+                        toConvert := add(
+                            toConvert,
+                            sub(selfbalance(), callvalue())
+                        )
+                    }
                 }
             }
             // convert to underlying
@@ -249,11 +268,22 @@ contract VaultFacet is
             // set return offset
             let retOffset := add(_freePtr, 0x04)
             // loop through facets
-            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 1)
+            } {
                 // read facet selector and execute staticcall
                 let selector := sload(add(slot, i))
                 mstore(_freePtr, selector)
-                let res := staticcall(gas(), address(), _freePtr, 4, retOffset, 0x40)
+                let res := staticcall(
+                    gas(),
+                    address(),
+                    _freePtr,
+                    4,
+                    retOffset,
+                    0x40
+                )
                 // if staticcall fails, revert with the error
                 if iszero(res) {
                     mstore(_freePtr, ACCOUNTING_FAILED_ERROR)
@@ -264,10 +294,10 @@ contract VaultFacet is
                 let decodedAmount := mload(retOffset)
                 let isPositive := mload(add(retOffset, 0x20))
                 // if the amount is positive, add it to the total assets else add to debt
-                if iszero(isPositive) {
+                if isPositive {
                     _totalAssets := add(_totalAssets, decodedAmount)
                 }
-                if isPositive {
+                if iszero(isPositive) {
                     debt := add(debt, decodedAmount)
                 }
             }
@@ -296,11 +326,22 @@ contract VaultFacet is
             // move return value offset to the end of function call data
             let retOffset := add(_freePtr, 4)
             // loop through vaults
-            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 1)
+            } {
                 // read vault and execute staticcall
                 let vault := sload(add(slot, i))
                 // perform totalAssets() call
-                let res := staticcall(gas(), vault, _freePtr, 4, retOffset, 0x20)
+                let res := staticcall(
+                    gas(),
+                    vault,
+                    _freePtr,
+                    4,
+                    retOffset,
+                    0x20
+                )
                 // if call failed, revert with error
                 if iszero(res) {
                     mstore(_freePtr, TOTAL_ASSETS_RUN_FAILED)
@@ -332,11 +373,26 @@ contract VaultFacet is
             freePtr := mload(0x40)
         }
         // account available assets
-        _totalAssets = _accountAvailableAssets(ds.availableAssets, ds.staked, ds.wrappedNative, ds.isNativeDeposit, freePtr);
+        console.log("storage refresh");
+        _totalAssets = _accountAvailableAssets(
+            ds.availableAssets,
+            ds.staked,
+            ds.wrappedNative,
+            ds.isNativeDeposit,
+            freePtr
+        );
         // account facets
-        _totalAssets = _accountFacets(ds.facetsForAccounting, _totalAssets, freePtr);
+        _totalAssets = _accountFacets(
+            ds.facetsForAccounting,
+            _totalAssets,
+            freePtr
+        );
         // account nested vaults
-        _totalAssets = _accountNestedVaults(ds.nestedVaults, _totalAssets, freePtr);
+        _totalAssets = _accountNestedVaults(
+            ds.nestedVaults,
+            _totalAssets,
+            freePtr
+        );
     }
 
     /**
@@ -467,9 +523,12 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            msg.sender
+        ];
         request.shares = _shares;
-        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        uint256 endsAt = block.timestamp +
+            ds.withdrawableShares.timelockDuration;
         request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
@@ -501,10 +560,15 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            msg.sender
+        ];
         request.shares = shares;
-        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
-        request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        uint256 endsAt = block.timestamp +
+            ds.withdrawableShares.timelockDuration;
+        request.timelockEndsAt =
+            block.timestamp +
+            ds.withdrawableShares.timelockDuration;
 
         emit WithdrawRequestCreated(msg.sender, shares, endsAt);
     }
@@ -534,7 +598,7 @@ contract VaultFacet is
 
         bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
 
-        if(!isWithdrawable) {
+        if (!isWithdrawable) {
             revert CantProcessWithdrawRequest();
         }
 
@@ -572,13 +636,13 @@ contract VaultFacet is
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
         returns (uint256 assets)
-    {   
+    {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
         bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
 
-        if(!isWithdrawable) {
+        if (!isWithdrawable) {
             revert CantProcessWithdrawRequest();
         }
 
@@ -682,14 +746,19 @@ contract VaultFacet is
         MoreVaultsLib._setFee(_fee);
     }
 
-    function updateWithdrawableShares(uint256 _timestamp, uint256 _shares) external {
+    function updateWithdrawableShares(
+        uint256 _timestamp,
+        uint256 _shares
+    ) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        if (block.timestamp >= _timestamp) revert WithdrawSchedulerInvalidTimestamp(_timestamp);
+        if (block.timestamp >= _timestamp)
+            revert WithdrawSchedulerInvalidTimestamp(_timestamp);
 
-        MoreVaultsLib.WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
+        MoreVaultsLib.WithdrawableShares storage withdrawableShares = ds
+            .withdrawableShares;
 
         uint256 lastUnlockTimestamp = withdrawableShares.windowTimestamp;
 
@@ -836,12 +905,12 @@ contract VaultFacet is
         ) = IMoreVaultsRegistry(acs.moreVaultsRegistry).protocolFeeInfo(
                 address(this)
             );
-        
+
         emit AccrueInterest(newTotalAssets, feeShares);
 
         if (feeShares == 0) return newTotalAssets;
 
-        if (protocolFee !=0) {
+        if (protocolFee != 0) {
             uint256 protocolFeeShares = feeShares.mulDiv(
                 protocolFee,
                 MoreVaultsLib.FEE_BASIS_POINT

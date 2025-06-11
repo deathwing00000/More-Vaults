@@ -22,11 +22,12 @@ contract VaultsRegistry is BaseVaultsRegistry {
     /// @dev Mapping of facet address => is allowed
     mapping(address => bool) private _allowedFacets;
     mapping(address => EnumerableSet.AddressSet) private _facetToVaults;
-    address public factory;
 
     uint96 private constant MAX_PROTOCOL_FEE = 5000; // 50%
 
-    function pauseAffectedVaults(address _facet) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pauseAffectedVaults(
+        address _facet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address[] memory vaults = _facetToVaults[_facet].values();
         for (uint i = 0; i < vaults.length; ) {
             IVaultFacet(vaults[i]).pause();
@@ -36,20 +37,20 @@ contract VaultsRegistry is BaseVaultsRegistry {
         }
     }
 
-    function linkFacet(address facet) external {
-        if (!IVaultsFactory(factory).isFactoryVault(msg.sender)) {
-            revert NotFactoryVault(msg.sender);
-        }
+    // function linkFacet(address facet) external {
+    //     if (!IVaultsFactory(factory).isFactoryVault(msg.sender)) {
+    //         revert NotFactoryVault(msg.sender);
+    //     }
 
-        _facetToVaults[facet].add(msg.sender);
-    }
+    //     _facetToVaults[facet].add(msg.sender);
+    // }
 
-    function unlinkFacet(address facet) external {
-        if (!IVaultsFactory(factory).isFactoryVault(msg.sender)) {
-            revert NotFactoryVault(msg.sender);
-        }
-        _facetToVaults[facet].remove(msg.sender);
-    }
+    // function unlinkFacet(address facet) external {
+    //     if (!IVaultsFactory(factory).isFactoryVault(msg.sender)) {
+    //         revert NotFactoryVault(msg.sender);
+    //     }
+    //     _facetToVaults[facet].remove(msg.sender);
+    // }
 
     /**
      * @inheritdoc IMoreVaultsRegistry
@@ -164,9 +165,11 @@ contract VaultsRegistry is BaseVaultsRegistry {
         _setWhitelisted(protocol, false);
     }
 
-    function setFactoryAddress(address _factory) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        factory = _factory;
-    }
+    // function setFactoryAddress(
+    //     address _factory
+    // ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    //     factory = _factory;
+    // }
 
     /**
      * @inheritdoc IMoreVaultsRegistry

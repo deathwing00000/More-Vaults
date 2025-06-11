@@ -12,6 +12,8 @@ interface ICurveViews {
 
     function coins(uint256 i) external view returns (address);
 
+    function decimals() external view returns (uint8);
+
     function remove_liquidity_one_coin(
         uint256 _tokenAmount,
         int128 i,

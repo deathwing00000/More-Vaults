@@ -13,6 +13,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
 import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /**
  * @title CurveFacet
@@ -45,7 +46,10 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(ICurveFacet).interfaceId] = true;
-        (address facetAddress, bytes32 facetSelector) = abi.decode(data, (address, bytes32));
+        (address facetAddress, bytes32 facetSelector) = abi.decode(
+            data,
+            (address, bytes32)
+        );
         ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
     }
@@ -83,22 +87,39 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 continue;
             }
 
-            uint256 gaugeBalance = ILiquidityGaugeV6(
-                ds.stakingTokenToGauge[lpToken]
-            ).balanceOf(address(this));
-            uint256 multiRewardsBalance = IMultiRewards(
-                ds.stakingTokenToMultiRewards[lpToken]
-            ).balanceOf(address(this));
+            uint256 gaugeBalance;
+            if (ds.stakingTokenToGauge[lpToken] != address(0)) {
+                gaugeBalance = ILiquidityGaugeV6(
+                    ds.stakingTokenToGauge[lpToken]
+                ).balanceOf(address(this));
+            }
+            uint256 multiRewardsBalance;
+            if (ds.stakingTokenToMultiRewards[lpToken] != address(0)) {
+                multiRewardsBalance = IMultiRewards(
+                    ds.stakingTokenToMultiRewards[lpToken]
+                ).balanceOf(address(this));
+            }
 
             // Get direct LP token balance
             uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
                 gaugeBalance +
                 multiRewardsBalance;
 
+            // convert lp token to
+            uint8 coinZeroDecimals = IERC20Metadata(
+                ICurveViews(lpToken).coins(0)
+            ).decimals();
+            uint8 lpTokenDecimals = ICurveViews(lpToken).decimals();
+            uint256 lpBalanceToCoin = (ICurveViews(lpToken)
+                .get_virtual_price() * lpTokenBalance) / 1e18;
+
+            uint256 convertedBalance = lpTokenDecimals > coinZeroDecimals
+                ? lpBalanceToCoin / 10 ** (lpTokenDecimals - coinZeroDecimals)
+                : lpBalanceToCoin * 10 ** (coinZeroDecimals - lpTokenDecimals);
+
             sum += MoreVaultsLib.convertToUnderlying(
                 ICurveViews(lpToken).coins(0),
-                (ICurveViews(lpToken).get_virtual_price() * lpTokenBalance) /
-                    1e18,
+                convertedBalance,
                 Math.Rounding.Floor
             );
 

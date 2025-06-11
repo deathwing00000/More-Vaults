@@ -63,9 +63,12 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
                 continue;
             }
 
-            uint multiRewardsBalance = IMultiRewards(
-                ds.stakingTokenToMultiRewards[lpToken]
-            ).balanceOf(address(this));
+            uint multiRewardsBalance;
+            if (ds.stakingTokenToMultiRewards[lpToken] != address(0)) {
+                multiRewardsBalance = IMultiRewards(
+                    ds.stakingTokenToMultiRewards[lpToken]
+                ).balanceOf(address(this));
+            }
 
             uint totalSupply = IERC20(lpToken).totalSupply();
             uint balance = IERC20(lpToken).balanceOf(address(this)) +

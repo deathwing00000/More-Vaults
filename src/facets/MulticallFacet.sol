@@ -31,7 +31,10 @@ contract MulticallFacet is
     }
 
     function initialize(bytes calldata data) external initializerFacet {
-        (uint256 timeLockPeriod, uint256 maxSlippage) = abi.decode(data, (uint256, uint256));
+        (uint256 timeLockPeriod, uint256 maxSlippage) = abi.decode(
+            data,
+            (uint256, uint256)
+        );
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -108,7 +111,6 @@ contract MulticallFacet is
 
         _multicall(actions.actionsData);
         delete ds.pendingActions[actionsNonce];
-
         assembly {
             mstore(freePtr, TOTAL_ASSETS_SELECTOR)
             let retOffset := add(freePtr, 4)
@@ -123,9 +125,13 @@ contract MulticallFacet is
 
         uint256 slippagePercent;
         if (totalAfter > totalBefore) {
-            slippagePercent = ((totalAfter - totalBefore) * 10_000) / totalBefore;
+            slippagePercent =
+                ((totalAfter - totalBefore) * 10_000) /
+                totalBefore;
         } else {
-            slippagePercent = ((totalBefore - totalAfter) * 10_000) / totalBefore;
+            slippagePercent =
+                ((totalBefore - totalAfter) * 10_000) /
+                totalBefore;
         }
 
         if (slippagePercent > ds.maxSlippagePercent) {
@@ -184,7 +190,10 @@ contract MulticallFacet is
     ) internal virtual returns (bytes[] memory results) {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; ) {
-            (address target, bytes memory callData) = abi.decode(data[i], (address, bytes));
+            (address target, bytes memory callData) = abi.decode(
+                data[i],
+                (address, bytes)
+            );
             (bool success, bytes memory result) = target.call(callData);
             if (!success) {
                 revert MulticallFailed(i, result);
