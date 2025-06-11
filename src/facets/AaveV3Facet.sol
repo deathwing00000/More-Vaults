@@ -68,6 +68,35 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         uint256 sumDebt;
         for (uint i = 0; i < mTokensHeld.length(); ) {
             address mToken = mTokensHeld.at(i);
+
+            {
+                address[] memory mTokenSingleArray = new address[](1);
+                mTokenSingleArray[0] = mToken;
+                (
+                    address[] memory rewards,
+                    uint256[] memory amounts
+                ) = IRewardsDistributor(
+                        IATokenExtended(mToken).getIncentivesController()
+                    ).getAllUserRewards(mTokenSingleArray, address(this));
+
+                for (uint256 j = 0; j < rewards.length; ) {
+                    if (!ds.isAssetAvailable[rewards[j]]) {
+                        unchecked {
+                            ++j;
+                        }
+                        continue;
+                    }
+                    sumCollateral += MoreVaultsLib.convertToUnderlying(
+                        rewards[j],
+                        amounts[j],
+                        Math.Rounding.Floor
+                    );
+                    unchecked {
+                        ++j;
+                    }
+                }
+            }
+
             if (ds.isAssetAvailable[mToken]) {
                 unchecked {
                     ++i;
@@ -83,32 +112,6 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
                 balance,
                 Math.Rounding.Floor
             );
-
-            address[] memory mTokenSingleArray = new address[](1);
-            mTokenSingleArray[0] = mToken;
-            (
-                address[] memory rewards,
-                uint256[] memory amounts
-            ) = IRewardsDistributor(
-                    IATokenExtended(mToken).getIncentivesController()
-                ).getAllUserRewards(mTokenSingleArray, address(this));
-
-            for (uint256 j = 0; j < rewards.length; ) {
-                if (ds.isAssetAvailable[rewards[j]]) {
-                    unchecked {
-                        ++j;
-                    }
-                    continue;
-                }
-                sumCollateral += MoreVaultsLib.convertToUnderlying(
-                    rewards[j],
-                    amounts[j],
-                    Math.Rounding.Floor
-                );
-                unchecked {
-                    ++j;
-                }
-            }
             unchecked {
                 ++i;
             }
