@@ -98,6 +98,7 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
     function acceptOwnership() external {
         AccessControlLib.validatePendingOwner(msg.sender);
         AccessControlLib.setVaultOwner(msg.sender);
+        AccessControlLib.setPendingOwner(address(0));
     }
 
     /**

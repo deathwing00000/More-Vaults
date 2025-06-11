@@ -116,10 +116,6 @@ library AccessControlLib {
     }
 
     function setPendingOwner(address _newPendingOwner) internal {
-        if (_newPendingOwner == address(0)) {
-            revert ZeroAddress();
-        }
-
         if (_newPendingOwner == accessControlStorage().owner) {
             revert SameAddress();
         }

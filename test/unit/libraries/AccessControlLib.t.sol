@@ -154,11 +154,6 @@ contract AccessControlLibTest is Test {
         );
     }
 
-    function test_setPendingOwner_ShouldRevertWhenZeroAddress() public {
-        vm.expectRevert(AccessControlLib.ZeroAddress.selector);
-        AccessControlLib.setPendingOwner(zeroAddress);
-    }
-
     function test_setPendingOwner_ShouldRevertWhenSameAddress() public {
         vm.expectRevert(AccessControlLib.SameAddress.selector);
         AccessControlLib.setPendingOwner(owner);

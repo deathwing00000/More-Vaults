@@ -211,6 +211,28 @@ contract AccessControlFacetTest is Test {
         vm.stopPrank();
     }
 
+    function test_acceptOwnership_ShouldSetPendingOwnerToZero() public {
+        vm.startPrank(owner);
+
+        // Set pending owner
+        facet.transferOwnership(newOwner);
+
+        vm.stopPrank();
+
+        // Attempt to transfer ownership
+        vm.startPrank(newOwner);
+        facet.acceptOwnership();
+
+        // Verify owner in storage
+        assertEq(
+            MoreVaultsStorageHelper.getPendingOwner(address(facet)),
+            address(0),
+            "Pending owner should be 0"
+        );
+
+        vm.stopPrank();
+    }
+
     function test_acceptOwnership_ShouldRevertWhenUnauthorized() public {
         vm.startPrank(unauthorized);
 
