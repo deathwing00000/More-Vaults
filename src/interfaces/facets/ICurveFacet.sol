@@ -12,7 +12,7 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     error UnsupportedAsset(address asset);
     error InvalidSwapType(uint256 indexOfSwap);
 
-    function beforeAccountingCurveFacet() external;
+    function beforeAccounting() external;
 
     function accountingCurveFacet()
         external

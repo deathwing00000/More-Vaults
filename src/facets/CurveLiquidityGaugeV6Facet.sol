@@ -24,6 +24,7 @@ contract CurveLiquidityGaugeV6Facet is
 {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 constant CURVE_LIQUIDITY_GAUGES_V6_ID =
         keccak256("CURVE_LIQUIDITY_GAUGES_V6_ID");
@@ -54,16 +55,17 @@ contract CurveLiquidityGaugeV6Facet is
         ds.supportedInterfaces[
             type(ICurveLiquidityGaugeV6Facet).interfaceId
         ] = true;
-        (address facetAddress, address minter) = abi.decode(
+        (address facetAddress, address minter, bytes32 facetSelector) = abi.decode(
             data,
-            (address, address)
+            (address, address, bytes32)
         );
-        ds.facetsForAccounting.push(facetAddress);
+        ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
         ds.minter = minter;
+        ds.held_ids.add(CURVE_LIQUIDITY_GAUGES_V6_ID);
     }
 
-    function beforeAccountingCurveLiquidityGaugeV6Facet() external {
+    function beforeAccounting() external {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 

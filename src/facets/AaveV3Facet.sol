@@ -21,6 +21,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 constant MTOKENS_ID = keccak256("MTOKENS_ID");
     bytes32 constant MORE_DEBT_TOKENS_ID = keccak256("MORE_DEBT_TOKENS_ID");
@@ -37,10 +38,12 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
 
         ds.supportedInterfaces[type(IAaveV3Facet).interfaceId] = true;
+        ds.held_ids.add(MTOKENS_ID);
+        ds.held_ids.add(MORE_DEBT_TOKENS_ID);
     }
 
     function facetName() external pure returns (string memory) {

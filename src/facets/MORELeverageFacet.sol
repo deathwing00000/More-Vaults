@@ -19,6 +19,7 @@ error UnsupportedLovToken(address);
 contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 constant ORIGAMI_VAULT_TOKENS_ID =
         keccak256("ORIGAMI_VAULT_TOKENS_ID");
@@ -40,9 +41,10 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
         ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = true;
+        ds.held_ids.add(ORIGAMI_VAULT_TOKENS_ID);
     }
 
     function accountingMORELeverageFacet()

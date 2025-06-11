@@ -21,6 +21,7 @@ import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
 contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 constant CURVE_LP_TOKENS_ID = keccak256("CURVE_LP_TOKENS_ID");
 
@@ -45,12 +46,13 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(ICurveFacet).interfaceId] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        (address facetAddress, bytes32 facetSelector) = abi.decode(data, (address, bytes32));
+        ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
+        ds.held_ids.add(CURVE_LP_TOKENS_ID);
     }
 
-    function beforeAccountingCurveFacet() external {
+    function beforeAccounting() external {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 

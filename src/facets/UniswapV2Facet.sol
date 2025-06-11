@@ -18,6 +18,7 @@ import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
 contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
     using Math for uint256;
 
     bytes32 constant UNISWAP_V2_LP_TOKENS_ID =
@@ -35,8 +36,9 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
+        ds.held_ids.add(UNISWAP_V2_LP_TOKENS_ID);
     }
 
     function facetName() public pure returns (string memory) {

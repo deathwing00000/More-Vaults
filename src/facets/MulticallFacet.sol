@@ -89,6 +89,8 @@ contract MulticallFacet is
         _multicall(actions.actionsData);
         delete ds.pendingActions[actionsNonce];
 
+        MoreVaultsLib.checkGasLimitOverflow();
+
         emit ActionsExecuted(msg.sender, actionsNonce);
     }
 

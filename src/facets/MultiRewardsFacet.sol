@@ -18,6 +18,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
 
     bytes32 constant MULTI_REWARDS_STAKINGS_ID =
         keccak256("MULTI_REWARDS_STAKINGS_ID");
@@ -83,8 +84,9 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IMultiRewardsFacet).interfaceId] = true;
-        address facetAddress = abi.decode(data, (address));
-        ds.facetsForAccounting.push(facetAddress);
+        bytes32 facetSelector = abi.decode(data, (bytes32));
+        ds.facetsForAccounting.push(facetSelector);
+        ds.held_ids.add(MULTI_REWARDS_STAKINGS_ID);
     }
 
     /**

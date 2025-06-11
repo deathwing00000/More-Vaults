@@ -132,11 +132,15 @@ contract AaveV3FacetTest is Test {
 
     function test_initialize_ShouldRevertWhenAlreadyInitialized() public {
         // First initialization
-        AaveV3Facet(facet).initialize(abi.encode(facet));
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingAaveV3Facet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        AaveV3Facet(facet).initialize(abi.encode(facetSelector));
 
         // Try to initialize again
         vm.expectRevert(BaseFacetInitializer.AlreadyInitialized.selector);
-        AaveV3Facet(facet).initialize(abi.encode(facet));
+        AaveV3Facet(facet).initialize(abi.encode(facetSelector));
     }
 
     function test_initialize_ShouldInitializeFacet() public {

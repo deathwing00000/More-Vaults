@@ -26,6 +26,20 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
     }
 
+    function setGasLimitForAccounting(
+        uint48 _availableTokenAccountingGas,
+        uint48 _heldTokenAccountingGas,
+        uint48 _facetAccountingGas,
+        uint48 _newLimit
+    ) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.GasLimit storage gl = MoreVaultsLib.moreVaultsStorage().gasLimit;
+        gl.availableTokenAccountingGas = _availableTokenAccountingGas;
+        gl.heldTokenAccountingGas = _heldTokenAccountingGas;
+        gl.facetAccountingGas = _facetAccountingGas;
+        gl.value = _newLimit;
+    }
+
     /**
      * @inheritdoc IConfigurationFacet
      */
@@ -56,6 +70,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     function addAvailableAsset(address asset) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib._addAvailableAsset(asset);
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**
@@ -70,6 +85,7 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
                 ++i;
             }
         }
+        MoreVaultsLib.checkGasLimitOverflow();
     }
 
     /**

@@ -85,17 +85,24 @@ contract UniswapV2FacetTest is Test {
     }
 
     function test_initialize_ShouldSetFacetAddress() public {
-        UniswapV2Facet(facet).initialize(abi.encode(facet));
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingUniswapV2Facet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        UniswapV2Facet(facet).initialize(abi.encode(facetSelector));
         MoreVaultsStorageHelper.getStorageValue(facet, 0); // Verify storage was updated
     }
 
     function test_initialize_ShouldRevertWhenAlreadyInitialized() public {
-        // First initialization
-        UniswapV2Facet(facet).initialize(abi.encode(facet));
+        bytes32 facetSelector = keccak256(abi.encodePacked("accountingUniswapV2Facet()"));
+        assembly { 
+            facetSelector := shl(224, facetSelector)
+        }
+        UniswapV2Facet(facet).initialize(abi.encode(facetSelector));
 
         // Try to initialize again
         vm.expectRevert(BaseFacetInitializer.AlreadyInitialized.selector);
-        UniswapV2Facet(facet).initialize(abi.encode(facet));
+        UniswapV2Facet(facet).initialize(abi.encode(facetSelector));
     }
 
     function test_allNonViewFunctions_ShouldRevertWhenCalledByNonDiamond()
