@@ -17,6 +17,8 @@ bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000
 bytes32 constant ACCOUNTING_FAILED_ERROR = 0x712f778400000000000000000000000000000000000000000000000000000000;
 bytes32 constant BALANCE_OF_SELECTOR = 0x70a0823100000000000000000000000000000000000000000000000000000000;
 
+uint256 constant MAX_WITHDRAWAL_DELAY = 14 days;
+
 library MoreVaultsLib {
     error InitializationFunctionReverted(
         address _initializationContractAddress,
@@ -88,6 +90,18 @@ library MoreVaultsLib {
         uint48 value;
     }
 
+    struct WithdrawableShares {
+        uint64 timelockDuration;
+        uint64 windowTimestamp;
+        uint256 nextWindowAmount;
+        uint256 currentWindowAmount;
+    }
+
+    struct WithdrawRequest {
+        uint256 timelockEndsAt;    
+        uint256 shares;
+    }
+
     struct MoreVaultsStorage {
         // maps function selector to the facet address and
         // the position of the selector in the facetFunctionSelectors.selectors array
@@ -122,6 +136,8 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToMultiRewards;
         GasLimit gasLimit;
         EnumerableSet.Bytes32Set held_ids;
+        WithdrawableShares withdrawableShares;
+        mapping(address => WithdrawRequest) withdrawalRequests;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -718,5 +734,44 @@ library MoreVaultsLib {
         if (consumption > ds.gasLimit.value) {
             revert AccountingGasLimitExceeded(ds.gasLimit.value, consumption);
         }
+    }
+
+    function withdrawFromRequest(
+        address _requester,
+        uint256 _shares
+    ) internal returns (bool) {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
+        WithdrawRequest storage request = ds.withdrawalRequests[_requester];
+
+        if (
+            isWithdrawableRequest(
+                request.timelockEndsAt,
+                withdrawableShares.timelockDuration,
+                withdrawableShares.windowTimestamp
+            ) && request.shares >= _shares
+        ) {
+            request.shares -= _shares;
+            withdrawableShares.currentWindowAmount -= _shares;
+            return true;
+        }
+
+        return false;
+    }
+
+    function isWithdrawableRequest(
+        uint256 _timelockEndsAt,
+        uint256 _timelockDuration,
+        uint256 _windowTimestamp
+    ) private view returns (bool) {
+
+        uint256 requestTimestamp = _timelockEndsAt - _timelockDuration;
+        if (block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY) {
+            return true;
+        }
+
+        return
+            block.timestamp >= requestTimestamp &&
+            requestTimestamp < _windowTimestamp;
     }
 }

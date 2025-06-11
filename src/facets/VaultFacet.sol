@@ -21,6 +21,15 @@ contract VaultFacet is
 {
     using Math for uint256;
 
+    error WithdrawSchedulerInvalidTimestamp(uint256 timestamp);
+    error CantCoverWithdrawRequests(uint256, uint256);
+    error InvalidSharesAmount();
+    error InvalidAssetsAmount();
+
+    event WithdrawableSharesUpdated(uint256 timestamp, uint256 shares);
+    event WithdrawRequestCreated(address requester, uint256 sharesAmount, uint256 endsAt);
+    event WithdrawRequestFulfilled(address requester, address receiver, uint256 sharesAmount, uint256 assetAmount);
+
     function INITIALIZABLE_STORAGE_SLOT()
         internal
         pure
@@ -224,6 +233,40 @@ contract VaultFacet is
         }
     }
 
+    function updateWithdrawableShares(uint256 _timestamp, uint256 _shares) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        if (block.timestamp >= _timestamp) revert WithdrawSchedulerInvalidTimestamp(_timestamp);
+
+        MoreVaultsLib.WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
+        uint256 nextMinShares = withdrawableShares.currentWindowAmount + withdrawableShares.nextWindowAmount;
+
+        if (_shares < nextMinShares) {
+            revert CantCoverWithdrawRequests(_shares, nextMinShares);
+        }
+
+        uint256 lastUnlockTimestamp = withdrawableShares.windowTimestamp;
+
+        if (lastUnlockTimestamp > _timestamp) {
+            revert WithdrawSchedulerInvalidTimestamp(_timestamp);
+        }
+
+        withdrawableShares.windowTimestamp = uint64(_timestamp);
+        withdrawableShares.currentWindowAmount = _shares;
+
+        emit WithdrawableSharesUpdated(_timestamp, _shares);
+    }
+
+    function updateTimelockDuration(uint64 _duration) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.withdrawableShares.timelockDuration = _duration;
+    }
+
     /**
      * @inheritdoc IVaultFacet
      */
@@ -289,6 +332,63 @@ contract VaultFacet is
                     Math.Rounding.Floor
                 );
         }
+    }
+
+    function requestRedeem(uint256 _shares) external {
+        if (_shares == 0) {
+            revert InvalidSharesAmount();
+        }
+
+        uint256 maxRedeem_ = maxRedeem(msg.sender);
+        if (_shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(msg.sender, _shares, maxRedeem_);
+        }
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        request.shares = _shares;
+        ds.withdrawableShares.nextWindowAmount += _shares;
+        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        request.timelockEndsAt = endsAt;
+
+        emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
+    }
+
+    function requestWithdraw(uint256 _assets) external {
+        if (_assets == 0) {
+            revert InvalidAssetsAmount();
+        }
+
+        uint256 newTotalAssets = _accrueInterest();
+
+        uint256 shares = _convertToSharesWithTotals(
+            _assets,
+            totalSupply(),
+            newTotalAssets,
+            Math.Rounding.Ceil
+        );
+
+        if (shares == 0) {
+            revert InvalidSharesAmount();
+        }
+
+        uint256 maxRedeem_ = maxRedeem(msg.sender);
+        if (shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(msg.sender, shares, maxRedeem_);
+        }
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        request.shares = shares;
+        ds.withdrawableShares.nextWindowAmount += shares;
+        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+
+        emit WithdrawRequestCreated(msg.sender, shares, endsAt);
     }
 
     /**
@@ -374,6 +474,11 @@ contract VaultFacet is
             Math.Rounding.Ceil
         );
 
+        uint256 maxRedeem_ = maxRedeem(owner);
+        if (shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
+        }
+
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.lastTotalAssets = newTotalAssets > assets
@@ -381,6 +486,8 @@ contract VaultFacet is
             : 0;
 
         _withdraw(_msgSender(), receiver, owner, assets, shares);
+
+        emit WithdrawRequestFulfilled(owner, receiver, shares, assets);
     }
 
     /**
@@ -397,6 +504,11 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 assets)
     {
+        uint256 maxRedeem_ = maxRedeem(owner);
+        if (shares > maxRedeem_) {
+            revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
+        }
+
         uint256 newTotalAssets = _accrueInterest();
 
         assets = _convertToAssetsWithTotals(
@@ -413,6 +525,8 @@ contract VaultFacet is
             : 0;
 
         _withdraw(_msgSender(), receiver, owner, assets, shares);
+
+        emit WithdrawRequestFulfilled(owner, receiver, shares, assets);
     }
 
     /**
