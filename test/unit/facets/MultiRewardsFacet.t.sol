@@ -48,8 +48,10 @@ contract MultiRewardsFacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        bytes32 facetSelector = keccak256(abi.encodePacked("accountingMultiRewardsFacet()"));
-        assembly { 
+        bytes32 facetSelector = keccak256(
+            abi.encodePacked("accountingMultiRewardsFacet()")
+        );
+        assembly {
             facetSelector := shl(224, facetSelector)
         }
         MultiRewardsFacet(facet).initialize(abi.encode(facetSelector));
@@ -116,6 +118,65 @@ contract MultiRewardsFacetTest is Test {
         assertEq(
             MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
             amount
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_stake_ShouldStakeToMappedStakingIfNewRewardWasAddedAndIgnoreIt()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = rewardToken;
+
+        // Mock calls
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.getRewardTokens.selector),
+            abi.encode(rewardTokens)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.stakingToken.selector),
+            abi.encode(lpToken)
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.approve.selector, staking, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
+            abi.encode()
+        );
+
+        facet.stake(staking, amount);
+
+        // Mock calls
+        address[] memory newRewardTokens = new address[](2);
+        newRewardTokens[0] = rewardTokens[0];
+        newRewardTokens[1] = address(2);
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.getRewardTokens.selector),
+            abi.encode(rewardTokens)
+        );
+        facet.stake(staking, amount);
+
+        address[] memory stakings = MoreVaultsStorageHelper.getStakingsEntered(
+            address(facet),
+            keccak256("MULTI_REWARDS_STAKINGS_ID")
+        );
+        assertEq(stakings.length, 1, "Should have one staking");
+        assertEq(stakings[0], staking, "Should have correct stakings");
+        assertEq(
+            MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
+            amount * 2
         );
 
         vm.stopPrank();

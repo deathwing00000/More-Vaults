@@ -97,18 +97,21 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         MoreVaultsLib.validateAddressWhitelisted(staking);
         IMultiRewards _staking = IMultiRewards(staking);
         address[] memory rewardTokens = _staking.getRewardTokens();
-        for (uint256 i; i < rewardTokens.length; ) {
-            MoreVaultsLib.validateAssetAvailable(rewardTokens[i]);
-            unchecked {
-                ++i;
+
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        if (!ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].contains(staking)) {
+            for (uint256 i; i < rewardTokens.length; ) {
+                MoreVaultsLib.validateAssetAvailable(rewardTokens[i]);
+                unchecked {
+                    ++i;
+                }
             }
         }
         IERC20 stakingToken = _staking.stakingToken();
         stakingToken.forceApprove(staking, amount);
         _staking.stake(amount);
 
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
         ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].add(staking);
         ds.stakingTokenToMultiRewards[address(stakingToken)] = staking;
         ds.staked[address(stakingToken)] += amount;
