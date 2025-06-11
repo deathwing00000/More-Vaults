@@ -12,7 +12,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
 import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
-
+import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 
 bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
@@ -420,17 +420,19 @@ library MoreVaultsLib {
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].initData
                 );
-                
+                IMoreVaultsRegistry(registry).linkFacet(_diamondCut[facetIndex].facetAddress);
             } else if (action == IDiamondCut.FacetCutAction.Replace) {
                 replaceFunctions(
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
+                IMoreVaultsRegistry(registry).linkFacet(_diamondCut[facetIndex].facetAddress);
             } else if (action == IDiamondCut.FacetCutAction.Remove) {
                 removeFunctions(
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
+                IMoreVaultsRegistry(registry).unlinkFacet(_diamondCut[facetIndex].facetAddress);
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
             }
