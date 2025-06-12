@@ -239,6 +239,13 @@ contract VaultFacetTest is Test {
         );
     }
 
+    function test_deposit_ShouldRevertWhenCalledInMulticall() public {
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).deposit(100 ether, user);
+    }
+
     function test_deposit_ShouldMintSharesWithMultipleAssets() public {
         MockERC20 mockAsset2 = new MockERC20("Test Asset 2", "TA2");
         address asset2 = address(mockAsset2);
@@ -322,6 +329,27 @@ contract VaultFacetTest is Test {
             depositAmount2,
             "Should receive correct amount of assets2"
         );
+    }
+
+    function test_deposit_ShouldRevertWhenDepositMultipleAssetsInMulticall()
+        public
+    {
+        MockERC20 mockAsset2 = new MockERC20("Test Asset 2", "TA2");
+        address asset2 = address(mockAsset2);
+        uint256 depositAmount = 100 ether;
+        uint256 depositAmount2 = 200 ether;
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = asset;
+        tokens[1] = asset2;
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = depositAmount;
+        amounts[1] = depositAmount2;
+
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).deposit(tokens, amounts, user);
     }
 
     function test_deposit_ShouldMintSharesWhenDepositingNative() public {
@@ -474,6 +502,13 @@ contract VaultFacetTest is Test {
         );
     }
 
+    function test_mint_ShouldRevertinMulticall() public {
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).mint(100 ether, user);
+    }
+
     function test_mint_ShouldRevertWhenExceededDepositCapacity() public {
         uint256 mintAmount = 1000001 * 10 ** IERC20Metadata(facet).decimals();
 
@@ -594,7 +629,10 @@ contract VaultFacetTest is Test {
         VaultFacet(facet).requestWithdraw(withdrawAmount);
         vm.warp(block.timestamp + 100);
         vm.prank(curator);
-        VaultFacet(facet).updateWithdrawableShares(block.timestamp + 1, 5_000 ether);
+        VaultFacet(facet).updateWithdrawableShares(
+            block.timestamp + 1,
+            5_000 ether
+        );
         vm.warp(block.timestamp + 100);
         vm.prank(user);
         VaultFacet(facet).withdraw(withdrawAmount, user, user);
@@ -609,6 +647,20 @@ contract VaultFacetTest is Test {
             50 * 10 ** IERC20Metadata(facet).decimals(),
             "Should burn correct amount of shares"
         );
+    }
+
+    function test_withdraw_ShouldRevertInMulticall() public {
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).withdraw(100 ether, user, user);
+    }
+
+    function test_requestWithdraw_ShouldRevertInMulticall() public {
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).requestWithdraw(100 ether);
     }
 
     function test_redeem_ShouldBurnShares() public {
@@ -685,7 +737,10 @@ contract VaultFacetTest is Test {
         VaultFacet(facet).requestRedeem(redeemAmount);
         vm.warp(block.timestamp + 100);
         vm.prank(curator);
-        VaultFacet(facet).updateWithdrawableShares(block.timestamp + 1, 100 ether);
+        VaultFacet(facet).updateWithdrawableShares(
+            block.timestamp + 1,
+            100 ether
+        );
         vm.warp(block.timestamp + 100);
         vm.prank(user);
         uint256 assets = VaultFacet(facet).redeem(redeemAmount, user, user);
@@ -700,6 +755,20 @@ contract VaultFacetTest is Test {
             shares - redeemAmount,
             "Should burn correct amount of shares"
         );
+    }
+
+    function test_redeem_ShouldRevertInMulticall() public {
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).redeem(100 ether, user, user);
+    }
+
+    function test_requestRedeem_ShouldRevertInMulticall() public {
+        MoreVaultsStorageHelper.setIsMulticall(address(facet), true);
+        vm.prank(address(facet));
+        vm.expectRevert(MoreVaultsLib.RestrictedActionInsideMulticall.selector);
+        VaultFacet(facet).requestRedeem(100 ether);
     }
 
     function test_pause_ShouldRevertWhenNotOwner() public {

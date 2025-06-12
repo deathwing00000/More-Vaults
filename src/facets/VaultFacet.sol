@@ -386,6 +386,7 @@ contract VaultFacet is
     }
 
     function requestRedeem(uint256 _shares) external {
+        MoreVaultsLib.validateMulticall();
         if (_shares == 0) {
             revert InvalidSharesAmount();
         }
@@ -411,6 +412,7 @@ contract VaultFacet is
     }
 
     function requestWithdraw(uint256 _assets) external {
+        MoreVaultsLib.validateMulticall();
         if (_assets == 0) {
             revert InvalidAssetsAmount();
         }
@@ -463,6 +465,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 shares)
     {
+        MoreVaultsLib.validateMulticall();
         uint256 newTotalAssets = _accrueInterest();
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -493,6 +496,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 assets)
     {
+        MoreVaultsLib.validateMulticall();
         uint256 newTotalAssets = _accrueInterest();
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -524,6 +528,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 shares)
     {
+        MoreVaultsLib.validateMulticall();
         uint256 newTotalAssets = _accrueInterest();
 
         shares = _convertToSharesWithTotals(
@@ -569,6 +574,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 assets)
     {
+        MoreVaultsLib.validateMulticall();
         bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
 
         if (!isWithdrawable) {
@@ -608,6 +614,7 @@ contract VaultFacet is
         uint256[] calldata assets,
         address receiver
     ) external payable whenNotPaused returns (uint256 shares) {
+        MoreVaultsLib.validateMulticall();
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         if (msg.value > 0) {

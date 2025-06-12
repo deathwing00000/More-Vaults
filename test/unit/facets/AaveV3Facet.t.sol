@@ -132,8 +132,10 @@ contract AaveV3FacetTest is Test {
 
     function test_initialize_ShouldRevertWhenAlreadyInitialized() public {
         // First initialization
-        bytes32 facetSelector = keccak256(abi.encodePacked("accountingAaveV3Facet()"));
-        assembly { 
+        bytes32 facetSelector = keccak256(
+            abi.encodePacked("accountingAaveV3Facet()")
+        );
+        assembly {
             facetSelector := shl(224, facetSelector)
         }
         AaveV3Facet(facet).initialize(abi.encode(facetSelector));
@@ -896,6 +898,15 @@ contract AaveV3FacetTest is Test {
         bytes memory params = "";
 
         vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                address(this)
+            ),
+            abi.encode(true)
+        );
+
+        vm.mockCall(
             pool,
             abi.encodeWithSelector(
                 IPool.flashLoan.selector,
@@ -933,6 +944,15 @@ contract AaveV3FacetTest is Test {
         uint256[] memory interestRateModes = new uint256[](1);
         interestRateModes[0] = 1;
         bytes memory params = "";
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                address(facet)
+            ),
+            abi.encode(true)
+        );
 
         vm.mockCall(
             pool,
@@ -983,6 +1003,15 @@ contract AaveV3FacetTest is Test {
                 0
             ),
             abi.encode()
+        );
+
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isWhitelisted.selector,
+                address(this)
+            ),
+            abi.encode(true)
         );
 
         vm.prank(facet);

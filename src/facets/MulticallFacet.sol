@@ -105,7 +105,10 @@ contract MulticallFacet is
             mstore(0x40, add(freePtr, 4)) // leave the function signature for 2nd call
         }
 
+        ds.isMulticall = true;
         _multicall(actions.actionsData);
+        ds.isMulticall = false;
+
         delete ds.pendingActions[actionsNonce];
         assembly {
             mstore(freePtr, TOTAL_ASSETS_SELECTOR)
