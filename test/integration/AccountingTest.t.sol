@@ -195,8 +195,7 @@ contract AccountingTest is Test {
 
     function testAccountingMainnet() public {
         // Fork ETH Mainnet
-        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"));
-        vm.rollFork(blockNumber);
+        vm.createSelectFork(vm.envString("MAINNET_RPC_URL"), blockNumber);
         deadline = block.timestamp + 1 hours;
 
         // Deploy mock tokens
