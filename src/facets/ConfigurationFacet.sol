@@ -20,10 +20,19 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         return "ConfigurationFacet";
     }
 
-    function initialize(bytes calldata) external initializerFacet {
+    function initialize(bytes calldata data) external initializerFacet {
+        (uint256 maxSlippagePercent) = abi.decode(data, (uint256));
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
+        ds.maxSlippagePercent = maxSlippagePercent;
+    }
+
+    function setMaxSlippagePercent(uint256 _newPercent) external {
+        AccessControlLib.validateOwner(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.maxSlippagePercent = _newPercent;
     }
 
     function setGasLimitForAccounting(
