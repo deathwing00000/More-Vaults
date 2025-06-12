@@ -25,6 +25,7 @@ contract VaultFacet is
     error CantCoverWithdrawRequests(uint256, uint256);
     error InvalidSharesAmount();
     error InvalidAssetsAmount();
+    error CantProcessWithdrawRequest();
 
     event WithdrawableSharesUpdated(uint256 timestamp, uint256 shares);
     event WithdrawRequestCreated(address requester, uint256 sharesAmount, uint256 endsAt);
@@ -474,6 +475,12 @@ contract VaultFacet is
             Math.Rounding.Ceil
         );
 
+        bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
+
+        if(!isWithdrawable) {
+            revert CantProcessWithdrawRequest();
+        }
+
         uint256 maxRedeem_ = maxRedeem(owner);
         if (shares > maxRedeem_) {
             revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
@@ -503,7 +510,13 @@ contract VaultFacet is
         override(ERC4626Upgradeable, IVaultFacet)
         whenNotPaused
         returns (uint256 assets)
-    {
+    {   
+        bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
+
+        if(!isWithdrawable) {
+            revert CantProcessWithdrawRequest();
+        }
+
         uint256 maxRedeem_ = maxRedeem(owner);
         if (shares > maxRedeem_) {
             revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
