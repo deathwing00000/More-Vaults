@@ -6,6 +6,7 @@ import {IUniswapV2Router02} from "@uniswap-v2/v2-periphery/interfaces/IUniswapV2
 import {IUniswapV2Factory} from "../interfaces/Uniswap/v2/IUniswapV2Factory.sol";
 import {IUniswapV2Pair} from "../interfaces/Uniswap/v2/IUniswapV2Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
@@ -80,39 +81,24 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             // Get current reserves and k
             (uint reserve0, uint reserve1, ) = IUniswapV2Pair(lpToken)
                 .getReserves();
-            uint k = reserve0 * reserve1;
+
+            uint d0 = IERC20Metadata(token0).decimals();
+            uint d1 = IERC20Metadata(token1).decimals();
 
             // Get prices from oracle
             uint price0 = MoreVaultsLib.convertToUnderlying(
                 token0,
-                1e18,
+                10 ** d0,
                 Math.Rounding.Floor
             );
             uint price1 = MoreVaultsLib.convertToUnderlying(
                 token1,
-                1e18,
+                10 ** d1,
                 Math.Rounding.Floor
             );
 
-            // Calculate fair reserves
-            uint fairReserve0 = Math.sqrt((k * price1) / price0);
-            uint fairReserve1 = Math.sqrt((k * price0) / price1);
-
-            // Calculate our share of the fair reserves
-            uint token0Amount = fairReserve0.mulDiv(balance, totalSupply);
-            uint token1Amount = fairReserve1.mulDiv(balance, totalSupply);
-
-            // Convert both token amounts to underlying
-            sum += MoreVaultsLib.convertToUnderlying(
-                token0,
-                token0Amount,
-                Math.Rounding.Floor
-            );
-            sum += MoreVaultsLib.convertToUnderlying(
-                token1,
-                token1Amount,
-                Math.Rounding.Floor
-            );
+            uint totalValues = 2 * Math.sqrt(price0 * reserve0 / 10 ** d0 *  price1 * reserve1 / 10 ** d1);
+            sum += totalValues.mulDiv(balance, totalSupply);
 
             unchecked {
                 ++i;
