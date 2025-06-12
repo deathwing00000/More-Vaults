@@ -62,7 +62,7 @@ contract CurveLiquidityGaugeV6Facet is
         ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
         ds.minter = minter;
-        ds.held_ids.add(CURVE_LIQUIDITY_GAUGES_V6_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(CURVE_LIQUIDITY_GAUGES_V6_ID);
     }
 
     function beforeAccounting() external {

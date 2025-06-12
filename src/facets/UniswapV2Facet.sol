@@ -38,7 +38,7 @@ contract UniswapV2Facet is BaseFacetInitializer, IUniswapV2Facet {
             .moreVaultsStorage();
         bytes32 facetSelector = abi.decode(data, (bytes32));
         ds.facetsForAccounting.push(facetSelector);
-        ds.held_ids.add(UNISWAP_V2_LP_TOKENS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(UNISWAP_V2_LP_TOKENS_ID);
     }
 
     function facetName() public pure returns (string memory) {

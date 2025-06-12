@@ -49,7 +49,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         (address facetAddress, bytes32 facetSelector) = abi.decode(data, (address, bytes32));
         ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
-        ds.held_ids.add(CURVE_LP_TOKENS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(CURVE_LP_TOKENS_ID);
     }
 
     function beforeAccounting() external {

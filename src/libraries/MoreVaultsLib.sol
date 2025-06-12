@@ -86,6 +86,7 @@ library MoreVaultsLib {
         uint48 availableTokenAccountingGas;
         uint48 heldTokenAccountingGas;
         uint48 facetAccountingGas;
+        uint48 stakingTokenAccountingGas;
         uint48 nestedVaultsGas;
         uint48 value;
     }
@@ -100,6 +101,11 @@ library MoreVaultsLib {
     struct WithdrawRequest {
         uint256 timelockEndsAt;    
         uint256 shares;
+    }
+
+    enum TokenType {
+        HeldToken,
+        StakingToken
     }
 
     struct MoreVaultsStorage {
@@ -135,7 +141,7 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
         GasLimit gasLimit;
-        EnumerableSet.Bytes32Set held_ids;
+        mapping(TokenType => EnumerableSet.Bytes32Set) vaultExternalAssets;
         WithdrawableShares withdrawableShares;
         mapping(address => WithdrawRequest) withdrawalRequests;
     }
@@ -713,7 +719,16 @@ library MoreVaultsLib {
         
         if (gl.value == 0) return;
 
-        bytes32[] memory heldIds = ds.held_ids.values();
+        bytes32[] memory stakingIds = ds.vaultExternalAssets[TokenType.StakingToken].values();
+        bytes32[] memory heldIds = ds.vaultExternalAssets[TokenType.HeldToken].values();
+
+        uint256 stakingTokensLength;
+        for (uint256 i = 0; i < stakingIds.length;) {
+            unchecked {
+                stakingTokensLength += ds.stakingAddresses[stakingIds[i]].length();
+                ++i;
+            }
+        }
 
         uint256 tokensHeldLength;
         for (uint256 i = 0; i < heldIds.length;) {
@@ -726,6 +741,7 @@ library MoreVaultsLib {
         uint256 consumption;
         unchecked {
             consumption = tokensHeldLength * gl.heldTokenAccountingGas +
+                stakingTokensLength * gl.stakingTokenAccountingGas +
                 ds.availableAssets.length * gl.availableTokenAccountingGas +
                 ds.facetsForAccounting.length * gl.facetAccountingGas +
                 gl.nestedVaultsGas;
