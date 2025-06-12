@@ -11,11 +11,8 @@ import {IAccessControlFacet, AccessControlFacet} from "../src/facets/AccessContr
 import {IConfigurationFacet, ConfigurationFacet} from "../src/facets/ConfigurationFacet.sol";
 import {IMulticallFacet, MulticallFacet} from "../src/facets/MulticallFacet.sol";
 import {IVaultFacet, IERC4626, IERC20, VaultFacet} from "../src/facets/VaultFacet.sol";
-import {IUniswapV2Facet, UniswapV2Facet} from "../src/facets/UniswapV2Facet.sol";
 import {IMORELeverageFacet, MORELeverageFacet} from "../src/facets/MORELeverageFacet.sol";
 import {IPool, IAaveV3Facet, AaveV3Facet} from "../src/facets/AaveV3Facet.sol";
-import {IIzumiSwapFacet, IzumiSwapFacet} from "../src/facets/IzumiSwapFacet.sol";
-import {IAggroKittySwapFacet, AggroKittySwapFacet} from "../src/facets/AggroKittySwapFacet.sol";
 import {DeployConfig} from "./config/DeployConfig.s.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -35,11 +32,8 @@ contract CreateVaultScript is Script {
     address accessControl;
     address configuration;
     address multicall;
-    address uniswapV2;
     address origami;
     address moreMarkets;
-    address izumiSwap;
-    address aggroKittySwap;
     address curve;
     address vault;
     address uniswapV3;
@@ -68,11 +62,8 @@ contract CreateVaultScript is Script {
         configuration = vm.envAddress("CONFIGURATION_FACET");
         vault = vm.envAddress("VAULT_FACET");
         multicall = vm.envAddress("MULTICALL_FACET");
-        uniswapV2 = vm.envAddress("UNISWAP_V2_FACET");
         origami = vm.envAddress("ORIGAMI_FACET");
         moreMarkets = vm.envAddress("MORE_MARKETS_FACET");
-        izumiSwap = vm.envAddress("IZUMI_SWAP_FACET");
-        aggroKittySwap = vm.envAddress("AGGRO_KITTY_SWAP_FACET");
         curve = vm.envAddress("CURVE_FACET");
         uniswapV3 = vm.envAddress("UNISWAP_V3_FACET");
         multiRewards = vm.envAddress("MULTI_REWARDS_FACET");
@@ -91,11 +82,8 @@ contract CreateVaultScript is Script {
         facetAddresses.configuration = address(configuration);
         facetAddresses.multicall = address(multicall);
         facetAddresses.vault = address(vault);
-        facetAddresses.uniswapV2 = address(uniswapV2);
         facetAddresses.origami = address(origami);
         facetAddresses.moreMarkets = address(moreMarkets);
-        facetAddresses.izumiSwap = address(izumiSwap);
-        facetAddresses.aggroKittySwap = address(aggroKittySwap);
         facetAddresses.curve = address(curve);
         facetAddresses.uniswapV3 = address(uniswapV3);
         facetAddresses.multiRewards = address(multiRewards);
@@ -104,7 +92,15 @@ contract CreateVaultScript is Script {
         IDiamondCut.FacetCut[] memory cuts = config.getCuts(facetAddresses);
 
         // Deploy vault
-        address vaultAddress = factory.deployVault(cuts);
+        bytes memory accessControlFacetInitData = abi.encode(
+            config.owner,
+            config.curator,
+            config.guardian
+        );
+        address vaultAddress = factory.deployVault(
+            cuts,
+            accessControlFacetInitData
+        );
         console.log("Vault deployed at:", vaultAddress);
 
         // Save factory address

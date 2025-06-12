@@ -7,11 +7,8 @@ import {IAccessControlFacet, AccessControlFacet} from "../../src/facets/AccessCo
 import {IConfigurationFacet, ConfigurationFacet} from "../../src/facets/ConfigurationFacet.sol";
 import {IMulticallFacet, MulticallFacet} from "../../src/facets/MulticallFacet.sol";
 import {IVaultFacet, IERC4626, IERC20, VaultFacet} from "../../src/facets/VaultFacet.sol";
-import {IUniswapV2Facet, UniswapV2Facet} from "../../src/facets/UniswapV2Facet.sol";
 import {IMORELeverageFacet, MORELeverageFacet} from "../../src/facets/MORELeverageFacet.sol";
 import {IPool, IAaveV3Facet, AaveV3Facet} from "../../src/facets/AaveV3Facet.sol";
-import {IIzumiSwapFacet, IzumiSwapFacet} from "../../src/facets/IzumiSwapFacet.sol";
-import {IAggroKittySwapFacet, AggroKittySwapFacet} from "../../src/facets/AggroKittySwapFacet.sol";
 import {ICurveFacet, CurveFacet} from "../../src/facets/CurveFacet.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {IUniswapV3Facet, UniswapV3Facet} from "../../src/facets/UniswapV3Facet.sol";
@@ -41,11 +38,8 @@ contract DeployConfig {
         address configuration;
         address multicall;
         address vault;
-        address uniswapV2;
         address origami;
         address moreMarkets;
-        address izumiSwap;
-        address aggroKittySwap;
         address curve;
         address uniswapV3;
         address multiRewards;
@@ -242,59 +236,6 @@ contract DeployConfig {
         );
 
         /// OPTIONAL FACETS
-
-        // selectors for uniswap v2
-        bytes4[] memory functionSelectorsUniswapV2Facet = new bytes4[](15);
-        functionSelectorsUniswapV2Facet[0] = IUniswapV2Facet
-            .accountingUniswapV2Facet
-            .selector;
-        functionSelectorsUniswapV2Facet[1] = IUniswapV2Facet
-            .addLiquidity
-            .selector;
-        functionSelectorsUniswapV2Facet[2] = IUniswapV2Facet
-            .addLiquidityETH
-            .selector;
-        functionSelectorsUniswapV2Facet[3] = IUniswapV2Facet
-            .removeLiquidity
-            .selector;
-        functionSelectorsUniswapV2Facet[4] = IUniswapV2Facet
-            .removeLiquidityETH
-            .selector;
-        functionSelectorsUniswapV2Facet[5] = IUniswapV2Facet
-            .swapExactTokensForTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[6] = IUniswapV2Facet
-            .swapTokensForExactTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[7] = IUniswapV2Facet
-            .swapExactETHForTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[8] = IUniswapV2Facet
-            .swapTokensForExactETH
-            .selector;
-        functionSelectorsUniswapV2Facet[9] = IUniswapV2Facet
-            .swapExactTokensForETH
-            .selector;
-        functionSelectorsUniswapV2Facet[10] = IUniswapV2Facet
-            .swapETHForExactTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[11] = IUniswapV2Facet
-            .removeLiquidityETHSupportingFeeOnTransferTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[12] = IUniswapV2Facet
-            .swapExactTokensForTokensSupportingFeeOnTransferTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[13] = IUniswapV2Facet
-            .swapExactETHForTokensSupportingFeeOnTransferTokens
-            .selector;
-        functionSelectorsUniswapV2Facet[14] = IUniswapV2Facet
-            .swapExactTokensForETHSupportingFeeOnTransferTokens
-            .selector;
-
-        bytes memory initDataUniswapV2Facet = abi.encode(
-            facetAddresses.uniswapV2
-        );
-
         // selectors for origami
         bytes4[] memory functionSelectorsMORELeverageFacet = new bytes4[](9);
         functionSelectorsMORELeverageFacet[0] = IMORELeverageFacet
@@ -363,36 +304,12 @@ contract DeployConfig {
             facetAddresses.moreMarkets
         );
 
-        // selectors for izumi swap
-        bytes4[] memory functionSelectorsIzumiSwapFacet = new bytes4[](2);
-        functionSelectorsIzumiSwapFacet[0] = IIzumiSwapFacet
-            .swapAmount
-            .selector;
-        functionSelectorsIzumiSwapFacet[1] = IIzumiSwapFacet
-            .swapDesire
-            .selector;
-
-        // selectors for aggro kitty swap
-        bytes4[] memory functionSelectorsAggroKittySwapFacet = new bytes4[](3);
-        functionSelectorsAggroKittySwapFacet[0] = IAggroKittySwapFacet
-            .swapNoSplit
-            .selector;
-        functionSelectorsAggroKittySwapFacet[1] = IAggroKittySwapFacet
-            .swapNoSplitFromNative
-            .selector;
-        functionSelectorsAggroKittySwapFacet[2] = IAggroKittySwapFacet
-            .swapNoSplitToNative
-            .selector;
-
         // selectors for curve
-        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](4);
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](3);
         functionSelectorsCurveFacet[0] = ICurveFacet.exchangeNg.selector;
         functionSelectorsCurveFacet[1] = ICurveFacet.exchange.selector;
         functionSelectorsCurveFacet[2] = ICurveFacet
             .accountingCurveFacet
-            .selector;
-        functionSelectorsCurveFacet[3] = ICurveFacet
-            .beforeAccounting
             .selector;
         bytes memory initDataCurveFacet = abi.encode(facetAddresses.curve);
 
@@ -457,7 +374,7 @@ contract DeployConfig {
             facetAddresses.curveGaugeV6
         );
 
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](14);
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](11);
         cuts[0] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.diamondLoupe,
             action: IDiamondCut.FacetCutAction.Add,
@@ -489,54 +406,36 @@ contract DeployConfig {
             initData: initDataVaultFacet
         });
         cuts[5] = IDiamondCut.FacetCut({
-            facetAddress: facetAddresses.uniswapV2,
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectorsUniswapV2Facet,
-            initData: initDataUniswapV2Facet
-        });
-        cuts[6] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.origami,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsMORELeverageFacet,
             initData: initDataMORELeverageFacet
         });
-        cuts[7] = IDiamondCut.FacetCut({
+        cuts[6] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.moreMarkets,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsAaveV3Facet,
             initData: initDataAaveV3Facet
         });
-        cuts[8] = IDiamondCut.FacetCut({
-            facetAddress: facetAddresses.izumiSwap,
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectorsIzumiSwapFacet,
-            initData: ""
-        });
-        cuts[9] = IDiamondCut.FacetCut({
-            facetAddress: facetAddresses.aggroKittySwap,
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectorsAggroKittySwapFacet,
-            initData: ""
-        });
-        cuts[10] = IDiamondCut.FacetCut({
+        cuts[7] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.curve,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsCurveFacet,
             initData: initDataCurveFacet
         });
-        cuts[11] = IDiamondCut.FacetCut({
+        cuts[8] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.uniswapV3,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsUniswapV3Facet,
             initData: ""
         });
-        cuts[12] = IDiamondCut.FacetCut({
+        cuts[9] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.multiRewards,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsMultiRewardsFacet,
             initData: initDataMultiRewardsFacet
         });
-        cuts[13] = IDiamondCut.FacetCut({
+        cuts[10] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.curveGaugeV6,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsCurveLiquidityGaugeV6Facet,
