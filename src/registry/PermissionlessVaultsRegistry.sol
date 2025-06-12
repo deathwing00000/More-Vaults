@@ -17,6 +17,13 @@ contract PermissionlessVaultsRegistry is BaseVaultsRegistry {
     }
 
     /**
+     * @inheritdoc BaseVaultsRegistry
+     */
+    function isPermissionless() external pure override returns (bool) {
+        return true;
+    }
+
+    /**
      * @notice This function is disabled in PermissionlessVaultsRegistry as all facets are allowed by default
      */
     function addFacet(address, bytes4[] calldata) external pure override {

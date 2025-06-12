@@ -51,6 +51,11 @@ abstract contract BaseVaultsRegistry is
     /**
      * @inheritdoc IMoreVaultsRegistry
      */
+    function isPermissionless() external view virtual returns (bool);
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function updateOracleRegistry(
         address newOracleRegistry
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {

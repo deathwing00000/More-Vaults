@@ -395,31 +395,33 @@ library MoreVaultsLib {
                 action == IDiamondCut.FacetCutAction.Replace
             ) {
                 // Check if facet is allowed in registry
-                if (!registry.isFacetAllowed(facetAddress)) {
-                    revert FacetNotAllowed(facetAddress);
-                }
-
-                for (
-                    uint256 selectorIndex;
-                    selectorIndex <
-                    _diamondCut[facetIndex].functionSelectors.length;
-
-                ) {
-                    if (
-                        registry.selectorToFacet(
-                            _diamondCut[facetIndex].functionSelectors[
-                                selectorIndex
-                            ]
-                        ) != facetAddress
-                    ) {
-                        revert SelectorNotAllowed(
-                            _diamondCut[facetIndex].functionSelectors[
-                                selectorIndex
-                            ]
-                        );
+                if (!registry.isPermissionless()) {
+                    if (!registry.isFacetAllowed(facetAddress)) {
+                        revert FacetNotAllowed(facetAddress);
                     }
-                    unchecked {
-                        ++selectorIndex;
+
+                    for (
+                        uint256 selectorIndex;
+                        selectorIndex <
+                        _diamondCut[facetIndex].functionSelectors.length;
+
+                    ) {
+                        if (
+                            registry.selectorToFacet(
+                                _diamondCut[facetIndex].functionSelectors[
+                                    selectorIndex
+                                ]
+                            ) != facetAddress
+                        ) {
+                            revert SelectorNotAllowed(
+                                _diamondCut[facetIndex].functionSelectors[
+                                    selectorIndex
+                                ]
+                            );
+                        }
+                        unchecked {
+                            ++selectorIndex;
+                        }
                     }
                 }
             }
