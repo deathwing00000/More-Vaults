@@ -283,7 +283,7 @@ contract VaultFacet is
         // get free mem ptr for efficient calls
         uint256 freePtr;
         assembly {
-            freePtr := mload(0x40)
+            freePtr := 0x60
         }
         // account available assets
         _totalAssets = _accountAvailableAssets(
