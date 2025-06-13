@@ -122,19 +122,14 @@ contract MulticallFacet is
             totalAfter := mload(retOffset)
         }
 
-        uint256 slippagePercent;
-        if (totalAfter > totalBefore) {
-            slippagePercent =
-                ((totalAfter - totalBefore) * 10_000) /
-                totalBefore;
-        } else {
-            slippagePercent =
+        if (totalBefore > totalAfter) {
+            uint256 slippagePercent =
                 ((totalBefore - totalAfter) * 10_000) /
                 totalBefore;
-        }
 
-        if (slippagePercent > ds.maxSlippagePercent) {
-            revert SlippageExceeded(slippagePercent, ds.maxSlippagePercent);
+            if (slippagePercent > ds.maxSlippagePercent) {
+                revert SlippageExceeded(slippagePercent, ds.maxSlippagePercent);
+            }
         }
 
         MoreVaultsLib.checkGasLimitOverflow();
