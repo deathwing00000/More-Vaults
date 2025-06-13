@@ -27,7 +27,6 @@ contract VaultFacet is
     error InvalidAssetsAmount();
     error CantProcessWithdrawRequest();
 
-    event WithdrawableSharesUpdated(uint256 timestamp, uint256 shares);
     event WithdrawRequestCreated(
         address requester,
         uint256 sharesAmount,
@@ -39,6 +38,7 @@ contract VaultFacet is
         uint256 sharesAmount,
         uint256 assetAmount
     );
+    event WithdrawRequestDeleted(address requester);
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -268,46 +268,6 @@ contract VaultFacet is
         }
     }
 
-    function updateWithdrawableShares(
-        uint256 _timestamp,
-        uint256 _shares
-    ) external {
-        AccessControlLib.validateCurator(msg.sender);
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-
-        if (block.timestamp >= _timestamp)
-            revert WithdrawSchedulerInvalidTimestamp(_timestamp);
-
-        MoreVaultsLib.WithdrawableShares storage withdrawableShares = ds
-            .withdrawableShares;
-        uint256 nextMinShares = withdrawableShares.currentWindowAmount +
-            withdrawableShares.nextWindowAmount;
-
-        if (_shares < nextMinShares) {
-            revert CantCoverWithdrawRequests(_shares, nextMinShares);
-        }
-
-        uint256 lastUnlockTimestamp = withdrawableShares.windowTimestamp;
-
-        if (lastUnlockTimestamp > _timestamp) {
-            revert WithdrawSchedulerInvalidTimestamp(_timestamp);
-        }
-
-        withdrawableShares.windowTimestamp = uint64(_timestamp);
-        withdrawableShares.currentWindowAmount = _shares;
-
-        emit WithdrawableSharesUpdated(_timestamp, _shares);
-    }
-
-    function updateTimelockDuration(uint64 _duration) external {
-        AccessControlLib.validateCurator(msg.sender);
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-
-        ds.withdrawableShares.timelockDuration = _duration;
-    }
-
     /**
      * @inheritdoc IVaultFacet
      */
@@ -385,6 +345,28 @@ contract VaultFacet is
         }
     }
 
+    function updateTimelockDuration(uint64 _duration) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.timelockDuration = _duration;
+    }
+
+    function clearRequest() public {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            msg.sender
+        ];
+
+        delete request.shares;
+        delete request.timelockEndsAt;
+
+        emit WithdrawRequestDeleted(msg.sender);
+    }
+
     function requestRedeem(uint256 _shares) external {
         MoreVaultsLib.validateMulticall();
         if (_shares == 0) {
@@ -403,9 +385,8 @@ contract VaultFacet is
             msg.sender
         ];
         request.shares = _shares;
-        ds.withdrawableShares.nextWindowAmount += _shares;
         uint256 endsAt = block.timestamp +
-            ds.withdrawableShares.timelockDuration;
+            ds.timelockDuration;
         request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
@@ -441,13 +422,12 @@ contract VaultFacet is
         MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
             msg.sender
         ];
+
         request.shares = shares;
-        ds.withdrawableShares.nextWindowAmount += shares;
+
         uint256 endsAt = block.timestamp +
-            ds.withdrawableShares.timelockDuration;
-        request.timelockEndsAt =
-            block.timestamp +
-            ds.withdrawableShares.timelockDuration;
+            ds.timelockDuration;
+        request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, shares, endsAt);
     }

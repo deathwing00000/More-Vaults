@@ -627,13 +627,8 @@ contract VaultFacetTest is Test {
         uint256 withdrawAmount = 50 ether;
         vm.prank(user);
         VaultFacet(facet).requestWithdraw(withdrawAmount);
-        vm.warp(block.timestamp + 100);
-        vm.prank(curator);
-        VaultFacet(facet).updateWithdrawableShares(
-            block.timestamp + 1,
-            5_000 ether
-        );
-        vm.warp(block.timestamp + 100);
+        uint256 currentTimestamp = block.timestamp;
+        vm.warp(currentTimestamp + 200);
         vm.prank(user);
         VaultFacet(facet).withdraw(withdrawAmount, user, user);
 
@@ -731,19 +726,13 @@ contract VaultFacetTest is Test {
             abi.encode(8)
         );
 
-        uint256 redeemAmount = 50 ether;
         uint256 balanceBefore = IERC20(asset).balanceOf(user);
         vm.prank(user);
-        VaultFacet(facet).requestRedeem(redeemAmount);
-        vm.warp(block.timestamp + 100);
-        vm.prank(curator);
-        VaultFacet(facet).updateWithdrawableShares(
-            block.timestamp + 1,
-            100 ether
-        );
-        vm.warp(block.timestamp + 100);
+        VaultFacet(facet).requestRedeem(shares);
+        uint256 currentTimestamp = block.timestamp;
+        vm.warp(currentTimestamp + 200);
         vm.prank(user);
-        uint256 assets = VaultFacet(facet).redeem(redeemAmount, user, user);
+        uint256 assets = VaultFacet(facet).redeem(shares, user, user);
 
         assertEq(
             IERC20(asset).balanceOf(user),
@@ -752,7 +741,7 @@ contract VaultFacetTest is Test {
         );
         assertEq(
             IERC20(facet).balanceOf(user),
-            shares - redeemAmount,
+            shares - shares,
             "Should burn correct amount of shares"
         );
     }

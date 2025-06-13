@@ -11,7 +11,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
-import {console} from "forge-std/console.sol";
 
 bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
@@ -95,13 +94,6 @@ library MoreVaultsLib {
         uint48 value;
     }
 
-    struct WithdrawableShares {
-        uint64 timelockDuration;
-        uint64 windowTimestamp;
-        uint256 nextWindowAmount;
-        uint256 currentWindowAmount;
-    }
-
     struct WithdrawRequest {
         uint256 timelockEndsAt;
         uint256 shares;
@@ -146,7 +138,7 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToMultiRewards;
         GasLimit gasLimit;
         mapping(TokenType => EnumerableSet.Bytes32Set) vaultExternalAssets;
-        WithdrawableShares withdrawableShares;
+        uint256 timelockDuration;
         mapping(address => WithdrawRequest) withdrawalRequests;
         uint256 maxSlippagePercent;
         bool isMulticall;
@@ -208,7 +200,6 @@ library MoreVaultsLib {
 
     function validateMulticall() internal view {
         MoreVaultsStorage storage ds = moreVaultsStorage();
-        console.log(ds.isMulticall);
         if (ds.isMulticall) {
             revert RestrictedActionInsideMulticall();
         }
@@ -788,18 +779,14 @@ library MoreVaultsLib {
         uint256 _shares
     ) internal returns (bool) {
         MoreVaultsStorage storage ds = moreVaultsStorage();
-        WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
         WithdrawRequest storage request = ds.withdrawalRequests[_requester];
-
         if (
             isWithdrawableRequest(
                 request.timelockEndsAt,
-                withdrawableShares.timelockDuration,
-                withdrawableShares.windowTimestamp
+                ds.timelockDuration
             ) && request.shares >= _shares
         ) {
             request.shares -= _shares;
-            withdrawableShares.currentWindowAmount -= _shares;
             return true;
         }
 
@@ -808,16 +795,10 @@ library MoreVaultsLib {
 
     function isWithdrawableRequest(
         uint256 _timelockEndsAt,
-        uint256 _timelockDuration,
-        uint256 _windowTimestamp
+        uint256 _timelockDuration
     ) private view returns (bool) {
         uint256 requestTimestamp = _timelockEndsAt - _timelockDuration;
-        if (block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY) {
-            return true;
-        }
-
-        return
-            block.timestamp >= requestTimestamp &&
-            requestTimestamp < _windowTimestamp;
+        return block.timestamp >= _timelockEndsAt ||
+            block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY;
     }
 }

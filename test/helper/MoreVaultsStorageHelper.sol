@@ -36,10 +36,10 @@ library MoreVaultsStorageHelper {
     uint256 constant STAKING_TOKEN_TO_MULTI_REWARDS = 21;
     uint256 constant GAS_LIMIT = 22;
     uint256 constant VAULT_EXTERNAL_ASSETS = 24;
-    uint256 constant WITHDRAWABLE_SHARES = 25;
-    uint256 constant WITHDRAWABLE_REQUESTS = 28;
-    uint256 constant MAX_SLIPPAGE_PERCENT = 29;
-    uint256 constant IS_MULTICALL = 30;
+    uint256 constant TIMELOCK_DURATION = 25;
+    uint256 constant WITHDRAWABLE_REQUESTS = 26;
+    uint256 constant MAX_SLIPPAGE_PERCENT = 27;
+    uint256 constant IS_MULTICALL = 28;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
