@@ -71,6 +71,12 @@ interface IMoreVaultsRegistry {
     ) external;
 
     /**
+     * @notice returns bool flag if registry is permissionless
+     * @return bool flag if registry permissionless or not
+     */
+    function isPermissionless() external view returns (bool);
+
+    /**
      * @notice Add new facet with its selectors
      * @param facet Address of the facet contract
      * @param selectors Array of function selectors

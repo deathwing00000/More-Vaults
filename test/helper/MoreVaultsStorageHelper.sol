@@ -30,6 +30,16 @@ library MoreVaultsStorageHelper {
     uint256 constant STAKING_ADDRESSES = 16;
     uint256 constant STAKED = 17;
     uint256 constant MINTER = 18;
+    uint256 constant IS_NATIVE_DEPOSIT = 18;
+    uint256 constant BEFORE_ACCOUNTING_FACET = 19;
+    uint256 constant STAKING_TOKEN_TO_GAUGE = 20;
+    uint256 constant STAKING_TOKEN_TO_MULTI_REWARDS = 21;
+    uint256 constant GAS_LIMIT = 22;
+    uint256 constant VAULT_EXTERNAL_ASSETS = 24;
+    uint256 constant TIMELOCK_DURATION = 25;
+    uint256 constant WITHDRAWABLE_REQUESTS = 26;
+    uint256 constant MAX_SLIPPAGE_PERCENT = 27;
+    uint256 constant IS_MULTICALL = 28;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -270,7 +280,11 @@ library MoreVaultsStorageHelper {
         uint256 length = getArrayLength(contractAddress, FACETS_FOR_ACCOUNTING);
         bytes32[] memory facets = new bytes32[](length);
         for (uint256 i = 0; i < length; ) {
-            facets[i] = getArrayElement(contractAddress, FACETS_FOR_ACCOUNTING, i);
+            facets[i] = getArrayElement(
+                contractAddress,
+                FACETS_FOR_ACCOUNTING,
+                i
+            );
             unchecked {
                 ++i;
             }
@@ -288,6 +302,17 @@ library MoreVaultsStorageHelper {
             SUPPORTED_INTERFACE,
             bytes32(interfaceId),
             bytes32(uint256(supported ? 1 : 0))
+        );
+    }
+
+    function setIsMulticall(
+        address contractAddress,
+        bool isMulticall
+    ) internal {
+        setStorageValue(
+            contractAddress,
+            IS_MULTICALL,
+            bytes32(bytes32(uint256(isMulticall ? 1 : 0)))
         );
     }
 

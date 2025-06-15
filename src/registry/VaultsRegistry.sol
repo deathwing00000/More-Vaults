@@ -21,6 +21,13 @@ contract VaultsRegistry is BaseVaultsRegistry {
     /**
      * @inheritdoc IMoreVaultsRegistry
      */
+    function isPermissionless() external pure override returns (bool) {
+        return false;
+    }
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function addFacet(
         address facet,
         bytes4[] calldata selectors

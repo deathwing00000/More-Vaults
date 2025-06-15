@@ -65,6 +65,14 @@ contract DiamondCutFacetTest is Test {
         vm.mockCall(
             REGISTRY,
             abi.encodeWithSelector(
+                IMoreVaultsRegistry.isPermissionless.selector
+            ),
+            abi.encode(false)
+        );
+
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
                 IMoreVaultsRegistry.isFacetAllowed.selector,
                 mockFacetAddress
             ),
@@ -112,6 +120,14 @@ contract DiamondCutFacetTest is Test {
 
     function test_diamondCut_ShouldReplaceExistingFacet() public {
         // Mock registry functions
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isPermissionless.selector
+            ),
+            abi.encode(false)
+        );
+
         vm.mockCall(
             REGISTRY,
             abi.encodeWithSelector(
@@ -193,6 +209,14 @@ contract DiamondCutFacetTest is Test {
 
     function test_diamondCut_ShouldRemoveFacet() public {
         // Mock registry functions
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isPermissionless.selector
+            ),
+            abi.encode(false)
+        );
+
         vm.mockCall(
             REGISTRY,
             abi.encodeWithSelector(
@@ -284,6 +308,14 @@ contract DiamondCutFacetTest is Test {
 
     function test_diamondCut_ShouldRevertWhenFacetNotAllowed() public {
         // Mock registry functions
+        vm.mockCall(
+            REGISTRY,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isPermissionless.selector
+            ),
+            abi.encode(false)
+        );
+
         vm.mockCall(
             REGISTRY,
             abi.encodeWithSelector(

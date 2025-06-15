@@ -29,6 +29,13 @@ contract MoreVaultsDiamondTest is Test {
         wrappedNative = address(3);
         cuts = new IDiamondCut.FacetCut[](0);
 
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isPermissionless.selector
+            ),
+            abi.encode(false)
+        );
         // Mock registry calls for diamondCut
         vm.mockCall(
             registry,

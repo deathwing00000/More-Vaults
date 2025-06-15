@@ -16,6 +16,8 @@ bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f8000000000000000000000000
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
 bytes32 constant ACCOUNTING_FAILED_ERROR = 0x712f778400000000000000000000000000000000000000000000000000000000;
 bytes32 constant BALANCE_OF_SELECTOR = 0x70a0823100000000000000000000000000000000000000000000000000000000;
+bytes32 constant TOTAL_ASSETS_SELECTOR = 0x01e1d11400000000000000000000000000000000000000000000000000000000;
+bytes32 constant TOTAL_ASSETS_RUN_FAILED = 0xb5a7047700000000000000000000000000000000000000000000000000000000;
 
 uint256 constant MAX_WITHDRAWAL_DELAY = 14 days;
 
@@ -45,6 +47,7 @@ library MoreVaultsLib {
     error AccountingFailed(bytes32 selector);
     error UnsupportedProtocol(address protocol);
     error AccountingGasLimitExceeded(uint256 limit, uint256 consumption);
+    error RestrictedActionInsideMulticall();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -86,20 +89,19 @@ library MoreVaultsLib {
         uint48 availableTokenAccountingGas;
         uint48 heldTokenAccountingGas;
         uint48 facetAccountingGas;
+        uint48 stakingTokenAccountingGas;
         uint48 nestedVaultsGas;
         uint48 value;
     }
 
-    struct WithdrawableShares {
-        uint64 timelockDuration;
-        uint64 windowTimestamp;
-        uint256 nextWindowAmount;
-        uint256 currentWindowAmount;
+    struct WithdrawRequest {
+        uint256 timelockEndsAt;
+        uint256 shares;
     }
 
-    struct WithdrawRequest {
-        uint256 timelockEndsAt;    
-        uint256 shares;
+    enum TokenType {
+        HeldToken,
+        StakingToken
     }
 
     struct MoreVaultsStorage {
@@ -135,9 +137,11 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToGauge;
         mapping(address => address) stakingTokenToMultiRewards;
         GasLimit gasLimit;
-        EnumerableSet.Bytes32Set held_ids;
-        WithdrawableShares withdrawableShares;
+        mapping(TokenType => EnumerableSet.Bytes32Set) vaultExternalAssets;
+        uint256 timelockDuration;
         mapping(address => WithdrawRequest) withdrawalRequests;
+        uint256 maxSlippagePercent;
+        bool isMulticall;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -192,6 +196,13 @@ library MoreVaultsLib {
         MoreVaultsStorage storage ds = moreVaultsStorage();
         if (asset == address(0)) asset = ds.wrappedNative;
         if (!ds.isAssetDepositable[asset]) revert UnsupportedAsset(asset);
+    }
+
+    function validateMulticall() internal view {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        if (ds.isMulticall) {
+            revert RestrictedActionInsideMulticall();
+        }
     }
 
     function removeTokenIfnecessary(
@@ -375,31 +386,33 @@ library MoreVaultsLib {
                 action == IDiamondCut.FacetCutAction.Replace
             ) {
                 // Check if facet is allowed in registry
-                if (!registry.isFacetAllowed(facetAddress)) {
-                    revert FacetNotAllowed(facetAddress);
-                }
-
-                for (
-                    uint256 selectorIndex;
-                    selectorIndex <
-                    _diamondCut[facetIndex].functionSelectors.length;
-
-                ) {
-                    if (
-                        registry.selectorToFacet(
-                            _diamondCut[facetIndex].functionSelectors[
-                                selectorIndex
-                            ]
-                        ) != facetAddress
-                    ) {
-                        revert SelectorNotAllowed(
-                            _diamondCut[facetIndex].functionSelectors[
-                                selectorIndex
-                            ]
-                        );
+                if (!registry.isPermissionless()) {
+                    if (!registry.isFacetAllowed(facetAddress)) {
+                        revert FacetNotAllowed(facetAddress);
                     }
-                    unchecked {
-                        ++selectorIndex;
+
+                    for (
+                        uint256 selectorIndex;
+                        selectorIndex <
+                        _diamondCut[facetIndex].functionSelectors.length;
+
+                    ) {
+                        if (
+                            registry.selectorToFacet(
+                                _diamondCut[facetIndex].functionSelectors[
+                                    selectorIndex
+                                ]
+                            ) != facetAddress
+                        ) {
+                            revert SelectorNotAllowed(
+                                _diamondCut[facetIndex].functionSelectors[
+                                    selectorIndex
+                                ]
+                            );
+                        }
+                        unchecked {
+                            ++selectorIndex;
+                        }
                     }
                 }
             }
@@ -618,14 +631,18 @@ library MoreVaultsLib {
                 .facetAddressPosition;
 
             for (uint256 i; i < ds.facetsForAccounting.length; ) {
-                bytes4 selector = bytes4(keccak256(abi.encodePacked(
-                    "accounting",
-                    IGenericMoreVaultFacet(_facetAddress)
-                        .facetName(),
-                    "()"
-                )));
+                bytes4 selector = bytes4(
+                    keccak256(
+                        abi.encodePacked(
+                            "accounting",
+                            IGenericMoreVaultFacet(_facetAddress).facetName(),
+                            "()"
+                        )
+                    )
+                );
                 if (ds.facetsForAccounting[i] == selector) {
-                    (bool success, bytes memory result) = address(this).staticcall(abi.encodeWithSelector(selector));
+                    (bool success, bytes memory result) = address(this)
+                        .staticcall(abi.encodeWithSelector(selector));
                     if (success) {
                         uint256 decodedAmount = abi.decode(result, (uint256));
                         if (decodedAmount > 10e4) {
@@ -710,13 +727,28 @@ library MoreVaultsLib {
         MoreVaultsStorage storage ds = moreVaultsStorage();
 
         GasLimit storage gl = ds.gasLimit;
-        
+
         if (gl.value == 0) return;
 
-        bytes32[] memory heldIds = ds.held_ids.values();
+        bytes32[] memory stakingIds = ds
+            .vaultExternalAssets[TokenType.StakingToken]
+            .values();
+        bytes32[] memory heldIds = ds
+            .vaultExternalAssets[TokenType.HeldToken]
+            .values();
+
+        uint256 stakingTokensLength;
+        for (uint256 i = 0; i < stakingIds.length; ) {
+            unchecked {
+                stakingTokensLength += ds
+                    .stakingAddresses[stakingIds[i]]
+                    .length();
+                ++i;
+            }
+        }
 
         uint256 tokensHeldLength;
-        for (uint256 i = 0; i < heldIds.length;) {
+        for (uint256 i = 0; i < heldIds.length; ) {
             unchecked {
                 tokensHeldLength += ds.tokensHeld[heldIds[i]].length();
                 ++i;
@@ -725,9 +757,15 @@ library MoreVaultsLib {
 
         uint256 consumption;
         unchecked {
-            consumption = tokensHeldLength * gl.heldTokenAccountingGas +
-                ds.availableAssets.length * gl.availableTokenAccountingGas +
-                ds.facetsForAccounting.length * gl.facetAccountingGas +
+            consumption =
+                tokensHeldLength *
+                gl.heldTokenAccountingGas +
+                stakingTokensLength *
+                gl.stakingTokenAccountingGas +
+                ds.availableAssets.length *
+                gl.availableTokenAccountingGas +
+                ds.facetsForAccounting.length *
+                gl.facetAccountingGas +
                 gl.nestedVaultsGas;
         }
 
@@ -741,18 +779,14 @@ library MoreVaultsLib {
         uint256 _shares
     ) internal returns (bool) {
         MoreVaultsStorage storage ds = moreVaultsStorage();
-        WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
         WithdrawRequest storage request = ds.withdrawalRequests[_requester];
-
         if (
             isWithdrawableRequest(
                 request.timelockEndsAt,
-                withdrawableShares.timelockDuration,
-                withdrawableShares.windowTimestamp
+                ds.timelockDuration
             ) && request.shares >= _shares
         ) {
             request.shares -= _shares;
-            withdrawableShares.currentWindowAmount -= _shares;
             return true;
         }
 
@@ -761,17 +795,10 @@ library MoreVaultsLib {
 
     function isWithdrawableRequest(
         uint256 _timelockEndsAt,
-        uint256 _timelockDuration,
-        uint256 _windowTimestamp
+        uint256 _timelockDuration
     ) private view returns (bool) {
-
         uint256 requestTimestamp = _timelockEndsAt - _timelockDuration;
-        if (block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY) {
-            return true;
-        }
-
-        return
-            block.timestamp >= requestTimestamp &&
-            requestTimestamp < _windowTimestamp;
+        return block.timestamp >= _timelockEndsAt ||
+            block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY;
     }
 }

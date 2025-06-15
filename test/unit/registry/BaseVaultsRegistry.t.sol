@@ -14,6 +14,10 @@ contract TestBaseVaultsRegistry is BaseVaultsRegistry {
         return true;
     }
 
+    function isPermissionless() external pure override returns (bool) {
+        return false;
+    }
+
     function addFacet(address, bytes4[] calldata) external override {}
 
     function removeFacet(address) external override {}

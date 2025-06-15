@@ -74,7 +74,7 @@ contract ConfigurationFacetTest is Test {
     }
 
     function test_initialize_shouldSetCorrectValues() public {
-        facet.initialize("");
+        facet.initialize(abi.encode(10_000));
         assertEq(
             MoreVaultsStorageHelper.getSupportedInterface(
                 address(facet),

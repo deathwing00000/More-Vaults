@@ -25,10 +25,20 @@ contract VaultFacet is
     error CantCoverWithdrawRequests(uint256, uint256);
     error InvalidSharesAmount();
     error InvalidAssetsAmount();
+    error CantProcessWithdrawRequest();
 
-    event WithdrawableSharesUpdated(uint256 timestamp, uint256 shares);
-    event WithdrawRequestCreated(address requester, uint256 sharesAmount, uint256 endsAt);
-    event WithdrawRequestFulfilled(address requester, address receiver, uint256 sharesAmount, uint256 assetAmount);
+    event WithdrawRequestCreated(
+        address requester,
+        uint256 sharesAmount,
+        uint256 endsAt
+    );
+    event WithdrawRequestFulfilled(
+        address requester,
+        address receiver,
+        uint256 sharesAmount,
+        uint256 assetAmount
+    );
+    event WithdrawRequestDeleted(address requester);
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -115,7 +125,11 @@ contract VaultFacet is
             mstore(0, _baf.slot)
             let slot := keccak256(0, 0x20)
             mstore(freePtr, BEFORE_ACCOUNTING_SELECTOR)
-            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 1)
+            } {
                 let facet := sload(add(slot, i))
                 let res := delegatecall(gas(), facet, freePtr, 4, 0, 0) // call facets for acounting, ignore return values
                 // if delegatecall fails, revert with the error
@@ -148,14 +162,21 @@ contract VaultFacet is
                 asset := sload(add(slot, i))
                 mstore(add(_freePtr, 0x04), address())
                 let retOffset := add(_freePtr, 0x24)
-                let res := staticcall(gas(), asset, _freePtr, 0x24, retOffset, 0x20)
+                let res := staticcall(
+                    gas(),
+                    asset,
+                    _freePtr,
+                    0x24,
+                    retOffset,
+                    0x20
+                )
                 if iszero(res) {
                     mstore(_freePtr, ACCOUNTING_FAILED_ERROR)
                     mstore(add(_freePtr, 0x04), asset)
                     revert(retOffset, 0x24)
                 }
-                toConvert  := mload(retOffset)
-                
+                toConvert := mload(retOffset)
+
                 // compute staked value slot for asset
                 mstore(0, _staked.slot)
                 mstore(0x20, asset)
@@ -165,12 +186,15 @@ contract VaultFacet is
                 if eq(_wrappedNative, asset) {
                     // if the vault processes native deposits, make sure to exclude msg.value
                     switch iszero(_isNativeDeposit)
-                        case 1 {
-                            toConvert := add(toConvert, selfbalance())
-                        }
-                        default {
-                            toConvert := add(toConvert, sub(selfbalance(), callvalue()))
-                        }
+                    case 1 {
+                        toConvert := add(toConvert, selfbalance())
+                    }
+                    default {
+                        toConvert := add(
+                            toConvert,
+                            sub(selfbalance(), callvalue())
+                        )
+                    }
                 }
             }
             // convert to underlying
@@ -202,11 +226,22 @@ contract VaultFacet is
             // set return offset
             let retOffset := add(_freePtr, 0x04)
             // loop through facets
-            for {let i := 0} lt(i, length) {i := add(i, 1)} {
+            for {
+                let i := 0
+            } lt(i, length) {
+                i := add(i, 1)
+            } {
                 // read facet selector and execute staticcall
                 let selector := sload(add(slot, i))
                 mstore(_freePtr, selector)
-                let res := staticcall(gas(), address(), _freePtr, 4, retOffset, 0x40)
+                let res := staticcall(
+                    gas(),
+                    address(),
+                    _freePtr,
+                    4,
+                    retOffset,
+                    0x40
+                )
                 // if staticcall fails, revert with the error
                 if iszero(res) {
                     mstore(_freePtr, ACCOUNTING_FAILED_ERROR)
@@ -233,40 +268,6 @@ contract VaultFacet is
         }
     }
 
-    function updateWithdrawableShares(uint256 _timestamp, uint256 _shares) external {
-        AccessControlLib.validateCurator(msg.sender);
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-
-        if (block.timestamp >= _timestamp) revert WithdrawSchedulerInvalidTimestamp(_timestamp);
-
-        MoreVaultsLib.WithdrawableShares storage withdrawableShares = ds.withdrawableShares;
-        uint256 nextMinShares = withdrawableShares.currentWindowAmount + withdrawableShares.nextWindowAmount;
-
-        if (_shares < nextMinShares) {
-            revert CantCoverWithdrawRequests(_shares, nextMinShares);
-        }
-
-        uint256 lastUnlockTimestamp = withdrawableShares.windowTimestamp;
-
-        if (lastUnlockTimestamp > _timestamp) {
-            revert WithdrawSchedulerInvalidTimestamp(_timestamp);
-        }
-
-        withdrawableShares.windowTimestamp = uint64(_timestamp);
-        withdrawableShares.currentWindowAmount = _shares;
-
-        emit WithdrawableSharesUpdated(_timestamp, _shares);
-    }
-
-    function updateTimelockDuration(uint64 _duration) external {
-        AccessControlLib.validateCurator(msg.sender);
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
-
-        ds.withdrawableShares.timelockDuration = _duration;
-    }
-
     /**
      * @inheritdoc IVaultFacet
      */
@@ -282,12 +283,22 @@ contract VaultFacet is
         // get free mem ptr for efficient calls
         uint256 freePtr;
         assembly {
-            freePtr := mload(0x40)
+            freePtr := 0x60
         }
         // account available assets
-        _totalAssets = _accountAvailableAssets(ds.availableAssets, ds.staked, ds.wrappedNative, ds.isNativeDeposit, freePtr);
+        _totalAssets = _accountAvailableAssets(
+            ds.availableAssets,
+            ds.staked,
+            ds.wrappedNative,
+            ds.isNativeDeposit,
+            freePtr
+        );
         // account facets
-        _totalAssets = _accountFacets(ds.facetsForAccounting, _totalAssets, freePtr);
+        _totalAssets = _accountFacets(
+            ds.facetsForAccounting,
+            _totalAssets,
+            freePtr
+        );
     }
 
     /**
@@ -334,7 +345,30 @@ contract VaultFacet is
         }
     }
 
+    function updateTimelockDuration(uint64 _duration) external {
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        ds.timelockDuration = _duration;
+    }
+
+    function clearRequest() public {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            msg.sender
+        ];
+
+        delete request.shares;
+        delete request.timelockEndsAt;
+
+        emit WithdrawRequestDeleted(msg.sender);
+    }
+
     function requestRedeem(uint256 _shares) external {
+        MoreVaultsLib.validateMulticall();
         if (_shares == 0) {
             revert InvalidSharesAmount();
         }
@@ -347,16 +381,19 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            msg.sender
+        ];
         request.shares = _shares;
-        ds.withdrawableShares.nextWindowAmount += _shares;
-        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+        uint256 endsAt = block.timestamp +
+            ds.timelockDuration;
         request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
     }
 
     function requestWithdraw(uint256 _assets) external {
+        MoreVaultsLib.validateMulticall();
         if (_assets == 0) {
             revert InvalidAssetsAmount();
         }
@@ -382,11 +419,15 @@ contract VaultFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[msg.sender];
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            msg.sender
+        ];
+
         request.shares = shares;
-        ds.withdrawableShares.nextWindowAmount += shares;
-        uint256 endsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
-        request.timelockEndsAt = block.timestamp + ds.withdrawableShares.timelockDuration;
+
+        uint256 endsAt = block.timestamp +
+            ds.timelockDuration;
+        request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, shares, endsAt);
     }
@@ -404,6 +445,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 shares)
     {
+        MoreVaultsLib.validateMulticall();
         uint256 newTotalAssets = _accrueInterest();
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -434,6 +476,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 assets)
     {
+        MoreVaultsLib.validateMulticall();
         uint256 newTotalAssets = _accrueInterest();
 
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
@@ -465,6 +508,7 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 shares)
     {
+        MoreVaultsLib.validateMulticall();
         uint256 newTotalAssets = _accrueInterest();
 
         shares = _convertToSharesWithTotals(
@@ -473,6 +517,12 @@ contract VaultFacet is
             newTotalAssets,
             Math.Rounding.Ceil
         );
+
+        bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
+
+        if (!isWithdrawable) {
+            revert CantProcessWithdrawRequest();
+        }
 
         uint256 maxRedeem_ = maxRedeem(owner);
         if (shares > maxRedeem_) {
@@ -504,6 +554,13 @@ contract VaultFacet is
         whenNotPaused
         returns (uint256 assets)
     {
+        MoreVaultsLib.validateMulticall();
+        bool isWithdrawable = MoreVaultsLib.withdrawFromRequest(owner, shares);
+
+        if (!isWithdrawable) {
+            revert CantProcessWithdrawRequest();
+        }
+
         uint256 maxRedeem_ = maxRedeem(owner);
         if (shares > maxRedeem_) {
             revert ERC4626ExceededMaxRedeem(owner, shares, maxRedeem_);
@@ -537,6 +594,7 @@ contract VaultFacet is
         uint256[] calldata assets,
         address receiver
     ) external payable whenNotPaused returns (uint256 shares) {
+        MoreVaultsLib.validateMulticall();
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         if (msg.value > 0) {
@@ -726,12 +784,12 @@ contract VaultFacet is
         ) = IMoreVaultsRegistry(acs.moreVaultsRegistry).protocolFeeInfo(
                 address(this)
             );
-        
+
         emit AccrueInterest(newTotalAssets, feeShares);
 
         if (feeShares == 0) return newTotalAssets;
 
-        if (protocolFee !=0) {
+        if (protocolFee != 0) {
             uint256 protocolFeeShares = feeShares.mulDiv(
                 protocolFee,
                 MoreVaultsLib.FEE_BASIS_POINT

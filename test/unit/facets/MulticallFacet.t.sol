@@ -17,6 +17,7 @@ contract MulticallFacetTest is Test {
 
     // Mock data
     bytes[] public actionsData;
+    bytes public callData;
     uint256 public timeLockPeriod = 1 days;
     uint256 public currentNonce = 0;
 
@@ -39,8 +40,10 @@ contract MulticallFacetTest is Test {
 
         // Setup mock actions data
         actionsData = new bytes[](2);
-        actionsData[0] = abi.encodeWithSignature("mockFunction1()");
-        actionsData[1] = abi.encodeWithSignature("mockFunction2()");
+        callData = abi.encodeWithSignature("mockFunction1()");
+        actionsData[0] = callData;
+        callData = abi.encodeWithSignature("mockFunction2()");
+        actionsData[1] = callData;
     }
 
     function test_facetName_ShouldReturnCorrectName() public view {
@@ -52,7 +55,7 @@ contract MulticallFacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        MulticallFacet(facet).initialize(abi.encode(timeLockPeriod));
+        MulticallFacet(facet).initialize(abi.encode(timeLockPeriod, 10_000));
         assertEq(
             MoreVaultsStorageHelper.getTimeLockPeriod(address(facet)),
             timeLockPeriod,
@@ -111,6 +114,11 @@ contract MulticallFacetTest is Test {
             address(facet),
             abi.encodeWithSignature("mockFunction2()"),
             abi.encode()
+        );
+        vm.mockCall(
+            address(facet),
+            abi.encodeWithSignature("totalAssets()"),
+            abi.encode(1e18)
         );
 
         vm.expectEmit();
@@ -172,6 +180,11 @@ contract MulticallFacetTest is Test {
             abi.encodeWithSignature("mockFunction2()"),
             abi.encode()
         );
+        vm.mockCall(
+            address(facet),
+            abi.encodeWithSignature("totalAssets()"),
+            abi.encode(1e18)
+        );
 
         // Fast forward time
         vm.warp(block.timestamp + timeLockPeriod + 1);
@@ -226,6 +239,12 @@ contract MulticallFacetTest is Test {
 
         // Fast forward time
         vm.warp(block.timestamp + timeLockPeriod + 1);
+
+        vm.mockCall(
+            address(facet),
+            abi.encodeWithSignature("totalAssets()"),
+            abi.encode(1e18)
+        );
 
         // Attempt to execute actions
         vm.expectRevert(

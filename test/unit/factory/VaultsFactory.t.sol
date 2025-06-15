@@ -205,6 +205,14 @@ contract VaultsFactoryTest is Test {
     }
 
     function test_deployVault_ShouldDeployVaultWithFacets() public {
+        vm.mockCall(
+            registry,
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.isPermissionless.selector
+            ),
+            abi.encode(false)
+        );
+
         vm.prank(admin);
         factory.initialize(
             registry,

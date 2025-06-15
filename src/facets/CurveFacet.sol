@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {ICurveFacet} from "../interfaces/facets/ICurveFacet.sol";
 import {ICurveRouter} from "../interfaces/Curve/ICurveRouter.sol";
@@ -49,7 +50,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         (address facetAddress, bytes32 facetSelector) = abi.decode(data, (address, bytes32));
         ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
-        ds.held_ids.add(CURVE_LP_TOKENS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(CURVE_LP_TOKENS_ID);
     }
 
     function beforeAccounting() external {
@@ -96,11 +97,11 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
                 gaugeBalance +
                 multiRewardsBalance;
-
+            uint8 lpDecimal = IERC20Metadata(lpToken).decimals();
             sum += MoreVaultsLib.convertToUnderlying(
                 ICurveViews(lpToken).coins(0),
                 (ICurveViews(lpToken).get_virtual_price() * lpTokenBalance) /
-                    1e18,
+                    10 ** lpDecimal,
                 Math.Rounding.Floor
             );
 

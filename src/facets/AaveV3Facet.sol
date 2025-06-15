@@ -42,8 +42,12 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         ds.facetsForAccounting.push(facetSelector);
 
         ds.supportedInterfaces[type(IAaveV3Facet).interfaceId] = true;
-        ds.held_ids.add(MTOKENS_ID);
-        ds.held_ids.add(MORE_DEBT_TOKENS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(
+            MTOKENS_ID
+        );
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(
+            MORE_DEBT_TOKENS_ID
+        );
     }
 
     function facetName() external pure returns (string memory) {
@@ -375,6 +379,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
     ) external {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAddressWhitelisted(pool);
+        MoreVaultsLib.validateAddressWhitelisted(receiverAddress);
         IPool(pool).flashLoan(
             receiverAddress,
             assets,
@@ -427,6 +432,7 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
     ) public {
         AccessControlLib.validateDiamond(msg.sender);
         MoreVaultsLib.validateAddressWhitelisted(pool);
+        MoreVaultsLib.validateAddressWhitelisted(receiverAddress);
         MoreVaultsLib.validateAssetAvailable(asset);
 
         IPool(pool).flashLoanSimple(

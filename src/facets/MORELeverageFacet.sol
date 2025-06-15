@@ -44,7 +44,7 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         bytes32 facetSelector = abi.decode(data, (bytes32));
         ds.facetsForAccounting.push(facetSelector);
         ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = true;
-        ds.held_ids.add(ORIGAMI_VAULT_TOKENS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(ORIGAMI_VAULT_TOKENS_ID);
     }
 
     function accountingMORELeverageFacet()
