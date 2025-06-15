@@ -142,6 +142,7 @@ library MoreVaultsLib {
         mapping(address => WithdrawRequest) withdrawalRequests;
         uint256 maxSlippagePercent;
         bool isMulticall;
+        mapping(address => uint256) curvePoolLength;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);

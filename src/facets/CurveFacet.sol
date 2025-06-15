@@ -14,6 +14,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILiquidityGaugeV6} from "../interfaces/Curve/ILiquidityGaugeV6.sol";
 import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 /**
  * @title CurveFacet
@@ -21,10 +22,12 @@ import {IMultiRewards} from "../interfaces/Curve/IMultiRewards.sol";
  */
 contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     using SafeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using Math for uint256;
 
     bytes32 constant CURVE_LP_TOKENS_ID = keccak256("CURVE_LP_TOKENS_ID");
+    bytes32 constant COINS_SELECTOR = 0xc661065700000000000000000000000000000000000000000000000000000000;
 
     function INITIALIZABLE_STORAGE_SLOT()
         internal
@@ -62,7 +65,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ];
 
         for (uint256 i = 0; i < tokensHeld.length(); ) {
-            ICurveViews(tokensHeld.at(0)).remove_liquidity_one_coin(0, 0, 0);
+            ICurveViews(tokensHeld.at(i)).remove_liquidity_one_coin(0, 0, 0);
         }
     }
 
@@ -78,6 +81,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ];
         for (uint256 i = 0; i < tokensHeld.length(); ) {
             address lpToken = tokensHeld.at(i);
+            uint256 poolLength = ds.curvePoolLength[lpToken];
             // if the lp token is available asset, then it should be already accounted
             if (ds.isAssetAvailable[lpToken]) {
                 unchecked {
@@ -97,13 +101,24 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
                 gaugeBalance +
                 multiRewardsBalance;
+
             uint8 lpDecimal = IERC20Metadata(lpToken).decimals();
-            sum += MoreVaultsLib.convertToUnderlying(
-                ICurveViews(lpToken).coins(0),
-                (ICurveViews(lpToken).get_virtual_price() * lpTokenBalance) /
-                    10 ** lpDecimal,
-                Math.Rounding.Floor
-            );
+            uint256 minPrice;
+            for(uint256 j = 0; j < poolLength; j++) {
+                address token = ICurveViews(lpToken).coins(j);
+                uint256 tokenDecimals = IERC20Metadata(token).decimals();
+                uint256 price = MoreVaultsLib.convertToUnderlying(token, 10 ** tokenDecimals, Math.Rounding.Floor);
+
+                if (price < minPrice || minPrice == 0) {
+                    minPrice = price;
+                }
+            }
+
+            //Price per LP in terms of underlying asset with decimals of the underlying asset
+            uint256 pricePerLP = minPrice.mulDiv(ICurveViews(lpToken).get_virtual_price(), 1e18, Math.Rounding.Floor);
+
+            //The value of the LPs is equal to the price of a single LP times the LP balance
+            sum += pricePerLP.mulDiv(lpTokenBalance, 10 ** IERC20Metadata(lpToken).decimals(), Math.Rounding.Floor);
 
             unchecked {
                 ++i;
@@ -163,6 +178,9 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
+            if (ds.curvePoolLength[outputToken] == 0) {
+                ds.curvePoolLength[outputToken] = _getPoolLength(outputToken);
+            }
         }
         if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(
@@ -227,6 +245,9 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
+            if (ds.curvePoolLength[outputToken] == 0) {
+                ds.curvePoolLength[outputToken] = _getPoolLength(outputToken);
+            }
         }
         if (_swap_params[0][2] == 6) {
             MoreVaultsLib.removeTokenIfnecessary(
@@ -248,5 +269,20 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     ) internal pure returns (uint256 i, address outputToken) {
         while (i < 4 && _route[i * 2 + 3] != address(0)) i++;
         outputToken = _route[(i + 1) * 2];
+    }
+
+    function _getPoolLength(address pool) internal view returns (uint256 length) {
+        assembly {
+            let freePtr := mload(0x40)
+            mstore(freePtr, COINS_SELECTOR)
+            for {let i := 0} 1 {i := add(i, 1)} {
+                mstore(add(freePtr, 4), i)
+                let res := staticcall(gas(), pool, freePtr, 0x24, 0, 0)
+                if iszero(res) {
+                    break
+                }
+                length := add(length, 1)
+            }
+        }
     }
 }
