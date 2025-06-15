@@ -106,7 +106,12 @@ contract VaultFacet is
      * @inheritdoc IVaultFacet
      */
     function pause() external {
-        AccessControlLib.validateOwner(msg.sender);
+        if (
+            AccessControlLib.vaultOwner() != msg.sender &&
+            MoreVaultsLib.factoryAddress() != msg.sender
+        ) {
+            revert AccessControlLib.UnauthorizedAccess();
+        }
         _pause();
     }
 

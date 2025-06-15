@@ -65,6 +65,24 @@ interface IVaultsFactory {
     ) external returns (address vault);
 
     /**
+     * @notice link the vault to the facet
+     * @param facet address of the facet
+     */
+    function link(address facet) external;
+
+    /**
+     * @notice unlink the vault from the facet
+     * @param facet address of the facet
+     */
+    function unlink(address facet) external;
+
+    /**
+     * @notice pauses all vaults using this facet
+     * @param facet address of the facet
+     */
+    function pauseFacet(address facet) external;
+
+    /**
      * @notice Get all deployed vaults
      * @return Array of vault addresses
      */
@@ -82,4 +100,10 @@ interface IVaultsFactory {
      * @return bool True if vault was deployed by this factory
      */
     function isVault(address vault) external view returns (bool);
+
+    /**
+     * @notice Returns vaults addresses using this facet
+     * @param _facet address of the facet
+     */
+    function getLinkedVaults(address _facet) external returns (address[] memory vaults);
 }

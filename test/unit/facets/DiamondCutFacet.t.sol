@@ -8,6 +8,7 @@ import {IDiamondCut} from "../../../src/interfaces/facets/IDiamondCut.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {IVaultsFactory} from "../../../src/interfaces/IVaultsFactory.sol";
 import {MockFacet} from "../../mocks/MockFacet.sol";
 
 contract DiamondCutFacetTest is Test {
@@ -101,6 +102,15 @@ contract DiamondCutFacetTest is Test {
         // Set up as owner
         vm.prank(owner);
 
+        vm.mockCall(
+            address(0),
+            abi.encodeWithSelector(
+                IVaultsFactory.link.selector,
+                mockFacetAddress
+            ),
+            ""
+        );
+
         // Execute diamond cut
         IDiamondCut(facet).diamondCut(cuts);
 
@@ -146,6 +156,15 @@ contract DiamondCutFacetTest is Test {
             abi.encode(mockFacetAddress)
         );
 
+        vm.mockCall(
+            address(0), // unassigned factory
+            abi.encodeWithSelector(
+                IVaultsFactory.link.selector,
+                mockFacetAddress
+            ),
+            ""
+        );
+
         // First add a facet
         IDiamondCut.FacetCut[] memory addCuts = new IDiamondCut.FacetCut[](1);
         addCuts[0] = IDiamondCut.FacetCut({
@@ -187,6 +206,24 @@ contract DiamondCutFacetTest is Test {
             initData: ""
         });
         replaceCuts[0].functionSelectors[0] = TEST_SELECTOR;
+
+        vm.mockCall(
+            address(0), // unassigned factory
+            abi.encodeWithSelector(
+                IVaultsFactory.unlink.selector,
+                mockFacetAddress
+            ),
+            ""
+        );
+
+        vm.mockCall(
+            address(0), // unassigned factory
+            abi.encodeWithSelector(
+                IVaultsFactory.link.selector,
+                newTestFacet
+            ),
+            ""
+        );
 
         // Set up as owner
         vm.prank(owner);
@@ -244,6 +281,15 @@ contract DiamondCutFacetTest is Test {
         });
         addCuts[0].functionSelectors[0] = TEST_SELECTOR;
 
+        vm.mockCall(
+            address(0), // unassigned factory
+            abi.encodeWithSelector(
+                IVaultsFactory.link.selector,
+                mockFacetAddress
+            ),
+            ""
+        );
+
         vm.prank(owner);
         IDiamondCut(facet).diamondCut(addCuts);
 
@@ -261,6 +307,15 @@ contract DiamondCutFacetTest is Test {
 
         // Set up as owner
         vm.prank(owner);
+
+        vm.mockCall(
+            address(0), // unassigned factory
+            abi.encodeWithSelector(
+                IVaultsFactory.unlink.selector,
+                mockFacetAddress
+            ),
+            ""
+        );
 
         // Execute diamond cut
         IDiamondCut(facet).diamondCut(removeCuts);

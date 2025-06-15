@@ -2,18 +2,24 @@
 pragma solidity 0.8.28;
 
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {MoreVaultsDiamond} from "../MoreVaultsDiamond.sol";
 import {DiamondCutFacet} from "../facets/DiamondCutFacet.sol";
 import {IDiamondCut} from "../interfaces/facets/IDiamondCut.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
 import {IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
+import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
 
 /**
  * @title VaultsFactory
  * @notice Factory contract for deploying new vault instances
  */
 contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
+    /// @dev Thrown when non-vault tries to link or unlink facet.
+    error NotAuthorizedToLinkFacets(address);
     /// @dev Registry contract address
     IMoreVaultsRegistry public registry;
 
@@ -31,6 +37,9 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
 
     /// @dev Address of the wrapped native token
     address public wrappedNative;
+
+    /// @dev Mapping facet address => vaults using this facet array
+    mapping(address => EnumerableSet.AddressSet) private _linkedVaults;
 
     function initialize(
         address _registry,
@@ -73,6 +82,45 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setAccessControlFacet(_accessControlFacet);
     }
+    
+    /**
+     * @notice pauses all vaults using this facet
+     * @param _facet address of the facet
+     */
+    function pauseFacet(
+        address _facet
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        address[] memory vaults = _linkedVaults[_facet].values();
+        for (uint256 i = 0; i < vaults.length;) {
+            IVaultFacet(vaults[i]).pause();
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice link the vault to the facet
+     * @param _facet address of the facet
+     */
+    function link(address _facet) external {
+        if (!isFactoryVault[msg.sender]) {
+            revert NotAuthorizedToLinkFacets(msg.sender);
+        }
+
+        _linkedVaults[_facet].add(msg.sender);
+    }
+
+    /**
+     * @notice unlink the vault from the facet
+     * @param _facet address of the facet
+     */
+    function unlink(address _facet) external {
+        if (!isFactoryVault[msg.sender]) {
+            revert NotAuthorizedToLinkFacets(msg.sender);
+        }
+        _linkedVaults[_facet].remove(msg.sender);
+    }
 
     /**
      * @inheritdoc IVaultsFactory
@@ -81,20 +129,6 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
         IDiamondCut.FacetCut[] calldata facets,
         bytes memory accessControlFacetInitData
     ) external returns (address vault) {
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](
-            facets.length
-        );
-        for (uint256 i = 0; i < facets.length; ) {
-            cuts[i] = IDiamondCut.FacetCut({
-                facetAddress: facets[i].facetAddress,
-                action: facets[i].action,
-                functionSelectors: facets[i].functionSelectors,
-                initData: facets[i].initData
-            });
-            unchecked {
-                ++i;
-            }
-        }
         // Deploy new MoreVaultsDiamond (vault)
         vault = address(
             new MoreVaultsDiamond(
@@ -102,12 +136,20 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
                 accessControlFacet,
                 address(registry),
                 wrappedNative,
-                cuts,
+                facets,
                 accessControlFacetInitData
             )
         );
         isFactoryVault[vault] = true;
         deployedVaults.push(vault);
+        _linkedVaults[diamondCutFacet].add(vault);
+        _linkedVaults[accessControlFacet].add(vault);
+        for (uint256 i = 0; i < facets.length; ) {
+            _linkedVaults[facets[i].facetAddress].add(vault);
+            unchecked {
+                ++i;
+            }
+        }
         emit VaultDeployed(vault, address(registry), wrappedNative, facets);
     }
 
@@ -139,6 +181,14 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
      */
     function isVault(address vault) external view override returns (bool) {
         return isFactoryVault[vault];
+    }
+
+    /**
+     * @notice Returns vaults addresses using this facet
+     * @param _facet address of the facet
+     */
+    function getLinkedVaults(address _facet) external returns (address[] memory vaults) {
+        vaults = _linkedVaults[_facet].values();
     }
 
     function _setDiamondCutFacet(address _diamondCutFacet) internal {

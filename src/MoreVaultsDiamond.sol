@@ -47,6 +47,7 @@ contract MoreVaultsDiamond {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.wrappedNative = _wrappedNative;
+        ds.factory = msg.sender;
 
         MoreVaultsLib.diamondCut(cut);
         if (_cuts.length > 0) {

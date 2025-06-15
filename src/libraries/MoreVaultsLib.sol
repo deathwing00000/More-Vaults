@@ -6,11 +6,13 @@ import {IDiamondCut} from "../interfaces/facets/IDiamondCut.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
+import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
 import {IAggregatorV2V3Interface} from "../interfaces/Chainlink/IAggregatorV2V3Interface.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
+import {console} from "forge-std/console.sol";
 
 bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
@@ -142,6 +144,7 @@ library MoreVaultsLib {
         mapping(address => WithdrawRequest) withdrawalRequests;
         uint256 maxSlippagePercent;
         bool isMulticall;
+        address factory;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -372,6 +375,8 @@ library MoreVaultsLib {
     function diamondCut(IDiamondCut.FacetCut[] memory _diamondCut) internal {
         AccessControlLib.AccessControlStorage storage acs = AccessControlLib
             .accessControlStorage();
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
         IMoreVaultsRegistry registry = IMoreVaultsRegistry(
             acs.moreVaultsRegistry
         );
@@ -422,6 +427,10 @@ library MoreVaultsLib {
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
+                initializeAfterAddition(
+                    _diamondCut[facetIndex].facetAddress,
+                    _diamondCut[facetIndex].initData
+                );
             } else if (action == IDiamondCut.FacetCutAction.Replace) {
                 replaceFunctions(
                     _diamondCut[facetIndex].facetAddress,
@@ -434,12 +443,6 @@ library MoreVaultsLib {
                 );
             } else {
                 revert IncorrectFacetCutAction(uint8(action));
-            }
-            if (action == IDiamondCut.FacetCutAction.Add) {
-                initializeAfterAddition(
-                    _diamondCut[facetIndex].facetAddress,
-                    _diamondCut[facetIndex].initData
-                );
             }
             unchecked {
                 ++facetIndex;
@@ -481,12 +484,15 @@ library MoreVaultsLib {
             addFunction(ds, selector, selectorPosition, _facetAddress);
             selectorPosition++;
         }
+        if (msg.sender != factoryAddress()) {
+            IVaultsFactory(ds.factory).link(_facetAddress);
+        }
     }
 
     function replaceFunctions(
         address _facetAddress,
         bytes4[] memory _functionSelectors
-    ) internal {
+    ) internal returns (address) {
         if (_functionSelectors.length == 0) {
             revert NoSelectorsInFacetToCut();
         }
@@ -501,6 +507,9 @@ library MoreVaultsLib {
         if (selectorPosition == 0) {
             addFacet(ds, _facetAddress);
         }
+
+        address facetToUnlink;
+        address factory = ds.factory;
         for (
             uint256 selectorIndex;
             selectorIndex < _functionSelectors.length;
@@ -515,8 +524,13 @@ library MoreVaultsLib {
             }
             removeFunction(ds, oldFacetAddress, selector);
             addFunction(ds, selector, selectorPosition, _facetAddress);
+            if (facetToUnlink != oldFacetAddress) {
+                IVaultsFactory(factory).unlink(oldFacetAddress);
+                facetToUnlink = oldFacetAddress;
+            }
             selectorPosition++;
         }
+        IVaultsFactory(factory).link(_facetAddress);
     }
 
     function removeFunctions(
@@ -531,6 +545,9 @@ library MoreVaultsLib {
         if (_facetAddress != address(0)) {
             revert ZeroAddress();
         }
+
+        address facetToUnlink;
+        address factory = ds.factory;
         for (
             uint256 selectorIndex;
             selectorIndex < _functionSelectors.length;
@@ -541,6 +558,10 @@ library MoreVaultsLib {
                 .selectorToFacetAndPosition[selector]
                 .facetAddress;
             removeFunction(ds, oldFacetAddress, selector);
+            if (facetToUnlink != oldFacetAddress) {
+                IVaultsFactory(factory).unlink(oldFacetAddress);
+                facetToUnlink = oldFacetAddress;
+            }
         }
     }
 
@@ -800,5 +821,10 @@ library MoreVaultsLib {
         uint256 requestTimestamp = _timelockEndsAt - _timelockDuration;
         return block.timestamp >= _timelockEndsAt ||
             block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY;
+    }
+
+    function factoryAddress() internal view returns (address) {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        return ds.factory;
     }
 }
