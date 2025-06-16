@@ -38,6 +38,9 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     /// @dev Address of the wrapped native token
     address public wrappedNative;
 
+    /// @dev Address set of restricted facets
+    EnumerableSet.AddressSet private _restrictedFacets;
+
     /// @dev Mapping facet address => vaults using this facet array
     mapping(address => EnumerableSet.AddressSet) private _linkedVaults;
 
@@ -82,21 +85,32 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _setAccessControlFacet(_accessControlFacet);
     }
-    
+
     /**
      * @notice pauses all vaults using this facet
      * @param _facet address of the facet
      */
-    function pauseFacet(
-        address _facet
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pauseFacet(address _facet) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address[] memory vaults = _linkedVaults[_facet].values();
-        for (uint256 i = 0; i < vaults.length;) {
+        _setFacetRestricted(_facet, true);
+        for (uint256 i = 0; i < vaults.length; ) {
             IVaultFacet(vaults[i]).pause();
             unchecked {
                 ++i;
             }
         }
+    }
+
+    /**
+     * @notice sets restricted flag for facet
+     * @param _facet address of facet
+     * @param _isRestricted bool flag
+     */
+    function setFacetRestricted(
+        address _facet,
+        bool _isRestricted
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _setFacetRestricted(_facet, _isRestricted);
     }
 
     /**
@@ -186,9 +200,32 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     /**
      * @notice Returns vaults addresses using this facet
      * @param _facet address of the facet
+     * @return vaults of the vaults that are linked to the facet
      */
-    function getLinkedVaults(address _facet) external returns (address[] memory vaults) {
+    function getLinkedVaults(
+        address _facet
+    ) external returns (address[] memory vaults) {
         vaults = _linkedVaults[_facet].values();
+    }
+
+    /**
+     * @notice Returns facet addresses that are restricted
+     * @return facets addresses of the restricted facets
+     */
+    function getRestrictedFacets() external returns (address[] memory facets) {
+        facets = _restrictedFacets.values();
+    }
+
+    /**
+     * @notice Returns bool flag if vault linked to the facet
+     * @param _facet address of the facet
+     * @param _vault address of the vault
+     */
+    function isVaultLinked(
+        address _facet,
+        address _vault
+    ) external returns (bool) {
+        return _linkedVaults[_facet].contains(_vault);
     }
 
     function _setDiamondCutFacet(address _diamondCutFacet) internal {
@@ -200,5 +237,12 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     function _setAccessControlFacet(address _accessControlFacet) internal {
         if (_accessControlFacet == address(0)) revert ZeroAddress();
         accessControlFacet = _accessControlFacet;
+    }
+
+    function _setFacetRestricted(address _facet, bool _isRestricted) private {
+        if (_isRestricted) _restrictedFacets.add(_facet);
+        else _restrictedFacets.remove(_facet);
+
+        emit SetFacetRestricted(_facet, _isRestricted);
     }
 }

@@ -20,6 +20,11 @@ interface IVaultsFactory {
 
     event DiamondCutFacetUpdated(address indexed newDiamondCutFacet);
 
+    event SetFacetRestricted(
+        address indexed _facet,
+        bool indexed _isRestricted
+    );
+
     /**
      * @notice Initialize the factory
      * @param _registry Registry contract address
@@ -83,6 +88,13 @@ interface IVaultsFactory {
     function pauseFacet(address facet) external;
 
     /**
+     * @notice sets restricted flag for facet
+     * @param _facet address of facet
+     * @param _isRestricted bool flag
+     */
+    function setFacetRestricted(address _facet, bool _isRestricted) external;
+
+    /**
      * @notice Get all deployed vaults
      * @return Array of vault addresses
      */
@@ -105,5 +117,23 @@ interface IVaultsFactory {
      * @notice Returns vaults addresses using this facet
      * @param _facet address of the facet
      */
-    function getLinkedVaults(address _facet) external returns (address[] memory vaults);
+    function getLinkedVaults(
+        address _facet
+    ) external returns (address[] memory vaults);
+
+    /**
+     * @notice Returns bool flag if vault linked to the facet
+     * @param _facet address of the facet
+     * @param _vault address of the vault
+     */
+    function isVaultLinked(
+        address _facet,
+        address _vault
+    ) external returns (bool);
+
+    /**
+     * @notice Returns facet addresses that are restricted
+     * @return facets addresses of the restricted facets
+     */
+    function getRestrictedFacets() external returns (address[] memory facets);
 }

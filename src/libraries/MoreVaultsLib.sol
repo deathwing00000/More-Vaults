@@ -819,7 +819,8 @@ library MoreVaultsLib {
         uint256 _timelockDuration
     ) private view returns (bool) {
         uint256 requestTimestamp = _timelockEndsAt - _timelockDuration;
-        return block.timestamp >= _timelockEndsAt ||
+        return
+            block.timestamp >= _timelockEndsAt ||
             block.timestamp - requestTimestamp > MAX_WITHDRAWAL_DELAY;
     }
 

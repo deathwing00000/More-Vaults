@@ -393,8 +393,25 @@ contract VaultsFactoryTest is Test {
         VaultsFactory(factory).pauseFacet(address(0));
     }
 
-    function test_pauseShouldWorkForSelectedFacet() public {
+    function test_pauseFacet_ShouldAddFacetToRestricted() public {
+        vm.prank(admin);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
 
+        vm.prank(admin);
+        VaultsFactory(factory).pauseFacet(address(diamondCutFacet));
+
+        address[] memory restricredFacets = VaultsFactory(factory)
+            .getRestrictedFacets();
+        assertEq(restricredFacets.length, 1);
+        assertEq(restricredFacets[0], address(diamondCutFacet));
+    }
+
+    function test_pauseShouldWorkForSelectedFacet() public {
         vm.mockCall(
             registry,
             abi.encodeWithSelector(
@@ -417,7 +434,7 @@ contract VaultsFactoryTest is Test {
         vaultSelectors[0] = VaultFacet.initialize.selector;
         vaultSelectors[1] = VaultFacet.pause.selector;
         vaultSelectors[2] = VaultFacet.paused.selector;
-        IDiamondCut.FacetCut memory vaultCut =IDiamondCut.FacetCut({
+        IDiamondCut.FacetCut memory vaultCut = IDiamondCut.FacetCut({
             facetAddress: address(vaultFacet),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: vaultSelectors,
@@ -454,7 +471,7 @@ contract VaultsFactoryTest is Test {
             functionSelectors: selectors,
             initData: ""
         });
-        
+
         IDiamondCut.FacetCut[] memory facets3 = new IDiamondCut.FacetCut[](2);
         facets3[0] = vaultCut;
         facets3[1] = IDiamondCut.FacetCut({
@@ -563,7 +580,7 @@ contract VaultsFactoryTest is Test {
             ),
             abi.encode(address(1000), uint96(1000))
         );
-        
+
         // allow mock1
         vm.mockCall(
             registry,
@@ -581,7 +598,7 @@ contract VaultsFactoryTest is Test {
             ),
             abi.encode(address(mock1))
         );
-        
+
         address vault1 = VaultsFactory(factory).deployVault(
             facets1,
             accessControlFacetInitData
@@ -638,5 +655,53 @@ contract VaultsFactoryTest is Test {
         assertFalse(VaultFacet(vault1).paused());
         assertTrue(VaultFacet(vault2).paused());
         assertFalse(VaultFacet(vault3).paused());
+    }
+
+    function test_setFacetRestricted_shouldRevertIfCalledNotByAnAdmin() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                curator,
+                bytes32(0)
+            )
+        );
+        vm.prank(curator);
+        VaultsFactory(factory).setFacetRestricted(diamondCutFacet, true);
+    }
+
+    function test_setFacetRestricted_shouldSetFacetToRestricted() public {
+        vm.prank(admin);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
+        vm.prank(admin);
+        VaultsFactory(factory).setFacetRestricted(diamondCutFacet, true);
+
+        address[] memory restricredFacets = VaultsFactory(factory)
+            .getRestrictedFacets();
+        assertEq(restricredFacets.length, 1);
+        assertEq(restricredFacets[0], address(diamondCutFacet));
+    }
+
+    function test_setFacetRestricted_shouldSetFacetToNotRestricted() public {
+        vm.prank(admin);
+        factory.initialize(
+            registry,
+            diamondCutFacet,
+            accessControlFacet,
+            wrappedNative
+        );
+        vm.prank(admin);
+        VaultsFactory(factory).setFacetRestricted(diamondCutFacet, true);
+
+        vm.prank(admin);
+        VaultsFactory(factory).setFacetRestricted(diamondCutFacet, false);
+
+        address[] memory restricredFacets = VaultsFactory(factory)
+            .getRestrictedFacets();
+        assertEq(restricredFacets.length, 0);
     }
 }

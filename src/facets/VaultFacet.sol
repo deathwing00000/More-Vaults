@@ -12,6 +12,7 @@ import {IVaultFacet} from "../interfaces/facets/IVaultFacet.sol";
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
+import {IVaultsFactory} from "../interfaces/IVaultsFactory.sol";
 
 contract VaultFacet is
     ERC4626Upgradeable,
@@ -26,6 +27,7 @@ contract VaultFacet is
     error InvalidSharesAmount();
     error InvalidAssetsAmount();
     error CantProcessWithdrawRequest();
+    error VaultIsUsingRestrictedFacet(address);
 
     event WithdrawRequestCreated(
         address requester,
@@ -119,7 +121,20 @@ contract VaultFacet is
      * @inheritdoc IVaultFacet
      */
     function unpause() external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
         AccessControlLib.validateOwner(msg.sender);
+        IVaultsFactory factory = IVaultsFactory(MoreVaultsLib.factoryAddress());
+        address[] memory restrictedFacets = factory.getRestrictedFacets();
+        for (uint256 i = 0; i < restrictedFacets.length; ) {
+            if (factory.isVaultLinked(restrictedFacets[i], address(this))) {
+                revert VaultIsUsingRestrictedFacet(restrictedFacets[i]);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
         _unpause();
     }
 
@@ -390,8 +405,7 @@ contract VaultFacet is
             msg.sender
         ];
         request.shares = _shares;
-        uint256 endsAt = block.timestamp +
-            ds.timelockDuration;
+        uint256 endsAt = block.timestamp + ds.timelockDuration;
         request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
@@ -430,8 +444,7 @@ contract VaultFacet is
 
         request.shares = shares;
 
-        uint256 endsAt = block.timestamp +
-            ds.timelockDuration;
+        uint256 endsAt = block.timestamp + ds.timelockDuration;
         request.timelockEndsAt = endsAt;
 
         emit WithdrawRequestCreated(msg.sender, shares, endsAt);

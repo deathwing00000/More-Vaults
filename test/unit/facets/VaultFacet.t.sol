@@ -24,6 +24,7 @@ import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.s
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
+import {console} from "forge-std/console.sol";
 
 contract VaultFacetTest is Test {
     using Math for uint256;
@@ -37,6 +38,7 @@ contract VaultFacetTest is Test {
     address public registry = address(1000);
     address public asset;
     address public user = address(1);
+    address public factory = address(1001);
 
     // Test data
     string constant VAULT_NAME = "Test Vault";
@@ -65,6 +67,7 @@ contract VaultFacetTest is Test {
 
         MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, registry);
         MoreVaultsStorageHelper.setOwner(facet, owner);
+        MoreVaultsStorageHelper.setFactory(facet, factory);
 
         // Initialize vault
         bytes memory initData = abi.encode(
@@ -777,10 +780,54 @@ contract VaultFacetTest is Test {
         vm.prank(owner);
         VaultFacet(facet).pause();
 
+        console.log(factory);
+        address[] memory restrictedFacets = new address[](1);
+        restrictedFacets[0] = address(101);
+        vm.mockCall(
+            factory,
+            abi.encodeWithSignature("getRestrictedFacets()"),
+            abi.encode(restrictedFacets)
+        );
+
+        vm.mockCall(
+            factory,
+            abi.encodeWithSignature("isVaultLinked(address,address)"),
+            abi.encode(false)
+        );
         // Then unpause
         vm.prank(owner);
         VaultFacet(facet).unpause();
         assertFalse(VaultFacet(facet).paused(), "Should be unpaused");
+    }
+
+    function test_unpause_ShouldRevertIfUsingRestrictedFacet() public {
+        // First pause
+        vm.prank(owner);
+        VaultFacet(facet).pause();
+
+        console.log(factory);
+        address[] memory restrictedFacets = new address[](1);
+        restrictedFacets[0] = address(101);
+        vm.mockCall(
+            factory,
+            abi.encodeWithSignature("getRestrictedFacets()"),
+            abi.encode(restrictedFacets)
+        );
+
+        vm.mockCall(
+            factory,
+            abi.encodeWithSignature("isVaultLinked(address,address)"),
+            abi.encode(true)
+        );
+        // Then unpause
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                VaultFacet.VaultIsUsingRestrictedFacet.selector,
+                address(101)
+            )
+        );
+        VaultFacet(facet).unpause();
     }
 
     function test_deposit_ShouldRevertWhenPaused() public {

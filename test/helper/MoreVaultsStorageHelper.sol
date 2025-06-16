@@ -40,6 +40,7 @@ library MoreVaultsStorageHelper {
     uint256 constant WITHDRAWABLE_REQUESTS = 26;
     uint256 constant MAX_SLIPPAGE_PERCENT = 27;
     uint256 constant IS_MULTICALL = 28;
+    uint256 constant FACTORY = 28;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -309,10 +310,23 @@ library MoreVaultsStorageHelper {
         address contractAddress,
         bool isMulticall
     ) internal {
+        bytes32 storedValue = getStorageValue(contractAddress, IS_MULTICALL);
+        bytes32 mask = bytes32(uint256(type(uint160).max) << 161);
         setStorageValue(
             contractAddress,
             IS_MULTICALL,
-            bytes32(bytes32(uint256(isMulticall ? 1 : 0)))
+            (storedValue & ~mask) |
+                bytes32(bytes32(uint256(isMulticall ? 1 : 0)))
+        );
+    }
+
+    function setFactory(address contractAddress, address factory) internal {
+        bytes32 storedValue = getStorageValue(contractAddress, FACTORY);
+        bytes32 mask = bytes32(type(uint256).max << 1);
+        setStorageValue(
+            contractAddress,
+            FACTORY,
+            (storedValue & ~mask) | bytes32(uint256(uint160(factory)) << 8)
         );
     }
 
