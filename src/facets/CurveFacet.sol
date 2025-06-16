@@ -102,7 +102,6 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 gaugeBalance +
                 multiRewardsBalance;
 
-            uint8 lpDecimal = IERC20Metadata(lpToken).decimals();
             uint256 minPrice;
             for(uint256 j = 0; j < poolLength; j++) {
                 address token = ICurveViews(lpToken).coins(j);
@@ -117,8 +116,9 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             //Price per LP in terms of underlying asset with decimals of the underlying asset
             uint256 pricePerLP = minPrice.mulDiv(ICurveViews(lpToken).get_virtual_price(), 1e18, Math.Rounding.Floor);
 
+            uint8 lpDecimal = IERC20Metadata(lpToken).decimals();
             //The value of the LPs is equal to the price of a single LP times the LP balance
-            sum += pricePerLP.mulDiv(lpTokenBalance, 10 ** IERC20Metadata(lpToken).decimals(), Math.Rounding.Floor);
+            sum += pricePerLP.mulDiv(lpTokenBalance, 10 ** lpDecimal, Math.Rounding.Floor);
 
             unchecked {
                 ++i;
