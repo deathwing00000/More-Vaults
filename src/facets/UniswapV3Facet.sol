@@ -72,8 +72,8 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
-        address inputToken = _getInputTokenAddress(params.path);
-        address outputToken = _getOutputTokenAddress(params.path);
+        address inputToken = _getFirstTokenAddress(params.path);
+        address outputToken = _getLastTokenAddress(params.path);
         MoreVaultsLib.validateAssetAvailable(inputToken);
         MoreVaultsLib.validateAssetAvailable(outputToken);
 
@@ -112,8 +112,8 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         if (params.recipient != address(this)) {
             params.recipient = address(this);
         }
-        address inputToken = _getInputTokenAddress(params.path);
-        address outputToken = _getOutputTokenAddress(params.path);
+        address inputToken = _getLastTokenAddress(params.path);
+        address outputToken = _getFirstTokenAddress(params.path);
         MoreVaultsLib.validateAssetAvailable(inputToken);
         MoreVaultsLib.validateAssetAvailable(outputToken);
 
@@ -122,23 +122,23 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
     }
 
     /**
-     * @notice Extracts input token address from the swap path
+     * @notice Extracts first token address from the swap path
      * @param path The swap path containing token addresses
      * @return inputToken The address of the input token
      * @dev Takes first 20 bytes of the path as input token address
      */
-    function _getInputTokenAddress(
+    function _getFirstTokenAddress(
         bytes memory path
     ) internal pure returns (address inputToken) {
         return address(bytes20(path.slice(0, 20)));
     }
 
     /**
-     * @notice Extracts output token address from the swap path
+     * @notice Extracts last token address from the swap path
      * @param path The swap path containing token addresses
      * @return outputToken The address of the output token
      */
-    function _getOutputTokenAddress(
+    function _getLastTokenAddress(
         bytes memory path
     ) internal pure returns (address outputToken) {
         return address(bytes20(path.slice(path.length - 20, path.length)));
