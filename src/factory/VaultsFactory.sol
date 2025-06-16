@@ -204,7 +204,7 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
      */
     function getLinkedVaults(
         address _facet
-    ) external returns (address[] memory vaults) {
+    ) external view returns (address[] memory vaults) {
         vaults = _linkedVaults[_facet].values();
     }
 
@@ -212,7 +212,11 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
      * @notice Returns facet addresses that are restricted
      * @return facets addresses of the restricted facets
      */
-    function getRestrictedFacets() external returns (address[] memory facets) {
+    function getRestrictedFacets()
+        external
+        view
+        returns (address[] memory facets)
+    {
         facets = _restrictedFacets.values();
     }
 
@@ -224,7 +228,7 @@ contract VaultsFactory is IVaultsFactory, AccessControlUpgradeable {
     function isVaultLinked(
         address _facet,
         address _vault
-    ) external returns (bool) {
+    ) external view returns (bool) {
         return _linkedVaults[_facet].contains(_vault);
     }
 

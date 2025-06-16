@@ -376,8 +376,6 @@ library MoreVaultsLib {
     function diamondCut(IDiamondCut.FacetCut[] memory _diamondCut) internal {
         AccessControlLib.AccessControlStorage storage acs = AccessControlLib
             .accessControlStorage();
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
         IMoreVaultsRegistry registry = IMoreVaultsRegistry(
             acs.moreVaultsRegistry
         );
@@ -493,7 +491,7 @@ library MoreVaultsLib {
     function replaceFunctions(
         address _facetAddress,
         bytes4[] memory _functionSelectors
-    ) internal returns (address) {
+    ) internal {
         if (_functionSelectors.length == 0) {
             revert NoSelectorsInFacetToCut();
         }

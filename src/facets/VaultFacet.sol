@@ -121,8 +121,6 @@ contract VaultFacet is
      * @inheritdoc IVaultFacet
      */
     function unpause() external {
-        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
-            .moreVaultsStorage();
         AccessControlLib.validateOwner(msg.sender);
         IVaultsFactory factory = IVaultsFactory(MoreVaultsLib.factoryAddress());
         address[] memory restrictedFacets = factory.getRestrictedFacets();
