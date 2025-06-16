@@ -145,6 +145,7 @@ library MoreVaultsLib {
         uint256 maxSlippagePercent;
         bool isMulticall;
         address factory;
+        mapping(address => uint256) curvePoolLength;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
