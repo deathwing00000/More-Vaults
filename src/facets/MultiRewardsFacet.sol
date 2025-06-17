@@ -96,6 +96,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].add(staking);
+        ds.stakingTokenToMultiRewards[address(stakingToken)] = staking;
         ds.staked[address(stakingToken)] += amount;
     }
 

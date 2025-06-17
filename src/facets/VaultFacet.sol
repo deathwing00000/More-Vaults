@@ -442,6 +442,25 @@ contract VaultFacet is
             ds.nativeBalanceForAccounting = address(this).balance;
         }
 
+        for (uint256 i; i < ds.beforeAccountingFacets.length; ) {
+            (bool success,) = address(this).delegatecall(
+                abi.encodeWithSignature(
+                    string.concat(
+                        "beforeAccounting",
+                        IGenericMoreVaultFacet(ds.beforeAccountingFacets[i]).facetName(),
+                        "()"
+                    ),
+                    ""
+                )
+            );
+            if (!success) {
+                revert BeforeAccountingFailed(ds.beforeAccountingFacets[i]);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        
         uint256 feeShares;
         (feeShares, newTotalAssets) = _accruedFeeShares();
         AccessControlLib.AccessControlStorage storage acs = AccessControlLib

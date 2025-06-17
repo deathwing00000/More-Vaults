@@ -5,6 +5,8 @@ import {IGenericMoreVaultFacetInitializable} from "./IGenericMoreVaultFacetIniti
 
 /// @title ICurveLiquidityGaugeV6Facet
 interface ICurveLiquidityGaugeV6Facet is IGenericMoreVaultFacetInitializable {
+    function beforeAccountingCurveLiquidityGaugeV6Facet() external;
+
     function accountingCurveLiquidityGaugeV6Facet()
         external
         view

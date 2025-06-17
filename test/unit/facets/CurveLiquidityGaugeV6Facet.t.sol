@@ -15,6 +15,7 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
     address public gauge = address(2222);
     address public crvMinter = address(2223);
     address public rewardToken = address(3333);
+    address public minter = address(4444);
 
     function setUp() public {
         // Deploy facet
@@ -37,7 +38,7 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        CurveLiquidityGaugeV6Facet(facet).initialize(abi.encode(facet));
+        CurveLiquidityGaugeV6Facet(facet).initialize(abi.encode(facet, minter));
         address[] memory facets = MoreVaultsStorageHelper
             .getFacetsForAccounting(address(facet));
         assertEq(
@@ -57,6 +58,11 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
             ),
             true,
             "Supported interfaces should be set"
+        );
+        assertEq(
+            MoreVaultsStorageHelper.getMinter(address(facet)),
+            minter,
+            "Minter should be set to minter address"
         );
     }
 

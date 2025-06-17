@@ -34,6 +34,12 @@ import {IMultiRewardsFacet, MultiRewardsFacet} from "../../src/facets/MultiRewar
 import {ICurveLiquidityGaugeV6Facet, CurveLiquidityGaugeV6Facet} from "../../src/facets/CurveLiquidityGaugeV6Facet.sol";
 import {console} from "forge-std/console.sol";
 
+contract MockMinter {
+    function token() external view returns (address) {
+        return address(0);
+    }
+}
+
 contract E2EFlowTest is Test {
     string constant VAULT_NAME = "Test Vault";
     string constant VAULT_SYMBOL = "TV";
@@ -94,6 +100,8 @@ contract E2EFlowTest is Test {
     MultiRewardsFacet multiRewards;
     CurveLiquidityGaugeV6Facet curveGaugeV6;
 
+    MockMinter mockMinter;
+
     // Mock tokens
     IERC20 usdce;
     IERC20 cbbtc;
@@ -133,6 +141,8 @@ contract E2EFlowTest is Test {
         uniswapV3 = new UniswapV3Facet();
         multiRewards = new MultiRewardsFacet();
         curveGaugeV6 = new CurveLiquidityGaugeV6Facet();
+
+        mockMinter = new MockMinter();
 
         // Deploy registry
         registry = new VaultsRegistry();
@@ -539,11 +549,14 @@ contract E2EFlowTest is Test {
             .selector;
 
         // selectors for curve
-        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](3);
+        bytes4[] memory functionSelectorsCurveFacet = new bytes4[](4);
         functionSelectorsCurveFacet[0] = ICurveFacet.exchangeNg.selector;
         functionSelectorsCurveFacet[1] = ICurveFacet.exchange.selector;
         functionSelectorsCurveFacet[2] = ICurveFacet
             .accountingCurveFacet
+            .selector;
+        functionSelectorsCurveFacet[3] = ICurveFacet
+            .beforeAccountingCurveFacet
             .selector;
         bytes memory initDataCurveFacet = abi.encode(address(curve));
 
@@ -586,7 +599,7 @@ contract E2EFlowTest is Test {
         // selectors for CurveLiquidityGaugeV6Facet
         bytes4[]
             memory functionSelectorsCurveLiquidityGaugeV6Facet = new bytes4[](
-                5
+                6
             );
         functionSelectorsCurveLiquidityGaugeV6Facet[
             0
@@ -605,8 +618,14 @@ contract E2EFlowTest is Test {
         functionSelectorsCurveLiquidityGaugeV6Facet[
             4
         ] = ICurveLiquidityGaugeV6Facet.mintCRV.selector;
+        functionSelectorsCurveLiquidityGaugeV6Facet[
+            5
+        ] = ICurveLiquidityGaugeV6Facet
+            .beforeAccountingCurveLiquidityGaugeV6Facet
+            .selector;
         bytes memory initDataCurveLiquidityGaugeV6Facet = abi.encode(
-            address(curveGaugeV6)
+            address(curveGaugeV6),
+            address(mockMinter)
         );
 
         IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](14);

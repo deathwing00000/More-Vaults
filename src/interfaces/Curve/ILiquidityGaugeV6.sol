@@ -23,4 +23,6 @@ interface ILiquidityGaugeV6 {
     function reward_count() external view returns (uint256);
 
     function reward_tokens(uint256 index) external view returns (address);
+
+    function balanceOf(address account) external view returns (uint256);
 }

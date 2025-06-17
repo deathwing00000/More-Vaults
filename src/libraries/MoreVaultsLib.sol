@@ -93,9 +93,14 @@ library MoreVaultsLib {
         uint256 actionNonce;
         mapping(uint256 => PendingActions) pendingActions;
         uint256 timeLockPeriod;
+        // TODO: refactor staking addresses approach
         mapping(bytes32 => EnumerableSet.AddressSet) stakingAddresses;
         mapping(address => uint256) staked;
+        address minter;
         uint256 nativeBalanceForAccounting;
+        address[] beforeAccountingFacets;
+        mapping(address => address) stakingTokenToGauge;
+        mapping(address => address) stakingTokenToMultiRewards;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
