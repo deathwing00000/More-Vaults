@@ -354,6 +354,7 @@ contract UniswapV3FacetTest is Test {
     function test_exactOutput_ShouldPerformSwap() public {
         vm.startPrank(address(facet));
 
+        path = abi.encodePacked(token2, fee, token1);
         // Prepare swap parameters
         ISwapRouter.ExactOutputParams memory exactOutputParams = ISwapRouter
             .ExactOutputParams({
