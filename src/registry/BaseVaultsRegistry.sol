@@ -5,6 +5,7 @@ import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/acce
 import {IOracleRegistry} from "../interfaces/IOracleRegistry.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title BaseVaultsRegistry
@@ -14,6 +15,8 @@ abstract contract BaseVaultsRegistry is
     IMoreVaultsRegistry,
     AccessControlUpgradeable
 {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     /// @dev Aave price oracle address
     IOracleRegistry public oracle;
 
@@ -24,7 +27,7 @@ abstract contract BaseVaultsRegistry is
     mapping(address => bytes4[]) public facetSelectors;
 
     /// @dev List of all allowed facets
-    address[] public facetsList;
+    EnumerableSet.AddressSet internal _facetsList;
 
     /// @dev USD stable token address
     address public usdStableTokenAddress;
@@ -79,6 +82,13 @@ abstract contract BaseVaultsRegistry is
     /**
      * @inheritdoc IMoreVaultsRegistry
      */
+    function facetsList(uint256 index) external view returns (address) {
+        return _facetsList.at(index);
+    }
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function getFacetSelectors(
         address facet
     ) external view returns (bytes4[] memory) {
@@ -89,7 +99,7 @@ abstract contract BaseVaultsRegistry is
      * @inheritdoc IMoreVaultsRegistry
      */
     function getAllowedFacets() external view returns (address[] memory) {
-        return facetsList;
+        return _facetsList.values();
     }
 
     /**
@@ -131,6 +141,15 @@ abstract contract BaseVaultsRegistry is
         address facet,
         bytes4[] calldata selectors
     ) external virtual;
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
+    function editFacet(
+        address facet,
+        bytes4[] calldata selectors,
+        bool[] calldata addOrRemove
+    ) external virtual {}
 
     /**
      * @inheritdoc IMoreVaultsRegistry

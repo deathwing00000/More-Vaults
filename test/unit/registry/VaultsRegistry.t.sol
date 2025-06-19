@@ -126,6 +126,52 @@ contract VaultsRegistryTest is Test {
             facet,
             "Should map selector to facet"
         );
+        address[] memory facets = registry.getAllowedFacets();
+        assertEq(facets.length, 1, "Should push facet to facet list");
+        assertEq(facets[0], facet, "Should return correct facet");
+    }
+
+    function test_addFacet_ShouldntPushFacetToFacetListIfFacetAlreadyAdded()
+        public
+    {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        bytes4[] memory selectorsNew = new bytes4[](1);
+        selectorsNew[0] = bytes4(keccak256("test3()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectorsNew);
+        assertTrue(registry.isFacetAllowed(facet), "Should allow facet");
+
+        address[] memory facets = registry.getAllowedFacets();
+        assertEq(facets.length, 1, "Should not push facet to facet list");
+        assertEq(facets[0], facet, "Should return correct facet");
+
+        assertEq(
+            registry.getFacetSelectors(facet).length,
+            3,
+            "Should add selectors"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[0]),
+            facet,
+            "Should map selector to facet"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[1]),
+            facet,
+            "Should map selector to facet"
+        );
+        assertEq(
+            registry.selectorToFacet(selectorsNew[0]),
+            facet,
+            "Should map selector to facet"
+        );
     }
 
     function test_addFacet_ShouldRevertWithZeroAddress() public {
@@ -156,6 +202,217 @@ contract VaultsRegistryTest is Test {
         registry.addFacet(facet2, selectors);
     }
 
+    function test_editFacet_ShouldEditFacetAndSelectors() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        bytes4[] memory selectorsNew = new bytes4[](1);
+        selectorsNew[0] = bytes4(keccak256("test3()"));
+        bool[] memory isSelectorAllowed = new bool[](1);
+        isSelectorAllowed[0] = true;
+
+        vm.prank(admin);
+        registry.editFacet(facet, selectorsNew, isSelectorAllowed);
+
+        assertTrue(registry.isFacetAllowed(facet), "Should allow facet");
+        assertEq(
+            registry.getFacetSelectors(facet).length,
+            3,
+            "Should add selectors"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[0]),
+            facet,
+            "Should map selector to facet"
+        );
+        address[] memory facets = registry.getAllowedFacets();
+        assertEq(facets.length, 1, "Should not push facet to facet list");
+        assertEq(facets[0], facet, "Should return correct facet");
+    }
+
+    function test_editFacet_ShouldRemoveSelectorFromList() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        bytes4[] memory selectorsNew = new bytes4[](1);
+        selectorsNew[0] = selectors[0];
+        bool[] memory isSelectorAllowed = new bool[](1);
+        isSelectorAllowed[0] = false;
+
+        vm.prank(admin);
+        registry.editFacet(facet, selectorsNew, isSelectorAllowed);
+
+        assertTrue(registry.isFacetAllowed(facet), "Should allow facet");
+        assertEq(
+            registry.getFacetSelectors(facet).length,
+            1,
+            "Should remove selector from list"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[0]),
+            address(0),
+            "Should remove selector mapping"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[1]),
+            facet,
+            "Should keep selector mapping"
+        );
+        address[] memory facets = registry.getAllowedFacets();
+        assertEq(facets.length, 1, "Should not push facet to facet list");
+        assertEq(facets[0], facet, "Should return correct facet");
+    }
+
+    function test_editFacet_ShouldRemoveFacetFromListIfNoSelectorsLeft()
+        public
+    {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        bool[] memory isSelectorAllowed = new bool[](2);
+        isSelectorAllowed[0] = false;
+        isSelectorAllowed[1] = false;
+
+        vm.prank(admin);
+        registry.editFacet(facet, selectors, isSelectorAllowed);
+
+        assertFalse(registry.isFacetAllowed(facet), "Should not allow facet");
+        assertEq(
+            registry.getFacetSelectors(facet).length,
+            0,
+            "Should remove all selectors from facet"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[0]),
+            address(0),
+            "Should remove selector mapping"
+        );
+        assertEq(
+            registry.selectorToFacet(selectors[1]),
+            address(0),
+            "Should remove selector mapping"
+        );
+        address[] memory facets = registry.getAllowedFacets();
+        assertEq(facets.length, 0, "Should remove facet from facet list");
+    }
+
+    function test_editFacet_ShouldRevertWhenFacetNotAllowed() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        bool[] memory isSelectorAllowed = new bool[](2);
+        isSelectorAllowed[0] = false;
+        isSelectorAllowed[1] = false;
+
+        vm.prank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.FacetNotAllowed.selector,
+                facet
+            )
+        );
+        registry.editFacet(facet, selectors, isSelectorAllowed);
+    }
+
+    function test_editFacet_ShouldRevertIfFacetProvidedIsZeroAddress() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        bool[] memory isSelectorAllowed = new bool[](2);
+        isSelectorAllowed[0] = false;
+        isSelectorAllowed[1] = false;
+
+        vm.prank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(IMoreVaultsRegistry.ZeroAddress.selector)
+        );
+        registry.editFacet(address(0), selectors, isSelectorAllowed);
+    }
+
+    function test_editFacet_ShouldRevertIfArraysLengthMismatch() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        bool[] memory isSelectorAllowed = new bool[](1);
+        isSelectorAllowed[0] = false;
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        vm.prank(admin);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(VaultsRegistry.ArrayLengthMismatch.selector)
+        );
+        registry.editFacet(facet, selectors, isSelectorAllowed);
+    }
+
+    function test_editFacet_ShouldRevertIfAddingSelectorThatAlreadyExists()
+        public
+    {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        bool[] memory isSelectorAllowed = new bool[](2);
+        isSelectorAllowed[0] = true;
+        isSelectorAllowed[1] = true;
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        vm.prank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IMoreVaultsRegistry.SelectorAlreadyExists.selector,
+                facet,
+                selectors[0]
+            )
+        );
+        registry.editFacet(facet, selectors, isSelectorAllowed);
+    }
+
+    function test_editFacet_ShouldRevertIfRemovingSelectorThatDoesntExist()
+        public
+    {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        bool[] memory isSelectorAllowed = new bool[](2);
+        isSelectorAllowed[0] = false;
+        isSelectorAllowed[1] = false;
+
+        vm.prank(admin);
+        registry.addFacet(facet, selectors);
+
+        selectors[0] = bytes4(keccak256("test3()"));
+
+        vm.prank(admin);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                VaultsRegistry.SelectorDidntExist.selector,
+                selectors[0]
+            )
+        );
+        registry.editFacet(facet, selectors, isSelectorAllowed);
+    }
+
     function test_removeFacet_ShouldRemoveFacetAndSelectors() public {
         bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = bytes4(keccak256("test1()"));
@@ -183,6 +440,8 @@ contract VaultsRegistryTest is Test {
             address(0),
             "Should remove selector mapping"
         );
+        address[] memory facets = registry.getAllowedFacets();
+        assertEq(facets.length, 0, "Should remove facet from facet list");
     }
 
     function test_removeFacet_ShouldRevertWhenFacetNotAllowed() public {

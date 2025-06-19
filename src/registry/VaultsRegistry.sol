@@ -4,14 +4,18 @@ pragma solidity 0.8.28;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {IMoreVaultsRegistry} from "../interfaces/IMoreVaultsRegistry.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {BaseVaultsRegistry} from "./BaseVaultsRegistry.sol";
+import {BaseVaultsRegistry, EnumerableSet} from "./BaseVaultsRegistry.sol";
 
 /**
  * @title VaultsRegistry
  * @notice Registry contract that stores information about allowed facets and their selectors
  */
 contract VaultsRegistry is BaseVaultsRegistry {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     error InvalidFee();
+    error SelectorDidntExist(bytes4);
+    error ArrayLengthMismatch();
 
     /// @dev Mapping of facet address => is allowed
     mapping(address => bool) private _allowedFacets;
@@ -34,8 +38,10 @@ contract VaultsRegistry is BaseVaultsRegistry {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (facet == address(0)) revert ZeroAddress();
 
-        _allowedFacets[facet] = true;
-        facetsList.push(facet);
+        if (!_allowedFacets[facet]) {
+            _allowedFacets[facet] = true;
+            _facetsList.add(facet);
+        }
 
         for (uint i = 0; i < selectors.length; ) {
             bytes4 selector = selectors[i];
@@ -59,6 +65,63 @@ contract VaultsRegistry is BaseVaultsRegistry {
     /**
      * @inheritdoc IMoreVaultsRegistry
      */
+    function editFacet(
+        address facet,
+        bytes4[] calldata selectors,
+        bool[] calldata addOrRemove
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (facet == address(0)) revert ZeroAddress();
+        if (!_allowedFacets[facet]) revert FacetNotAllowed(facet);
+        if (selectors.length != addOrRemove.length)
+            revert ArrayLengthMismatch();
+
+        for (uint i = 0; i < selectors.length; ) {
+            bytes4 selector = selectors[i];
+            if (addOrRemove[i]) {
+                if (selectorToFacet[selector] != address(0))
+                    revert SelectorAlreadyExists(
+                        selectorToFacet[selector],
+                        selector
+                    );
+
+                selectorToFacet[selector] = facet;
+                facetSelectors[facet].push(selector);
+            } else {
+                if (selectorToFacet[selector] == address(0))
+                    revert SelectorDidntExist(selector);
+                selectorToFacet[selector] = address(0);
+
+                bytes4[] storage _facetSelectorsArray = facetSelectors[facet];
+                for (uint j = 0; j < _facetSelectorsArray.length; ) {
+                    if (_facetSelectorsArray[j] == selector) {
+                        _facetSelectorsArray[j] = _facetSelectorsArray[
+                            _facetSelectorsArray.length - 1
+                        ];
+                        _facetSelectorsArray.pop();
+                        break;
+                    }
+                    unchecked {
+                        ++j;
+                    }
+                }
+
+                if (_facetSelectorsArray.length == 0) {
+                    _allowedFacets[facet] = false;
+                    _facetsList.remove(facet);
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        emit FacetAdded(facet, selectors);
+    }
+
+    /**
+     * @inheritdoc IMoreVaultsRegistry
+     */
     function removeFacet(
         address facet
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -68,16 +131,7 @@ contract VaultsRegistry is BaseVaultsRegistry {
         _allowedFacets[facet] = false;
 
         // Remove from facets list
-        for (uint i = 0; i < facetsList.length; ) {
-            if (facetsList[i] == facet) {
-                facetsList[i] = facetsList[facetsList.length - 1];
-                facetsList.pop();
-                break;
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        _facetsList.remove(facet);
 
         // Remove all selectors
         bytes4[] memory selectors = facetSelectors[facet];

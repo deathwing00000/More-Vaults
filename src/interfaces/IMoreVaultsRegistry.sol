@@ -77,11 +77,23 @@ interface IMoreVaultsRegistry {
     function isPermissionless() external view returns (bool);
 
     /**
-     * @notice Add new facet with its selectors
+     * @notice Add new facet with its selectors, also can add new selectors to existing facet
      * @param facet Address of the facet contract
      * @param selectors Array of function selectors
      */
     function addFacet(address facet, bytes4[] calldata selectors) external;
+
+    /**
+     * @notice Edit selectors for the facet
+     * @param facet Address of the facet contract
+     * @param selectors Array of function selectors
+     * @param addOrRemove Array with flags for add/remove of selector with same index
+     */
+    function editFacet(
+        address facet,
+        bytes4[] calldata selectors,
+        bool[] calldata addOrRemove
+    ) external;
 
     /**
      * @notice Remove facet and all its selectors
