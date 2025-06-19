@@ -31,6 +31,10 @@ contract DeployConfig {
     uint96 public fee;
     uint256 public depositCapacity;
     uint256 public timeLockPeriod;
+    uint256 public maxSlippagePercent;
+
+    string public vaultName;
+    string public vaultSymbol;
 
     struct FacetAddresses {
         address diamondLoupe;
@@ -64,7 +68,10 @@ contract DeployConfig {
         address _assetToDeposit,
         uint96 _fee,
         uint256 _depositCapacity,
-        uint256 _timeLockPeriod
+        uint256 _timeLockPeriod,
+        uint256 _maxSlippagePercent,
+        string memory _vaultName,
+        string memory _vaultSymbol
     ) external {
         owner = _owner;
         curator = _curator;
@@ -74,6 +81,9 @@ contract DeployConfig {
         fee = _fee;
         depositCapacity = _depositCapacity;
         timeLockPeriod = _timeLockPeriod;
+        maxSlippagePercent = _maxSlippagePercent;
+        vaultName = _vaultName;
+        vaultSymbol = _vaultSymbol;
     }
 
     function getCuts(
@@ -128,7 +138,7 @@ contract DeployConfig {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](14);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](16);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -171,6 +181,15 @@ contract DeployConfig {
         functionSelectorsConfigurationFacet[13] = ConfigurationFacet
             .feeRecipient
             .selector;
+        functionSelectorsConfigurationFacet[14] = ConfigurationFacet
+            .setGasLimitForAccounting
+            .selector;
+        functionSelectorsConfigurationFacet[15] = ConfigurationFacet
+            .setMaxSlippagePercent
+            .selector;
+        bytes memory initDataConfigurationFacet = abi.encode(
+            maxSlippagePercent
+        );
 
         // selectors for multicall
         bytes4[] memory functionSelectorsMulticallFacet = new bytes4[](5);
@@ -192,7 +211,7 @@ contract DeployConfig {
         bytes memory initDataMulticallFacet = abi.encode(timeLockPeriod);
 
         // selectors for vault
-        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](30);
+        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](34);
         functionSelectorsVaultFacet[0] = IERC20Metadata.name.selector;
         functionSelectorsVaultFacet[1] = IERC20Metadata.symbol.selector;
         functionSelectorsVaultFacet[2] = IERC20Metadata.decimals.selector;
@@ -225,10 +244,16 @@ contract DeployConfig {
         functionSelectorsVaultFacet[27] = IVaultFacet.pause.selector;
         functionSelectorsVaultFacet[28] = IVaultFacet.unpause.selector;
         functionSelectorsVaultFacet[29] = IVaultFacet.setFee.selector;
+        functionSelectorsVaultFacet[30] = IVaultFacet.requestRedeem.selector;
+        functionSelectorsVaultFacet[31] = IVaultFacet.requestWithdraw.selector;
+        functionSelectorsVaultFacet[32] = IVaultFacet
+            .updateTimelockDuration
+            .selector;
+        functionSelectorsVaultFacet[33] = IVaultFacet.clearRequest.selector;
 
         bytes memory initDataVaultFacet = abi.encode(
-            "SafeYields Test ankrFlow Vault",
-            "SYV",
+            vaultName,
+            vaultSymbol,
             assetToDeposit,
             feeRecipient,
             fee,
@@ -266,8 +291,11 @@ contract DeployConfig {
             .forceRebalanceDown
             .selector;
 
+        bytes32 facetSelectorMORELeverage = bytes4(
+            keccak256(abi.encodePacked("accountingMORELeverageFacet()"))
+        );
         bytes memory initDataMORELeverageFacet = abi.encode(
-            facetAddresses.origami
+            facetSelectorMORELeverage
         );
 
         // selectors for more markets
@@ -300,9 +328,10 @@ contract DeployConfig {
             .claimAllRewards
             .selector;
 
-        bytes memory initDataAaveV3Facet = abi.encode(
-            facetAddresses.moreMarkets
+        bytes32 facetSelectorAaveV3 = bytes4(
+            keccak256(abi.encodePacked("accountingAaveV3Facet()"))
         );
+        bytes memory initDataAaveV3Facet = abi.encode(facetSelectorAaveV3);
 
         // selectors for curve
         bytes4[] memory functionSelectorsCurveFacet = new bytes4[](3);
@@ -311,7 +340,14 @@ contract DeployConfig {
         functionSelectorsCurveFacet[2] = ICurveFacet
             .accountingCurveFacet
             .selector;
-        bytes memory initDataCurveFacet = abi.encode(facetAddresses.curve);
+
+        bytes32 facetSelectorCurve = bytes4(
+            keccak256(abi.encodePacked("accountingCurveFacet()"))
+        );
+        bytes memory initDataCurveFacet = abi.encode(
+            facetAddresses.curve,
+            facetSelectorCurve
+        );
 
         // selectors for UniswapV3
         bytes4[] memory functionSelectorsUniswapV3Facet = new bytes4[](4);
@@ -344,37 +380,47 @@ contract DeployConfig {
         functionSelectorsMultiRewardsFacet[4] = IMultiRewardsFacet
             .exit
             .selector;
+        bytes32 facetSelectorMultiRewards = bytes4(
+            keccak256(abi.encodePacked("accountingMultiRewardsFacet()"))
+        );
         bytes memory initDataMultiRewardsFacet = abi.encode(
-            facetAddresses.multiRewards
+            facetSelectorMultiRewards
         );
 
         // selectors for CurveLiquidityGaugeV6Facet
-        bytes4[]
-            memory functionSelectorsCurveLiquidityGaugeV6Facet = new bytes4[](
-                5
-            );
-        functionSelectorsCurveLiquidityGaugeV6Facet[
-            0
-        ] = ICurveLiquidityGaugeV6Facet
-            .accountingCurveLiquidityGaugeV6Facet
-            .selector;
-        functionSelectorsCurveLiquidityGaugeV6Facet[
-            1
-        ] = ICurveLiquidityGaugeV6Facet.depositCurveGaugeV6.selector;
-        functionSelectorsCurveLiquidityGaugeV6Facet[
-            2
-        ] = ICurveLiquidityGaugeV6Facet.withdrawCurveGaugeV6.selector;
-        functionSelectorsCurveLiquidityGaugeV6Facet[
-            3
-        ] = ICurveLiquidityGaugeV6Facet.claimRewardsCurveGaugeV6.selector;
-        functionSelectorsCurveLiquidityGaugeV6Facet[
-            4
-        ] = ICurveLiquidityGaugeV6Facet.mintCRV.selector;
-        bytes memory initDataCurveLiquidityGaugeV6Facet = abi.encode(
-            facetAddresses.curveGaugeV6
-        );
+        // bytes4[]
+        //     memory functionSelectorsCurveLiquidityGaugeV6Facet = new bytes4[](
+        //         5
+        //     );
+        // functionSelectorsCurveLiquidityGaugeV6Facet[
+        //     0
+        // ] = ICurveLiquidityGaugeV6Facet
+        //     .accountingCurveLiquidityGaugeV6Facet
+        //     .selector;
+        // functionSelectorsCurveLiquidityGaugeV6Facet[
+        //     1
+        // ] = ICurveLiquidityGaugeV6Facet.depositCurveGaugeV6.selector;
+        // functionSelectorsCurveLiquidityGaugeV6Facet[
+        //     2
+        // ] = ICurveLiquidityGaugeV6Facet.withdrawCurveGaugeV6.selector;
+        // functionSelectorsCurveLiquidityGaugeV6Facet[
+        //     3
+        // ] = ICurveLiquidityGaugeV6Facet.claimRewardsCurveGaugeV6.selector;
+        // functionSelectorsCurveLiquidityGaugeV6Facet[
+        //     4
+        // ] = ICurveLiquidityGaugeV6Facet.mintCRV.selector;
+        // bytes32 facetSelectorCurveLiquidityGaugeV6 = bytes4(
+        //     keccak256(
+        //         abi.encodePacked("accountingCurveLiquidityGaugeV6Facet()")
+        //     )
+        // );
+        // bytes memory initDataCurveLiquidityGaugeV6Facet = abi.encode(
+        //     facetAddresses.curveGaugeV6,
+        //     address(0),
+        //     facetSelectorCurveLiquidityGaugeV6
+        // );
 
-        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](11);
+        IDiamondCut.FacetCut[] memory cuts = new IDiamondCut.FacetCut[](10);
         cuts[0] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.diamondLoupe,
             action: IDiamondCut.FacetCutAction.Add,
@@ -391,7 +437,7 @@ contract DeployConfig {
             facetAddress: facetAddresses.configuration,
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsConfigurationFacet,
-            initData: ""
+            initData: initDataConfigurationFacet
         });
         cuts[3] = IDiamondCut.FacetCut({
             facetAddress: facetAddresses.multicall,
@@ -435,12 +481,12 @@ contract DeployConfig {
             functionSelectors: functionSelectorsMultiRewardsFacet,
             initData: initDataMultiRewardsFacet
         });
-        cuts[10] = IDiamondCut.FacetCut({
-            facetAddress: facetAddresses.curveGaugeV6,
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: functionSelectorsCurveLiquidityGaugeV6Facet,
-            initData: initDataCurveLiquidityGaugeV6Facet
-        });
+        // cuts[10] = IDiamondCut.FacetCut({
+        //     facetAddress: facetAddresses.curveGaugeV6,
+        //     action: IDiamondCut.FacetCutAction.Add,
+        //     functionSelectors: functionSelectorsCurveLiquidityGaugeV6Facet,
+        //     initData: initDataCurveLiquidityGaugeV6Facet
+        // });
 
         return cuts;
     }

@@ -93,4 +93,27 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
      * @param fee New fee amount (in basis points, max 10000 = 100%)
      */
     function setFee(uint96 fee) external;
+
+    /**
+     * @notice Request a redeem of shares
+     * @param shares Amount of shares to redeem
+     */
+    function requestRedeem(uint256 shares) external;
+
+    /**
+     * @notice Request a withdraw of assets
+     * @param assets Amount of assets to withdraw
+     */
+    function requestWithdraw(uint256 assets) external;
+
+    /**
+     * @notice Clear a request
+     */
+    function clearRequest() external;
+
+    /**
+     * @notice Update the withdraw timelock duration
+     * @param duration New withdraw timelock duration
+     */
+    function updateTimelockDuration(uint64 duration) external;
 }

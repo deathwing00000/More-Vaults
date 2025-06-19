@@ -349,7 +349,7 @@ contract E2EFlowTest is Test {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](14);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](16);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -392,6 +392,14 @@ contract E2EFlowTest is Test {
         functionSelectorsConfigurationFacet[13] = ConfigurationFacet
             .feeRecipient
             .selector;
+        functionSelectorsConfigurationFacet[14] = ConfigurationFacet
+            .setGasLimitForAccounting
+            .selector;
+        functionSelectorsConfigurationFacet[15] = ConfigurationFacet
+            .setMaxSlippagePercent
+            .selector;
+
+        bytes memory initDataConfigurationFacet = abi.encode(10_000);
 
         // selectors for multicall
         bytes4[] memory functionSelectorsMulticallFacet = new bytes4[](5);
@@ -413,7 +421,7 @@ contract E2EFlowTest is Test {
         bytes memory initDataMulticallFacet = abi.encode(0);
 
         // selectors for vault
-        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](30);
+        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](34);
         functionSelectorsVaultFacet[0] = IERC20Metadata.name.selector;
         functionSelectorsVaultFacet[1] = IERC20Metadata.symbol.selector;
         functionSelectorsVaultFacet[2] = IERC20Metadata.decimals.selector;
@@ -447,6 +455,12 @@ contract E2EFlowTest is Test {
         functionSelectorsVaultFacet[27] = IVaultFacet.pause.selector;
         functionSelectorsVaultFacet[28] = IVaultFacet.unpause.selector;
         functionSelectorsVaultFacet[29] = IVaultFacet.setFee.selector;
+        functionSelectorsVaultFacet[30] = IVaultFacet.requestRedeem.selector;
+        functionSelectorsVaultFacet[31] = IVaultFacet.requestWithdraw.selector;
+        functionSelectorsVaultFacet[32] = IVaultFacet
+            .updateTimelockDuration
+            .selector;
+        functionSelectorsVaultFacet[33] = IVaultFacet.clearRequest.selector;
 
         bytes memory initDataVaultFacet = abi.encode(
             VAULT_NAME,
@@ -635,7 +649,7 @@ contract E2EFlowTest is Test {
             facetAddress: address(configuration),
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: functionSelectorsConfigurationFacet,
-            initData: abi.encode(10_000)
+            initData: initDataConfigurationFacet
         });
         cuts[3] = IDiamondCut.FacetCut({
             facetAddress: address(multicall),

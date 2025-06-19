@@ -130,7 +130,6 @@ library MoreVaultsLib {
         uint256 actionNonce;
         mapping(uint256 => PendingActions) pendingActions;
         uint256 timeLockPeriod;
-        // TODO: refactor staking addresses approach
         mapping(bytes32 => EnumerableSet.AddressSet) stakingAddresses;
         mapping(address => uint256) staked;
         address minter;
@@ -722,24 +721,6 @@ library MoreVaultsLib {
         }
         if (contractSize == 0) {
             revert ContractDoesntHaveCode(_errorMessage);
-        }
-    }
-
-    function getLatestPrice(
-        IAggregatorV2V3Interface aggregator
-    ) internal view returns (uint256) {
-        (, int256 answer, , uint256 updatedAt, ) = aggregator.latestRoundData();
-        verifyPrice(answer, updatedAt);
-
-        return uint256(answer);
-    }
-
-    function verifyPrice(int256 answer, uint256 updatedAt) internal view {
-        if (updatedAt < block.timestamp - 3 hours) {
-            revert OraclePriceIsOld();
-        }
-        if (answer < 0) {
-            revert OraclePriceIsNegative();
         }
     }
 

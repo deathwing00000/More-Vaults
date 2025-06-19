@@ -54,7 +54,10 @@ contract CreateVaultScript is Script {
             vm.envAddress("UNDERLYING_ASSET"),
             uint96(vm.envUint("FEE")),
             vm.envUint("DEPOSIT_CAPACITY"),
-            vm.envUint("TIME_LOCK_PERIOD")
+            vm.envUint("TIME_LOCK_PERIOD"),
+            vm.envUint("MAX_SLIPPAGE_PERCENT"),
+            vm.envString("VAULT_NAME"),
+            vm.envString("VAULT_SYMBOL")
         );
 
         diamondLoupe = vm.envAddress("DIAMOND_LOUPE_FACET");
@@ -67,7 +70,7 @@ contract CreateVaultScript is Script {
         curve = vm.envAddress("CURVE_FACET");
         uniswapV3 = vm.envAddress("UNISWAP_V3_FACET");
         multiRewards = vm.envAddress("MULTI_REWARDS_FACET");
-        curveGaugeV6 = vm.envAddress("CURVE_LIQUIDITY_GAUGE_V6_FACET");
+        // curveGaugeV6 = vm.envAddress("CURVE_LIQUIDITY_GAUGE_V6_FACET");
     }
 
     function run() public {
@@ -87,15 +90,15 @@ contract CreateVaultScript is Script {
         facetAddresses.curve = address(curve);
         facetAddresses.uniswapV3 = address(uniswapV3);
         facetAddresses.multiRewards = address(multiRewards);
-        facetAddresses.curveGaugeV6 = address(curveGaugeV6);
+        // facetAddresses.curveGaugeV6 = address(curveGaugeV6);
 
         IDiamondCut.FacetCut[] memory cuts = config.getCuts(facetAddresses);
 
         // Deploy vault
         bytes memory accessControlFacetInitData = abi.encode(
-            config.owner,
-            config.curator,
-            config.guardian
+            config.owner(),
+            config.curator(),
+            config.guardian()
         );
         address vaultAddress = factory.deployVault(
             cuts,

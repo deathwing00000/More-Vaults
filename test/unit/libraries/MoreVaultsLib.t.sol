@@ -436,20 +436,6 @@ contract MoreVaultsLibTest is Test {
         );
     }
 
-    function test_verifyPrice_ShouldRevertWhenPriceIsOld() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(MoreVaultsLib.OraclePriceIsOld.selector)
-        );
-        MoreVaultsLib.verifyPrice(int256(0), block.timestamp - 3 hours - 1);
-    }
-
-    function test_verifyPrice_ShouldRevertWhenPriceIsNegative() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(MoreVaultsLib.OraclePriceIsNegative.selector)
-        );
-        MoreVaultsLib.verifyPrice(int256(-1), block.timestamp);
-    }
-
     function test_convertToUnderlying_WithZeroAmount() public {
         // Mock registry and oracle
         vm.mockCall(

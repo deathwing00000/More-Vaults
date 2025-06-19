@@ -22,6 +22,9 @@ import {CurveFacet} from "../src/facets/CurveFacet.sol";
 import {IUniswapV3Facet, UniswapV3Facet} from "../src/facets/UniswapV3Facet.sol";
 import {IMultiRewardsFacet, MultiRewardsFacet} from "../src/facets/MultiRewardsFacet.sol";
 import {ICurveLiquidityGaugeV6Facet, CurveLiquidityGaugeV6Facet} from "../src/facets/CurveLiquidityGaugeV6Facet.sol";
+import {OracleRegistry} from "../src/registry/OracleRegistry.sol";
+import {IOracleRegistry, IAggregatorV2V3Interface} from "../src/interfaces/IOracleRegistry.sol";
+import {IAaveOracle} from "@aave-v3-core/contracts/interfaces/IAaveOracle.sol";
 
 // testnet deployment script
 // forge script scripts/Deploy.s.sol:DeployScript --chain-id 545 --rpc-url https://testnet.evm.nodes.onflow.org -vv --slow --broadcast --verify --verifier blockscout --verifier-url 'https://evm-testnet.flowscan.io/api/'
@@ -34,6 +37,17 @@ contract DeployScript is Script {
     VaultsRegistry registry;
     VaultsFactory factory;
     MoreVaultsDiamond diamond;
+    OracleRegistry oracleRegistry;
+
+    address constant USDF = address(0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED);
+    address constant WFLOW =
+        address(0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e);
+    address constant ankrFLOW =
+        address(0x1b97100eA1D7126C4d60027e231EA4CB25314bdb);
+    address constant WETH = address(0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590);
+    address constant stgUSDC =
+        address(0xF1815bd50389c46847f0Bda824eC8da914045D14);
+
     function test_skip() public pure {}
 
     function setUp() public {
@@ -53,7 +67,10 @@ contract DeployScript is Script {
             vm.envAddress("UNDERLYING_ASSET"),
             uint96(vm.envUint("FEE")),
             vm.envUint("DEPOSIT_CAPACITY"),
-            vm.envUint("TIME_LOCK_PERIOD")
+            vm.envUint("TIME_LOCK_PERIOD"),
+            vm.envUint("MAX_SLIPPAGE_PERCENT"),
+            vm.envString("VAULT_NAME"),
+            vm.envString("VAULT_SYMBOL")
         );
     }
 
@@ -75,7 +92,7 @@ contract DeployScript is Script {
             CurveFacet curve = new CurveFacet();
             UniswapV3Facet uniswapV3 = new UniswapV3Facet();
             MultiRewardsFacet multiRewards = new MultiRewardsFacet();
-            CurveLiquidityGaugeV6Facet curveGaugeV6 = new CurveLiquidityGaugeV6Facet();
+            // CurveLiquidityGaugeV6Facet curveGaugeV6 = new CurveLiquidityGaugeV6Facet();
 
             facetAddresses.diamondLoupe = address(diamondLoupe);
             facetAddresses.accessControl = address(accessControl);
@@ -87,7 +104,7 @@ contract DeployScript is Script {
             facetAddresses.curve = address(curve);
             facetAddresses.uniswapV3 = address(uniswapV3);
             facetAddresses.multiRewards = address(multiRewards);
-            facetAddresses.curveGaugeV6 = address(curveGaugeV6);
+            // facetAddresses.curveGaugeV6 = address(curveGaugeV6);
         }
 
         // Save addresses to .env.deployments file
@@ -186,6 +203,68 @@ contract DeployScript is Script {
 
         console.log("Facets deployed");
 
+        address[] memory assets = new address[](5);
+        assets[0] = USDF;
+        assets[1] = ankrFLOW;
+        assets[2] = WFLOW;
+        assets[3] = stgUSDC;
+        assets[4] = WETH;
+        address[] memory sources = new address[](5);
+        sources[0] = IAaveOracle(config.aaveOracle()).getSourceOfAsset(USDF);
+        sources[1] = IAaveOracle(config.aaveOracle()).getSourceOfAsset(
+            ankrFLOW
+        );
+        sources[2] = IAaveOracle(config.aaveOracle()).getSourceOfAsset(WFLOW);
+        sources[3] = IAaveOracle(config.aaveOracle()).getSourceOfAsset(stgUSDC);
+        sources[4] = IAaveOracle(config.aaveOracle()).getSourceOfAsset(WETH);
+        uint96[] memory confidence = new uint96[](5);
+        confidence[0] = 4 hours;
+        confidence[1] = 4 hours;
+        confidence[2] = 4 hours;
+        confidence[3] = 4 hours;
+        confidence[4] = 4 hours;
+
+        IOracleRegistry.OracleInfo[]
+            memory infos = new IOracleRegistry.OracleInfo[](5);
+        for (uint i; i < assets.length; ) {
+            infos[i] = IOracleRegistry.OracleInfo({
+                aggregator: IAggregatorV2V3Interface(sources[i]),
+                stalenessThreshold: confidence[i]
+            });
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Deploy oracle registry
+        oracleRegistry = new OracleRegistry();
+        oracleRegistry.initialize(assets, infos, address(0), 8);
+        console.log("Oracle registry deployed at:", address(oracleRegistry));
+
+        // Save registry address
+        vm.writeFile(
+            ".env.deployments",
+            string(
+                abi.encodePacked(
+                    vm.readFile(".env.deployments"),
+                    "ORACLE_REGISTRY=",
+                    vm.toString(address(oracleRegistry)),
+                    "\n"
+                )
+            )
+        );
+        vm.writeFile(
+            ".env",
+            string(
+                abi.encodePacked(
+                    vm.readFile(".env"),
+                    "ORACLE_REGISTRY=",
+                    vm.toString(address(oracleRegistry)),
+                    "\n"
+                )
+            )
+        );
+
         // Deploy registry
         address registryImplementation = address(new VaultsRegistry());
         registry = VaultsRegistry(
@@ -195,7 +274,7 @@ contract DeployScript is Script {
                     msg.sender,
                     abi.encodeWithSelector(
                         BaseVaultsRegistry.initialize.selector,
-                        config.aaveOracle(),
+                        oracleRegistry,
                         config.usdce()
                     )
                 )

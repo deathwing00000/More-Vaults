@@ -112,4 +112,24 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
      * @return Time lock period
      */
     function timeLockPeriod() external view returns (uint256);
+
+    /**
+     * @notice Sets gas limit for accounting
+     * @param _availableTokenAccountingGas Gas limit for available token accounting
+     * @param _heldTokenAccountingGas Gas limit for held token accounting
+     * @param _facetAccountingGas Gas limit for facet accounting
+     * @param _newLimit New gas limit
+     */
+    function setGasLimitForAccounting(
+        uint48 _availableTokenAccountingGas,
+        uint48 _heldTokenAccountingGas,
+        uint48 _facetAccountingGas,
+        uint48 _newLimit
+    ) external;
+
+    /**
+     * @notice Sets max slippage percent
+     * @param _newPercent New max slippage percent
+     */
+    function setMaxSlippagePercent(uint256 _newPercent) external;
 }
