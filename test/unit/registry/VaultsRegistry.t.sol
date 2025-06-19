@@ -202,6 +202,15 @@ contract VaultsRegistryTest is Test {
         registry.addFacet(facet2, selectors);
     }
 
+    function test_addFacet_ShouldRevertWhenNotAdmin() public {
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = bytes4(keccak256("test()"));
+
+        vm.prank(user);
+        vm.expectRevert();
+        registry.addFacet(facet, selectors);
+    }
+
     function test_editFacet_ShouldEditFacetAndSelectors() public {
         bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = bytes4(keccak256("test1()"));
@@ -413,6 +422,20 @@ contract VaultsRegistryTest is Test {
         registry.editFacet(facet, selectors, isSelectorAllowed);
     }
 
+    function test_editFacet_ShouldRevertIfCalledNotByAdmin() public {
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = bytes4(keccak256("test1()"));
+        selectors[1] = bytes4(keccak256("test2()"));
+
+        bool[] memory isSelectorAllowed = new bool[](2);
+        isSelectorAllowed[0] = false;
+        isSelectorAllowed[1] = false;
+
+        vm.prank(user);
+        vm.expectRevert();
+        registry.editFacet(facet, selectors, isSelectorAllowed);
+    }
+
     function test_removeFacet_ShouldRemoveFacetAndSelectors() public {
         bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = bytes4(keccak256("test1()"));
@@ -452,6 +475,12 @@ contract VaultsRegistryTest is Test {
                 facet
             )
         );
+        registry.removeFacet(facet);
+    }
+
+    function test_removeFacet_ShouldRevertWhenNotAdmin() public {
+        vm.prank(user);
+        vm.expectRevert();
         registry.removeFacet(facet);
     }
 
