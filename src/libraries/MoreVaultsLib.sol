@@ -139,7 +139,7 @@ library MoreVaultsLib {
         mapping(address => address) stakingTokenToMultiRewards;
         GasLimit gasLimit;
         mapping(TokenType => EnumerableSet.Bytes32Set) vaultExternalAssets;
-        uint256 timelockDuration;
+        uint64 timelockDuration;
         mapping(address => WithdrawRequest) withdrawalRequests;
         uint256 maxSlippagePercent;
         bool isMulticall;

@@ -25,6 +25,8 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
 
     event AccrueInterest(uint256 newTotalAssets, uint256 interestAccrued);
 
+    event WithdrawalTimelockSet(uint64 duration);
+
     /// @notice Pauses all vault operations
     function pause() external;
 
@@ -36,6 +38,18 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
 
     /// @notice Returns the total amount of the underlying asset that is "managed" by Vault
     function totalAssets() external view override returns (uint256);
+
+    /// @notice Returns the request for a given owner
+    /// @param _owner The owner of the request
+    /// @return shares The shares of the request
+    /// @return timelockEndsAt The timelock end time of the request
+    function getWithdrawalRequest(
+        address _owner
+    ) external view returns (uint256 shares, uint256 timelockEndsAt);
+
+    /// @notice Returns the withdrawal timelock duration
+    /// @return duration The withdrawal timelock duration
+    function getWithdrawalTimelock() external view returns (uint64);
 
     /// @notice Allows deposit of multiple tokens in a single transaction
     /// @param tokens Array of token addresses to deposit
@@ -115,5 +129,5 @@ interface IVaultFacet is IERC4626, IGenericMoreVaultFacetInitializable {
      * @notice Update the withdraw timelock duration
      * @param duration New withdraw timelock duration
      */
-    function updateTimelockDuration(uint64 duration) external;
+    function setWithdrawalTimelock(uint64 duration) external;
 }

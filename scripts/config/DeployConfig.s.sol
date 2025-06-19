@@ -211,7 +211,7 @@ contract DeployConfig {
         bytes memory initDataMulticallFacet = abi.encode(timeLockPeriod);
 
         // selectors for vault
-        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](34);
+        bytes4[] memory functionSelectorsVaultFacet = new bytes4[](36);
         functionSelectorsVaultFacet[0] = IERC20Metadata.name.selector;
         functionSelectorsVaultFacet[1] = IERC20Metadata.symbol.selector;
         functionSelectorsVaultFacet[2] = IERC20Metadata.decimals.selector;
@@ -247,9 +247,15 @@ contract DeployConfig {
         functionSelectorsVaultFacet[30] = IVaultFacet.requestRedeem.selector;
         functionSelectorsVaultFacet[31] = IVaultFacet.requestWithdraw.selector;
         functionSelectorsVaultFacet[32] = IVaultFacet
-            .updateTimelockDuration
+            .setWithdrawalTimelock
             .selector;
         functionSelectorsVaultFacet[33] = IVaultFacet.clearRequest.selector;
+        functionSelectorsVaultFacet[34] = IVaultFacet
+            .getWithdrawalRequest
+            .selector;
+        functionSelectorsVaultFacet[35] = IVaultFacet
+            .getWithdrawalTimelock
+            .selector;
 
         bytes memory initDataVaultFacet = abi.encode(
             vaultName,

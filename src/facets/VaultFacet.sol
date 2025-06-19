@@ -363,14 +363,47 @@ contract VaultFacet is
         }
     }
 
-    function updateTimelockDuration(uint64 _duration) external {
+    /**
+     * @inheritdoc IVaultFacet
+     */
+    function getWithdrawalRequest(
+        address _owner
+    ) public view returns (uint256 shares, uint256 timelockEndsAt) {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+
+        MoreVaultsLib.WithdrawRequest storage request = ds.withdrawalRequests[
+            _owner
+        ];
+
+        return (request.shares, request.timelockEndsAt);
+    }
+
+    /**
+     * @inheritdoc IVaultFacet
+     */
+    function getWithdrawalTimelock() external view returns (uint64) {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        return ds.timelockDuration;
+    }
+
+    /**
+     * @inheritdoc IVaultFacet
+     */
+    function setWithdrawalTimelock(uint64 _duration) external {
         AccessControlLib.validateCurator(msg.sender);
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
         ds.timelockDuration = _duration;
+
+        emit WithdrawalTimelockSet(_duration);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function clearRequest() public {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -385,6 +418,9 @@ contract VaultFacet is
         emit WithdrawRequestDeleted(msg.sender);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function requestRedeem(uint256 _shares) external {
         MoreVaultsLib.validateMulticall();
         if (_shares == 0) {
@@ -409,6 +445,9 @@ contract VaultFacet is
         emit WithdrawRequestCreated(msg.sender, _shares, endsAt);
     }
 
+    /**
+     * @inheritdoc IVaultFacet
+     */
     function requestWithdraw(uint256 _assets) external {
         MoreVaultsLib.validateMulticall();
         if (_assets == 0) {

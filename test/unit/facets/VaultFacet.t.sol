@@ -561,7 +561,12 @@ contract VaultFacetTest is Test {
 
     function test_withdraw_ShouldBurnShares() public {
         vm.prank(curator);
-        VaultFacet(facet).updateTimelockDuration(110);
+        VaultFacet(facet).setWithdrawalTimelock(110);
+        assertEq(
+            VaultFacet(facet).getWithdrawalTimelock(),
+            110,
+            "Should set correct timelock duration"
+        );
         // Mock oracle call
         vm.mockCall(
             registry,
@@ -628,8 +633,23 @@ contract VaultFacetTest is Test {
         );
 
         uint256 withdrawAmount = 50 ether;
+        uint256 expectedShares = IVaultFacet(facet).convertToShares(
+            withdrawAmount
+        );
         vm.prank(user);
         VaultFacet(facet).requestWithdraw(withdrawAmount);
+        (uint256 sharesRequest, uint256 timelockEndsAt) = VaultFacet(facet)
+            .getWithdrawalRequest(user);
+        assertEq(
+            sharesRequest,
+            expectedShares,
+            "Should request correct amount of shares"
+        );
+        assertEq(
+            timelockEndsAt,
+            block.timestamp + 110,
+            "Should set correct timelock end time"
+        );
         uint256 currentTimestamp = block.timestamp;
         vm.warp(currentTimestamp + 200);
         vm.prank(user);
@@ -663,7 +683,12 @@ contract VaultFacetTest is Test {
 
     function test_redeem_ShouldBurnShares() public {
         vm.prank(curator);
-        VaultFacet(facet).updateTimelockDuration(110);
+        VaultFacet(facet).setWithdrawalTimelock(110);
+        assertEq(
+            VaultFacet(facet).getWithdrawalTimelock(),
+            110,
+            "Should set correct timelock duration"
+        );
         // Mock oracle call
         vm.mockCall(
             registry,
@@ -732,6 +757,18 @@ contract VaultFacetTest is Test {
         uint256 balanceBefore = IERC20(asset).balanceOf(user);
         vm.prank(user);
         VaultFacet(facet).requestRedeem(shares);
+        (uint256 sharesRequest, uint256 timelockEndsAt) = VaultFacet(facet)
+            .getWithdrawalRequest(user);
+        assertEq(
+            sharesRequest,
+            shares,
+            "Should request correct amount of shares"
+        );
+        assertEq(
+            timelockEndsAt,
+            block.timestamp + 110,
+            "Should set correct timelock end time"
+        );
         uint256 currentTimestamp = block.timestamp;
         vm.warp(currentTimestamp + 200);
         vm.prank(user);
