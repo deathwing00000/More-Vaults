@@ -89,18 +89,18 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
                 }
                 continue;
             }
-
-            uint256 gaugeBalance = ILiquidityGaugeV6(
-                ds.stakingTokenToGauge[lpToken]
-            ).balanceOf(address(this));
-            uint256 multiRewardsBalance = IMultiRewards(
-                ds.stakingTokenToMultiRewards[lpToken]
-            ).balanceOf(address(this));
+            
+            address gauge = ds.stakingTokenToGauge[lpToken];
+            address multiReawrd = ds.stakingTokenToMultiRewards[lpToken];
 
             // Get direct LP token balance
-            uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this)) +
-                gaugeBalance +
-                multiRewardsBalance;
+            uint256 lpTokenBalance = IERC20(lpToken).balanceOf(address(this));
+            if (gauge != address(0)) {
+                lpTokenBalance += ILiquidityGaugeV6(gauge).balanceOf(address(this));
+            }
+            if (multiReawrd != address(0)) {
+                lpTokenBalance += IMultiRewards(multiReawrd).balanceOf(address(this));
+            }
 
             uint256 minPrice;
             for(uint256 j = 0; j < poolLength; j++) {
