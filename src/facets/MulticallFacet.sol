@@ -123,8 +123,7 @@ contract MulticallFacet is
         }
 
         if (totalBefore > totalAfter) {
-            uint256 slippagePercent =
-                ((totalBefore - totalAfter) * 10_000) /
+            uint256 slippagePercent = ((totalBefore - totalAfter) * 10_000) /
                 totalBefore;
 
             if (slippagePercent > ds.maxSlippagePercent) {
@@ -145,13 +144,16 @@ contract MulticallFacet is
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
 
-        for (uint256 i = 0; i < actionsNonces.length; i++) {
+        for (uint256 i = 0; i < actionsNonces.length; ) {
             if (ds.pendingActions[actionsNonces[i]].pendingUntil == 0) {
                 revert NoSuchActions(actionsNonces[i]);
             }
 
             delete ds.pendingActions[actionsNonces[i]];
             emit ActionsVetoed(msg.sender, actionsNonces[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 

@@ -55,14 +55,14 @@ contract CurveLiquidityGaugeV6Facet is
         ds.supportedInterfaces[
             type(ICurveLiquidityGaugeV6Facet).interfaceId
         ] = true;
-        (address facetAddress, address minter, bytes32 facetSelector) = abi.decode(
-            data,
-            (address, address, bytes32)
-        );
+        (address facetAddress, address minter, bytes32 facetSelector) = abi
+            .decode(data, (address, address, bytes32));
         ds.facetsForAccounting.push(facetSelector);
         ds.beforeAccountingFacets.push(facetAddress);
         ds.minter = minter;
-        ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(CURVE_LIQUIDITY_GAUGES_V6_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(
+            CURVE_LIQUIDITY_GAUGES_V6_ID
+        );
     }
 
     function beforeAccounting() external {
@@ -84,9 +84,12 @@ contract CurveLiquidityGaugeV6Facet is
             address[8] memory gaugesArray8;
             uint256 batchSize;
 
-            for (uint256 j = 0; j < 8 && i + j < gaugesArray.length; j++) {
+            for (uint256 j = 0; j < 8 && i + j < gaugesArray.length; ) {
                 gaugesArray8[j] = gaugesArray[i + j];
                 batchSize++;
+                unchecked {
+                    ++j;
+                }
             }
 
             if (batchSize > 0) {

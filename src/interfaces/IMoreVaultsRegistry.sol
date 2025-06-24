@@ -26,6 +26,18 @@ interface IMoreVaultsRegistry {
     event FacetAdded(address indexed facet, bytes4[] selectors);
 
     /**
+     * @dev Emitted when facet is edited
+     * @param facet Address of edited facet
+     * @param selectors Array of function selectors
+     * @param addOrRemove Array with flags for add/remove of selector with same index
+     */
+    event FacetEdited(
+        address indexed facet,
+        bytes4[] selectors,
+        bool[] addOrRemove
+    );
+
+    /**
      * @dev Emitted when facet is removed
      * @param facet Address of removed facet
      */

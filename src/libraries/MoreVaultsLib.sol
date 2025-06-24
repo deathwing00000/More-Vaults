@@ -12,7 +12,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IGenericMoreVaultFacet, IGenericMoreVaultFacetInitializable} from "../interfaces/facets/IGenericMoreVaultFacetInitializable.sol";
-import {console} from "forge-std/console.sol";
 
 bytes32 constant BEFORE_ACCOUNTING_SELECTOR = 0xa85367f800000000000000000000000000000000000000000000000000000000;
 bytes32 constant BEFORE_ACCOUNTING_FAILED_ERROR = 0xc5361f8d00000000000000000000000000000000000000000000000000000000;
@@ -470,7 +469,7 @@ library MoreVaultsLib {
         for (
             uint256 selectorIndex;
             selectorIndex < _functionSelectors.length;
-            selectorIndex++
+
         ) {
             bytes4 selector = _functionSelectors[selectorIndex];
             address oldFacetAddress = ds
@@ -481,6 +480,9 @@ library MoreVaultsLib {
             }
             addFunction(ds, selector, selectorPosition, _facetAddress);
             selectorPosition++;
+            unchecked {
+                ++selectorIndex;
+            }
         }
         if (msg.sender != factoryAddress()) {
             IVaultsFactory(ds.factory).link(_facetAddress);
@@ -511,7 +513,7 @@ library MoreVaultsLib {
         for (
             uint256 selectorIndex;
             selectorIndex < _functionSelectors.length;
-            selectorIndex++
+
         ) {
             bytes4 selector = _functionSelectors[selectorIndex];
             address oldFacetAddress = ds
@@ -520,13 +522,16 @@ library MoreVaultsLib {
             if (oldFacetAddress == _facetAddress) {
                 revert FunctionAlreadyExists(oldFacetAddress, selector);
             }
-            removeFunction(ds, oldFacetAddress, selector);
+            removeFunction(ds, oldFacetAddress, selector, true);
             addFunction(ds, selector, selectorPosition, _facetAddress);
             if (facetToUnlink != oldFacetAddress) {
                 IVaultsFactory(factory).unlink(oldFacetAddress);
                 facetToUnlink = oldFacetAddress;
             }
             selectorPosition++;
+            unchecked {
+                ++selectorIndex;
+            }
         }
         IVaultsFactory(factory).link(_facetAddress);
     }
@@ -549,16 +554,19 @@ library MoreVaultsLib {
         for (
             uint256 selectorIndex;
             selectorIndex < _functionSelectors.length;
-            selectorIndex++
+
         ) {
             bytes4 selector = _functionSelectors[selectorIndex];
             address oldFacetAddress = ds
                 .selectorToFacetAndPosition[selector]
                 .facetAddress;
-            removeFunction(ds, oldFacetAddress, selector);
+            removeFunction(ds, oldFacetAddress, selector, false);
             if (facetToUnlink != oldFacetAddress) {
                 IVaultsFactory(factory).unlink(oldFacetAddress);
                 facetToUnlink = oldFacetAddress;
+            }
+            unchecked {
+                ++selectorIndex;
             }
         }
     }
@@ -595,7 +603,8 @@ library MoreVaultsLib {
     function removeFunction(
         MoreVaultsStorage storage ds,
         address _facetAddress,
-        bytes4 _selector
+        bytes4 _selector,
+        bool _isReplacing
     ) internal {
         if (_facetAddress == address(0)) {
             revert FunctionDoesNotExist();
@@ -624,9 +633,6 @@ library MoreVaultsLib {
                 .selectorToFacetAndPosition[lastSelector]
                 .functionSelectorPosition = uint96(selectorPosition);
         }
-        // delete the last selector
-        ds.facetFunctionSelectors[_facetAddress].functionSelectors.pop();
-        delete ds.selectorToFacetAndPosition[_selector];
 
         // if no more selectors for facet address then delete the facet address
         if (lastSelectorPosition == 0) {
@@ -649,32 +655,45 @@ library MoreVaultsLib {
                 .facetFunctionSelectors[_facetAddress]
                 .facetAddressPosition;
 
-            for (uint256 i; i < ds.facetsForAccounting.length; ) {
-                bytes4 selector = bytes4(
-                    keccak256(
-                        abi.encodePacked(
-                            "accounting",
-                            IGenericMoreVaultFacet(_facetAddress).facetName(),
-                            "()"
+            if (!_isReplacing) {
+                for (uint256 i; i < ds.facetsForAccounting.length; ) {
+                    bytes4 selector = bytes4(
+                        keccak256(
+                            abi.encodePacked(
+                                "accounting",
+                                IGenericMoreVaultFacet(_facetAddress)
+                                    .facetName(),
+                                "()"
+                            )
                         )
-                    )
-                );
-                if (ds.facetsForAccounting[i] == selector) {
-                    (bool success, bytes memory result) = address(this)
-                        .staticcall(abi.encodeWithSelector(selector));
-                    if (success) {
-                        uint256 decodedAmount = abi.decode(result, (uint256));
-                        if (decodedAmount > 10e4) {
-                            revert FacetHasBalance(_facetAddress);
-                        }
-                        ds.facetsForAccounting[i] = ds.facetsForAccounting[
-                            ds.facetsForAccounting.length - 1
-                        ];
-                        ds.facetsForAccounting.pop();
-                    } else revert AccountingFailed(selector);
+                    );
+                    if (ds.facetsForAccounting[i] == selector) {
+                        (bool success, bytes memory result) = address(this)
+                            .staticcall(abi.encodeWithSelector(selector));
+                        if (success) {
+                            uint256 decodedAmount = abi.decode(
+                                result,
+                                (uint256)
+                            );
+                            if (decodedAmount > 10e4) {
+                                revert FacetHasBalance(_facetAddress);
+                            }
+                            ds.facetsForAccounting[i] = ds.facetsForAccounting[
+                                ds.facetsForAccounting.length - 1
+                            ];
+                            ds.facetsForAccounting.pop();
+                        } else revert AccountingFailed(selector);
+                    }
+                    unchecked {
+                        ++i;
+                    }
                 }
             }
         }
+
+        // delete the last selector
+        ds.facetFunctionSelectors[_facetAddress].functionSelectors.pop();
+        delete ds.selectorToFacetAndPosition[_selector];
     }
 
     function initializeAfterAddition(

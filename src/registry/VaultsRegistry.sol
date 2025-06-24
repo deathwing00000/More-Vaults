@@ -104,19 +104,18 @@ contract VaultsRegistry is BaseVaultsRegistry {
                         ++j;
                     }
                 }
-
-                if (_facetSelectorsArray.length == 0) {
-                    _allowedFacets[facet] = false;
-                    _facetsList.remove(facet);
-                }
             }
 
             unchecked {
                 ++i;
             }
         }
+        if (facetSelectors[facet].length == 0) {
+            _allowedFacets[facet] = false;
+            _facetsList.remove(facet);
+        }
 
-        emit FacetAdded(facet, selectors);
+        emit FacetEdited(facet, selectors, addOrRemove);
     }
 
     /**

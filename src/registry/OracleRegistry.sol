@@ -64,11 +64,14 @@ contract OracleRegistry is IOracleRegistry, AccessControlUpgradeable {
         if (assets.length != infos.length) {
             revert InconsistentParamsLength();
         }
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length; ) {
             oracleInfos[assets[i]].aggregator = infos[i].aggregator;
             oracleInfos[assets[i]].stalenessThreshold = infos[i]
                 .stalenessThreshold;
             emit OracleInfoUpdated(assets[i], infos[i]);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -92,8 +95,11 @@ contract OracleRegistry is IOracleRegistry, AccessControlUpgradeable {
         address[] calldata assets
     ) external view override returns (uint256[] memory) {
         uint256[] memory prices = new uint256[](assets.length);
-        for (uint256 i = 0; i < assets.length; i++) {
+        for (uint256 i = 0; i < assets.length; ) {
             prices[i] = getAssetPrice(assets[i]);
+            unchecked {
+                ++i;
+            }
         }
         return prices;
     }

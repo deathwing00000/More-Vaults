@@ -86,7 +86,9 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         ds.supportedInterfaces[type(IMultiRewardsFacet).interfaceId] = true;
         bytes32 facetSelector = abi.decode(data, (bytes32));
         ds.facetsForAccounting.push(facetSelector);
-        ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(MULTI_REWARDS_STAKINGS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(
+            MULTI_REWARDS_STAKINGS_ID
+        );
     }
 
     /**
