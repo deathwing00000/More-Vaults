@@ -508,7 +508,6 @@ library MoreVaultsLib {
             addFacet(ds, _facetAddress);
         }
 
-        address facetToUnlink;
         address factory = ds.factory;
         for (
             uint256 selectorIndex;
@@ -524,10 +523,6 @@ library MoreVaultsLib {
             }
             removeFunction(ds, oldFacetAddress, selector, true);
             addFunction(ds, selector, selectorPosition, _facetAddress);
-            if (facetToUnlink != oldFacetAddress) {
-                IVaultsFactory(factory).unlink(oldFacetAddress);
-                facetToUnlink = oldFacetAddress;
-            }
             selectorPosition++;
             unchecked {
                 ++selectorIndex;
@@ -549,8 +544,6 @@ library MoreVaultsLib {
             revert ZeroAddress();
         }
 
-        address facetToUnlink;
-        address factory = ds.factory;
         for (
             uint256 selectorIndex;
             selectorIndex < _functionSelectors.length;
@@ -561,10 +554,6 @@ library MoreVaultsLib {
                 .selectorToFacetAndPosition[selector]
                 .facetAddress;
             removeFunction(ds, oldFacetAddress, selector, false);
-            if (facetToUnlink != oldFacetAddress) {
-                IVaultsFactory(factory).unlink(oldFacetAddress);
-                facetToUnlink = oldFacetAddress;
-            }
             unchecked {
                 ++selectorIndex;
             }
@@ -654,6 +643,8 @@ library MoreVaultsLib {
             delete ds
                 .facetFunctionSelectors[_facetAddress]
                 .facetAddressPosition;
+            address factory = ds.factory;
+            IVaultsFactory(factory).unlink(_facetAddress);
 
             if (!_isReplacing) {
                 for (uint256 i; i < ds.facetsForAccounting.length; ) {
