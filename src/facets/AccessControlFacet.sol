@@ -21,6 +21,10 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
         return "AccessControlFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -35,6 +39,12 @@ contract AccessControlFacet is BaseFacetInitializer, IAccessControlFacet {
         AccessControlLib.setVaultGuardian(_guardian);
 
         ds.supportedInterfaces[type(IAccessControlFacet).interfaceId] = true; // AccessControlFacet
+    }
+
+    function onFacetRemoval(address, bool) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IAccessControlFacet).interfaceId] = false;
     }
 
     /**

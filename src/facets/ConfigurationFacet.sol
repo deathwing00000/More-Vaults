@@ -20,12 +20,22 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         return "ConfigurationFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
-        (uint256 maxSlippagePercent) = abi.decode(data, (uint256));
+        uint256 maxSlippagePercent = abi.decode(data, (uint256));
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = true;
         ds.maxSlippagePercent = maxSlippagePercent;
+    }
+
+    function onFacetRemoval(address, bool) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IConfigurationFacet).interfaceId] = false;
     }
 
     function setMaxSlippagePercent(uint256 _newPercent) external {
@@ -42,7 +52,9 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
         uint48 _newLimit
     ) external {
         AccessControlLib.validateCurator(msg.sender);
-        MoreVaultsLib.GasLimit storage gl = MoreVaultsLib.moreVaultsStorage().gasLimit;
+        MoreVaultsLib.GasLimit storage gl = MoreVaultsLib
+            .moreVaultsStorage()
+            .gasLimit;
         gl.availableTokenAccountingGas = _availableTokenAccountingGas;
         gl.heldTokenAccountingGas = _heldTokenAccountingGas;
         gl.facetAccountingGas = _facetAccountingGas;

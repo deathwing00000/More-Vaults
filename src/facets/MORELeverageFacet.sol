@@ -38,13 +38,37 @@ contract MORELeverageFacet is BaseFacetInitializer, IMORELeverageFacet {
         return "MORELeverageFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         bytes32 facetSelector = abi.decode(data, (bytes32));
         ds.facetsForAccounting.push(facetSelector);
         ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = true;
-        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(ORIGAMI_VAULT_TOKENS_ID);
+        ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(
+            ORIGAMI_VAULT_TOKENS_ID
+        );
+    }
+
+    function onFacetRemoval(address facetAddress, bool isReplacing) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IMORELeverageFacet).interfaceId] = false;
+
+        MoreVaultsLib.removeFromFacetsForAccounting(
+            ds,
+            facetAddress,
+            isReplacing
+        );
+
+        if (!isReplacing) {
+            ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].remove(
+                ORIGAMI_VAULT_TOKENS_ID
+            );
+        }
     }
 
     function accountingMORELeverageFacet()

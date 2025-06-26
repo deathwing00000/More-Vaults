@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {MoreVaultsLib} from "../libraries/MoreVaultsLib.sol";
+import {MoreVaultsLib, BEFORE_ACCOUNTING_SELECTOR, BEFORE_ACCOUNTING_FAILED_ERROR} from "../libraries/MoreVaultsLib.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
@@ -36,15 +36,19 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         override
         returns (bytes32)
     {
-        return keccak256("MoreVaults.storage.initializable.CurveFacet");
+        return keccak256("MoreVaults.storage.initializable.CurveFacet.V1.0.1");
     }
 
     /**
      * @notice Returns the name of the facet
      * @return The facet name
      */
-    function facetName() external pure returns (string memory) {
+    function facetName() public pure returns (string memory) {
         return "CurveFacet";
+    }
+
+    function facetVersion() public pure returns (string memory) {
+        return "1.0.1";
     }
 
     function initialize(bytes calldata data) external initializerFacet {
@@ -60,6 +64,25 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].add(
             CURVE_LP_TOKENS_ID
         );
+    }
+
+    function onFacetRemoval(address facetAddress, bool isReplacing) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(ICurveFacet).interfaceId] = false;
+
+        MoreVaultsLib.removeFromBeforeAccounting(ds, facetAddress, isReplacing);
+        MoreVaultsLib.removeFromFacetsForAccounting(
+            ds,
+            facetAddress,
+            isReplacing
+        );
+
+        if (!isReplacing) {
+            ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].remove(
+                CURVE_LP_TOKENS_ID
+            );
+        }
     }
 
     function beforeAccounting() external {

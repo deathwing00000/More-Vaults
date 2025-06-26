@@ -24,7 +24,13 @@ contract MockFacet is
         return "MockFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata) external initializerFacet {}
+
+    function onFacetRemoval(address, bool) external {}
 
     function mockFunciton1() external pure returns (bool) {
         return true;

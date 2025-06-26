@@ -49,6 +49,10 @@ contract CurveLiquidityGaugeV6Facet is
         return "CurveLiquidityGaugeV6Facet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -63,6 +67,27 @@ contract CurveLiquidityGaugeV6Facet is
         ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(
             CURVE_LIQUIDITY_GAUGES_V6_ID
         );
+    }
+
+    function onFacetRemoval(address facetAddress, bool isReplacing) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[
+            type(ICurveLiquidityGaugeV6Facet).interfaceId
+        ] = false;
+
+        MoreVaultsLib.removeFromBeforeAccounting(ds, facetAddress, isReplacing);
+        MoreVaultsLib.removeFromFacetsForAccounting(
+            ds,
+            facetAddress,
+            isReplacing
+        );
+
+        if (!isReplacing) {
+            ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].remove(
+                CURVE_LIQUIDITY_GAUGES_V6_ID
+            );
+        }
     }
 
     function beforeAccounting() external {

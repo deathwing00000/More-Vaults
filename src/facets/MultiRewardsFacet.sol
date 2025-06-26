@@ -40,6 +40,10 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         return "MultiRewardsFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function accountingMultiRewardsFacet()
         external
         view
@@ -89,6 +93,24 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].add(
             MULTI_REWARDS_STAKINGS_ID
         );
+    }
+
+    function onFacetRemoval(address facetAddress, bool isReplacing) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IMultiRewardsFacet).interfaceId] = false;
+
+        MoreVaultsLib.removeFromFacetsForAccounting(
+            ds,
+            facetAddress,
+            isReplacing
+        );
+
+        if (!isReplacing) {
+            ds.vaultExternalAssets[MoreVaultsLib.TokenType.StakingToken].remove(
+                MULTI_REWARDS_STAKINGS_ID
+            );
+        }
     }
 
     /**

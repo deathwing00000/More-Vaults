@@ -30,6 +30,10 @@ contract MulticallFacet is
         return "MulticallFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
         uint256 timeLockPeriod = abi.decode(data, (uint256));
 
@@ -38,6 +42,12 @@ contract MulticallFacet is
         ds.supportedInterfaces[type(IMulticallFacet).interfaceId] = true;
 
         MoreVaultsLib._setTimeLockPeriod(timeLockPeriod);
+    }
+
+    function onFacetRemoval(address, bool) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IMulticallFacet).interfaceId] = false;
     }
 
     /**

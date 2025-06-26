@@ -35,6 +35,14 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         return keccak256("MoreVaults.storage.initializable.AaveV3Facet");
     }
 
+    function facetName() external pure returns (string memory) {
+        return "AaveV3Facet";
+    }
+
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata data) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
@@ -50,8 +58,24 @@ contract AaveV3Facet is BaseFacetInitializer, IAaveV3Facet {
         );
     }
 
-    function facetName() external pure returns (string memory) {
-        return "AaveV3Facet";
+    function onFacetRemoval(address facetAddress, bool isReplacing) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IAaveV3Facet).interfaceId] = false;
+
+        MoreVaultsLib.removeFromFacetsForAccounting(
+            ds,
+            facetAddress,
+            isReplacing
+        );
+        if (!isReplacing) {
+            ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].remove(
+                MTOKENS_ID
+            );
+            ds.vaultExternalAssets[MoreVaultsLib.TokenType.HeldToken].remove(
+                MORE_DEBT_TOKENS_ID
+            );
+        }
     }
 
     function accountingAaveV3Facet()

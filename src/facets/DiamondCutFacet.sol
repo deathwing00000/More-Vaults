@@ -20,10 +20,20 @@ contract DiamondCutFacet is BaseFacetInitializer, IDiamondCut {
         return "DiamondCutFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
+    }
+
+    function onFacetRemoval(address, bool) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IDiamondCut).interfaceId] = false;
     }
 
     /**

@@ -35,10 +35,20 @@ contract UniswapV3Facet is IUniswapV3Facet, BaseFacetInitializer {
         return "UniswapV3Facet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IUniswapV3Facet).interfaceId] = true;
+    }
+
+    function onFacetRemoval(address, bool) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IUniswapV3Facet).interfaceId] = false;
     }
 
     /**

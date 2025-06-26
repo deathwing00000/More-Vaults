@@ -55,6 +55,10 @@ contract VaultFacet is
         return "VaultFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(
         bytes calldata data
     ) external initializerFacet initializer {
@@ -90,6 +94,12 @@ contract VaultFacet is
         __ERC20_init(name, symbol);
         MoreVaultsLib._addAvailableAsset(asset);
         MoreVaultsLib._enableAssetToDeposit(asset);
+    }
+
+    function onFacetRemoval(address, bool) external override {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IVaultFacet).interfaceId] = false;
     }
 
     /**

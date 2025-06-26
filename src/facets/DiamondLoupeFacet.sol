@@ -20,11 +20,22 @@ contract DiamondLoupeFacet is BaseFacetInitializer, IDiamondLoupe, IERC165 {
         return "DiamondLoupeFacet";
     }
 
+    function facetVersion() external pure returns (string memory) {
+        return "1.0.0";
+    }
+
     function initialize(bytes calldata) external initializerFacet {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
         ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
         ds.supportedInterfaces[type(IERC165).interfaceId] = true;
+    }
+
+    function onFacetRemoval(address, bool) external {
+        MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
+            .moreVaultsStorage();
+        ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = false;
+        ds.supportedInterfaces[type(IERC165).interfaceId] = false;
     }
 
     /**

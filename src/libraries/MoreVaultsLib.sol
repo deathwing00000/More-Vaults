@@ -49,6 +49,8 @@ library MoreVaultsLib {
     error UnsupportedProtocol(address protocol);
     error AccountingGasLimitExceeded(uint256 limit, uint256 consumption);
     error RestrictedActionInsideMulticall();
+    error OnFacetRemovalFailed(address facet, bytes data);
+    error FacetNameFailed(address facet);
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -433,6 +435,10 @@ library MoreVaultsLib {
                     _diamondCut[facetIndex].facetAddress,
                     _diamondCut[facetIndex].functionSelectors
                 );
+                initializeAfterAddition(
+                    _diamondCut[facetIndex].facetAddress,
+                    _diamondCut[facetIndex].initData
+                );
             } else if (action == IDiamondCut.FacetCutAction.Remove) {
                 removeFunctions(
                     _diamondCut[facetIndex].facetAddress,
@@ -646,39 +652,21 @@ library MoreVaultsLib {
             address factory = ds.factory;
             IVaultsFactory(factory).unlink(_facetAddress);
 
-            if (!_isReplacing) {
-                for (uint256 i; i < ds.facetsForAccounting.length; ) {
-                    bytes4 selector = bytes4(
-                        keccak256(
-                            abi.encodePacked(
-                                "accounting",
-                                IGenericMoreVaultFacet(_facetAddress)
-                                    .facetName(),
-                                "()"
-                            )
-                        )
-                    );
-                    if (ds.facetsForAccounting[i] == selector) {
-                        (bool success, bytes memory result) = address(this)
-                            .staticcall(abi.encodeWithSelector(selector));
-                        if (success) {
-                            uint256 decodedAmount = abi.decode(
-                                result,
-                                (uint256)
-                            );
-                            if (decodedAmount > 10e4) {
-                                revert FacetHasBalance(_facetAddress);
-                            }
-                            ds.facetsForAccounting[i] = ds.facetsForAccounting[
-                                ds.facetsForAccounting.length - 1
-                            ];
-                            ds.facetsForAccounting.pop();
-                        } else revert AccountingFailed(selector);
-                    }
-                    unchecked {
-                        ++i;
-                    }
-                }
+            (bool success, bytes memory result) = address(_facetAddress)
+                .delegatecall(
+                    abi.encodeWithSelector(
+                        bytes4(
+                            IGenericMoreVaultFacetInitializable
+                                .onFacetRemoval
+                                .selector
+                        ),
+                        _facetAddress,
+                        _isReplacing
+                    )
+                );
+            // revert if onFacetRemoval exists on facet and failed
+            if (!success && result.length > 0) {
+                revert OnFacetRemovalFailed(_facetAddress, result);
             }
         }
 
@@ -717,6 +705,81 @@ library MoreVaultsLib {
                 }
             } else {
                 revert InitializationFunctionReverted(_facetAddress, callData);
+            }
+        }
+    }
+
+    function removeFromBeforeAccounting(
+        MoreVaultsStorage storage ds,
+        address _facetAddress,
+        bool _isReplacing
+    ) internal {
+        for (uint256 i; i < ds.beforeAccountingFacets.length; ) {
+            if (ds.beforeAccountingFacets[i] == _facetAddress) {
+                if (!_isReplacing) {
+                    (bool success, ) = address(_facetAddress).delegatecall(
+                        abi.encodeWithSelector(
+                            bytes4(BEFORE_ACCOUNTING_SELECTOR)
+                        )
+                    );
+                    assembly {
+                        if iszero(success) {
+                            mstore(0x40, BEFORE_ACCOUNTING_FAILED_ERROR)
+                            mstore(add(0x40, 0x04), _facetAddress)
+                            revert(0x40, 0x24)
+                        }
+                    }
+                }
+                ds.beforeAccountingFacets[i] = ds.beforeAccountingFacets[
+                    ds.beforeAccountingFacets.length - 1
+                ];
+                ds.beforeAccountingFacets.pop();
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function removeFromFacetsForAccounting(
+        MoreVaultsStorage storage ds,
+        address _facetAddress,
+        bool _isReplacing
+    ) internal {
+        (bool success, bytes memory result) = address(_facetAddress).staticcall(
+            abi.encodeWithSelector(IGenericMoreVaultFacet.facetName.selector)
+        );
+        if (!success) {
+            revert FacetNameFailed(_facetAddress);
+        }
+        string memory facetName = abi.decode(result, (string));
+
+        bytes4 selector = bytes4(
+            keccak256(abi.encodePacked("accounting", facetName, "()"))
+        );
+        for (uint256 i; i < ds.facetsForAccounting.length; ) {
+            if (ds.facetsForAccounting[i] == selector) {
+                if (!_isReplacing) {
+                    (success, result) = address(this).staticcall(
+                        abi.encodeWithSelector(selector)
+                    );
+                    if (!success) {
+                        revert AccountingFailed(selector);
+                    }
+                    uint256 decodedAmount = abi.decode(result, (uint256));
+                    if (decodedAmount > 10e4) {
+                        revert FacetHasBalance(_facetAddress);
+                    }
+                }
+                ds.facetsForAccounting[i] = ds.facetsForAccounting[
+                    ds.facetsForAccounting.length - 1
+                ];
+                ds.facetsForAccounting.pop();
+                break;
+            }
+            unchecked {
+                ++i;
             }
         }
     }

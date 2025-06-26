@@ -88,11 +88,13 @@ contract CurveFacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        bytes32 facetSelector = keccak256(abi.encodePacked("accountingCurveFacet()"));
-        assembly { 
+        bytes32 facetSelector = keccak256(
+            abi.encodePacked("accountingCurveFacet()")
+        );
+        assembly {
             facetSelector := shl(224, facetSelector)
         }
-        CurveFacet(facet).initialize(abi.encode(facet,facetSelector));
+        CurveFacet(facet).initialize(abi.encode(facet, facetSelector));
         bytes32[] memory facets = MoreVaultsStorageHelper
             .getFacetsForAccounting(address(facet));
         assertEq(
