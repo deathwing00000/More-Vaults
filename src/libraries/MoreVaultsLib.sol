@@ -144,6 +144,7 @@ library MoreVaultsLib {
         bool isMulticall;
         address factory;
         mapping(address => uint256) curvePoolLength;
+        mapping(address => uint256) depositWhitelist;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);
@@ -299,6 +300,16 @@ library MoreVaultsLib {
         ds.depositCapacity = capacity;
 
         emit DepositCapacitySet(previousCapacity, capacity);
+    }
+
+    function _setDepositWhitelist(address[] calldata depositors, uint256[] calldata undelyingAssetCaps) internal {
+        MoreVaultsStorage storage ds = moreVaultsStorage();
+        for (uint256 i; i < depositors.length; ) {
+            ds.depositWhitelist[depositors[i]] = undelyingAssetCaps[i];
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function _setTimeLockPeriod(uint256 period) internal {

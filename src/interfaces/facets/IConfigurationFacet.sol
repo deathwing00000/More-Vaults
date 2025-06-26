@@ -13,6 +13,7 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
     error AssetNotAvailable();
     error TimeLockPeriodNotExpired();
     error NothingSubmitted();
+    error ArraysLengthsMismatch();
 
     /**
      * @dev Events
@@ -44,6 +45,20 @@ interface IConfigurationFacet is IGenericMoreVaultFacetInitializable {
      * @param capacity New deposit capacity
      */
     function setDepositCapacity(uint256 capacity) external;
+
+    /**
+     * @notice Sets deposit whitelist
+     * @param depositors Array of depositors
+     * @param undelyingAssetCaps Array of underlying asset caps
+     */
+    function setDepositWhitelist(address[] calldata depositors, uint256[] calldata undelyingAssetCaps) external;
+
+    /**
+     * @notice Gets deposit whitelist
+     * @param depositor Depositor address
+     * @return Undelying asset cap
+     */
+    function getDepositWhitelist(address depositor) external view returns (uint256);
 
     /**
      * @notice Adds new available asset

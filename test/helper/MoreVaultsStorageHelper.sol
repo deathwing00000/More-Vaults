@@ -41,6 +41,8 @@ library MoreVaultsStorageHelper {
     uint256 constant MAX_SLIPPAGE_PERCENT = 27;
     uint256 constant IS_MULTICALL = 28;
     uint256 constant FACTORY = 28;
+    uint256 constant CURVE_POOL_LENGTH = 29;
+    uint256 constant DEPOSIT_WHITELIST = 30;
 
     uint256 constant OWNER = 0;
     uint256 constant CURATOR = 1;
@@ -939,5 +941,9 @@ library MoreVaultsStorageHelper {
         address contractAddress
     ) internal view returns (address) {
         return getStorageAddress(contractAddress, MINTER);
+    }
+
+    function setDepositWhitelist(address contractAddress, address depositor, uint256 undelyingAssetCap) internal {
+        setMappingValue(contractAddress, DEPOSIT_WHITELIST, bytes32(uint256(uint160(depositor))), bytes32(undelyingAssetCap));
     }
 }

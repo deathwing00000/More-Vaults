@@ -138,7 +138,7 @@ contract DeployConfig {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](16);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](17);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -186,6 +186,9 @@ contract DeployConfig {
             .selector;
         functionSelectorsConfigurationFacet[15] = ConfigurationFacet
             .setMaxSlippagePercent
+            .selector;
+        functionSelectorsConfigurationFacet[16] = ConfigurationFacet
+            .setDepositWhitelist
             .selector;
         bytes memory initDataConfigurationFacet = abi.encode(
             maxSlippagePercent

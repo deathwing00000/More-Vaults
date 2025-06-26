@@ -548,4 +548,29 @@ contract ConfigurationFacetTest is Test {
 
         vm.stopPrank();
     }
+
+    function test_setDepositWhitelist_ShouldUpdateDepositWhitelist() public {
+        vm.startPrank(curator);
+
+        address[] memory depositors = new address[](1);
+        depositors[0] = address(1);
+        uint256[] memory undelyingAssetCaps = new uint256[](1);
+        undelyingAssetCaps[0] = 10 ether;
+        facet.setDepositWhitelist(depositors, undelyingAssetCaps);
+        vm.stopPrank();
+
+        assertEq(facet.getDepositWhitelist(address(1)), 10 ether);
+    }
+
+    function test_setDepositWhitelist_ShouldRevertWhenUnauthorized() public {
+        address[] memory depositors = new address[](1);
+        depositors[0] = address(1);
+        uint256[] memory undelyingAssetCaps = new uint256[](1);
+        undelyingAssetCaps[0] = 10 ether;
+
+        vm.startPrank(unauthorized);
+        vm.expectRevert(AccessControlLib.UnauthorizedAccess.selector);
+        facet.setDepositWhitelist(depositors, undelyingAssetCaps);
+        vm.stopPrank();
+    }
 }
