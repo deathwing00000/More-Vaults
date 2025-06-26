@@ -146,6 +146,7 @@ library MoreVaultsLib {
         bool isMulticall;
         address factory;
         mapping(address => uint256) curvePoolLength;
+        mapping(address => bool) isNecessaryToCheckLock;
     }
 
     event DiamondCut(IDiamondCut.FacetCut[] _diamondCut);

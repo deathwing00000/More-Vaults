@@ -94,7 +94,14 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         ];
 
         for (uint256 i = 0; i < tokensHeld.length(); ) {
-            ICurveViews(tokensHeld.at(i)).remove_liquidity_one_coin(0, 0, 0);
+            if (ds.isNecessaryToCheckLock[tokensHeld.at(i)]) {
+                // needed to prevent Curve read-only reentrancy attack
+                ICurveViews(tokensHeld.at(i)).remove_liquidity_one_coin(
+                    1,
+                    0,
+                    0
+                );
+            }
             unchecked {
                 ++i;
             }
@@ -296,6 +303,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
             .moreVaultsStorage();
         if (_swap_params[index][2] == 4) {
             ds.tokensHeld[CURVE_LP_TOKENS_ID].add(outputToken);
+            ds.isNecessaryToCheckLock[outputToken] = true;
             if (ds.curvePoolLength[outputToken] == 0) {
                 ds.curvePoolLength[outputToken] = _getPoolLength(outputToken);
             }
