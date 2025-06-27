@@ -37,7 +37,7 @@ contract CurveLiquidityGaugeV6Facet is
     {
         return
             keccak256(
-                "MoreVaults.storage.initializable.CurveLiquidityGaugeV6Facet"
+                "MoreVaults.storage.initializable.CurveLiquidityGaugeV6Facet.V1.0.1"
             );
     }
 
@@ -50,7 +50,7 @@ contract CurveLiquidityGaugeV6Facet is
     }
 
     function facetVersion() external pure returns (string memory) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     function initialize(bytes calldata data) external initializerFacet {

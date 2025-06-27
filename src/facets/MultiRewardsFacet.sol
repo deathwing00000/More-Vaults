@@ -29,7 +29,10 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         override
         returns (bytes32)
     {
-        return keccak256("MoreVaults.storage.initializable.MultiRewardsFacet");
+        return
+            keccak256(
+                "MoreVaults.storage.initializable.MultiRewardsFacet.V1.0.1"
+            );
     }
 
     /**
@@ -41,7 +44,7 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
     }
 
     function facetVersion() external pure returns (string memory) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     function accountingMultiRewardsFacet()
