@@ -228,6 +228,14 @@ contract E2EFlowTest is Test {
         availableAssets[1] = address(ankrflow);
         availableAssets[2] = address(usdce);
         IConfigurationFacet(vaultAddress).addAvailableAssets(availableAssets);
+        address[] memory depositors = new address[](1);
+        depositors[0] = USER;
+        uint256[] memory undelyingAssetCaps = new uint256[](1);
+        undelyingAssetCaps[0] = 10_000_000 ether;
+        IConfigurationFacet(vaultAddress).setDepositWhitelist(
+            depositors,
+            undelyingAssetCaps
+        );
         vm.stopPrank();
 
         // Approve tokens
@@ -349,7 +357,7 @@ contract E2EFlowTest is Test {
         );
 
         // selectors for configuration
-        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](16);
+        bytes4[] memory functionSelectorsConfigurationFacet = new bytes4[](18);
         functionSelectorsConfigurationFacet[0] = ConfigurationFacet
             .setFeeRecipient
             .selector;
@@ -397,6 +405,12 @@ contract E2EFlowTest is Test {
             .selector;
         functionSelectorsConfigurationFacet[15] = ConfigurationFacet
             .setMaxSlippagePercent
+            .selector;
+        functionSelectorsConfigurationFacet[16] = ConfigurationFacet
+            .setDepositWhitelist
+            .selector;
+        functionSelectorsConfigurationFacet[17] = ConfigurationFacet
+            .getDepositWhitelist
             .selector;
 
         bytes memory initDataConfigurationFacet = abi.encode(10_000);

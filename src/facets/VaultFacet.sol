@@ -916,6 +916,11 @@ contract VaultFacet is
     ) internal view {
         MoreVaultsLib.MoreVaultsStorage storage ds = MoreVaultsLib
             .moreVaultsStorage();
+        uint256 userDepositedAssets = newAssets +
+            _convertToAssetsWithTotals(balanceOf(receiver), totalSupply(), newTotalAssets, Math.Rounding.Ceil);
+        if (ds.depositWhitelist[receiver] < userDepositedAssets) {
+            revert ERC4626ExceededMaxDeposit(receiver, newAssets, userDepositedAssets - ds.depositWhitelist[receiver]);
+        }
         uint256 depositCapacity = ds.depositCapacity;
         if (depositCapacity == 0) {
             return;

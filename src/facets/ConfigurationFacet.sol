@@ -80,6 +80,17 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     /**
      * @inheritdoc IConfigurationFacet
      */
+    function setDepositWhitelist(address[] calldata depositors, uint256[] calldata undelyingAssetCaps) external {
+        if (depositors.length != undelyingAssetCaps.length) {
+            revert ArraysLengthsMismatch();
+        }
+        AccessControlLib.validateCurator(msg.sender);
+        MoreVaultsLib._setDepositWhitelist(depositors, undelyingAssetCaps);
+    }
+
+    /**
+     * @inheritdoc IConfigurationFacet
+     */
     function setTimeLockPeriod(uint256 period) external {
         AccessControlLib.validateOwner(msg.sender);
         MoreVaultsLib._setTimeLockPeriod(period);
@@ -172,5 +183,12 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
      */
     function timeLockPeriod() external view returns (uint256) {
         return MoreVaultsLib.moreVaultsStorage().timeLockPeriod;
+    }
+
+    /**
+     * @inheritdoc IConfigurationFacet
+     */
+    function getDepositWhitelist(address depositor) external view returns (uint256) {
+        return MoreVaultsLib.moreVaultsStorage().depositWhitelist[depositor];
     }
 }
