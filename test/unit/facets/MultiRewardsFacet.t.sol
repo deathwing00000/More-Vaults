@@ -106,6 +106,11 @@ contract MultiRewardsFacetTest is Test {
             abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
             abi.encode()
         );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
 
         facet.stake(staking, amount);
 
@@ -154,6 +159,11 @@ contract MultiRewardsFacetTest is Test {
             abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
             abi.encode()
         );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
 
         facet.stake(staking, amount);
 
@@ -177,6 +187,104 @@ contract MultiRewardsFacetTest is Test {
         assertEq(
             MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
             amount * 2
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_stake_ShouldAddToStakedCorrectAmount() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = rewardToken;
+
+        // Mock calls
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.getRewardTokens.selector),
+            abi.encode(rewardTokens)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.stakingToken.selector),
+            abi.encode(lpToken)
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.approve.selector, staking, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
+            abi.encode()
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
+
+        facet.stake(staking, amount);
+
+        assertEq(
+            MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
+            amount
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_stake_ShouldSubtractDustFromStakedIfNeedsToCheckLock()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        address[] memory rewardTokens = new address[](1);
+        rewardTokens[0] = rewardToken;
+
+        // Mock calls
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.getRewardTokens.selector),
+            abi.encode(rewardTokens)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.stakingToken.selector),
+            abi.encode(lpToken)
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.approve.selector, staking, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            staking,
+            abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
+            abi.encode()
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
+
+        MoreVaultsStorageHelper.setIsNecessaryToCheckLock(
+            address(facet),
+            address(lpToken),
+            true
+        );
+
+        facet.stake(staking, amount);
+
+        assertEq(
+            MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
+            amount - 10e5
         );
 
         vm.stopPrank();
@@ -335,6 +443,11 @@ contract MultiRewardsFacetTest is Test {
             abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
             abi.encode()
         );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
 
         facet.stake(staking, amount);
 
@@ -393,6 +506,11 @@ contract MultiRewardsFacetTest is Test {
             staking,
             abi.encodeWithSelector(IMultiRewards.stake.selector, amount),
             abi.encode()
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
         );
 
         facet.stake(staking, amount);

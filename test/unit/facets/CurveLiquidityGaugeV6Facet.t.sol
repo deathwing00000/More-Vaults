@@ -7,6 +7,7 @@ import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
 import {IMoreVaultsRegistry} from "../../../src/interfaces/IMoreVaultsRegistry.sol";
+import {console} from "forge-std/console.sol";
 
 contract CurveLiquidityGaugeV6FacetTest is Test {
     CurveLiquidityGaugeV6Facet public facet;
@@ -50,11 +51,15 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
     }
 
     function test_initialize_ShouldSetParametersCorrectly() public {
-        bytes32 facetSelector = keccak256(abi.encodePacked("accountingCurveLiquidityGaugeV6Facet()"));
-        assembly { 
+        bytes32 facetSelector = keccak256(
+            abi.encodePacked("accountingCurveLiquidityGaugeV6Facet()")
+        );
+        assembly {
             facetSelector := shl(224, facetSelector)
         }
-        CurveLiquidityGaugeV6Facet(facet).initialize(abi.encode(facet, minter, facetSelector));
+        CurveLiquidityGaugeV6Facet(facet).initialize(
+            abi.encode(facet, minter, facetSelector)
+        );
         bytes32[] memory facets = MoreVaultsStorageHelper
             .getFacetsForAccounting(address(facet));
         assertEq(
@@ -121,6 +126,12 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
             abi.encode()
         );
 
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
+
         facet.depositCurveGaugeV6(gauge, amount);
 
         address[] memory stakings = MoreVaultsStorageHelper.getStakingsEntered(
@@ -132,6 +143,120 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
         assertEq(
             MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
             amount
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_depositCurveGaugeV6_ShouldAddToStakedCorrectAmount() public {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        // Mock calls
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGaugeV6.reward_count.selector),
+            abi.encode(1)
+        );
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGaugeV6.reward_tokens.selector, 0),
+            abi.encode(rewardToken)
+        );
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGaugeV6.lp_token.selector),
+            abi.encode(lpToken)
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.approve.selector, gauge, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(
+                ILiquidityGaugeV6.deposit.selector,
+                amount,
+                address(facet),
+                false
+            ),
+            abi.encode()
+        );
+
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
+
+        facet.depositCurveGaugeV6(gauge, amount);
+
+        assertEq(
+            MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
+            amount
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_depositCurveGaugeV6_ShouldSubtractDustFromStakedIfNeedsToCheckLock()
+        public
+    {
+        vm.startPrank(address(facet));
+
+        uint256 amount = 1e18;
+
+        // Mock calls
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGaugeV6.reward_count.selector),
+            abi.encode(1)
+        );
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGaugeV6.reward_tokens.selector, 0),
+            abi.encode(rewardToken)
+        );
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGaugeV6.lp_token.selector),
+            abi.encode(lpToken)
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.approve.selector, gauge, amount),
+            abi.encode(true)
+        );
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(
+                ILiquidityGaugeV6.deposit.selector,
+                amount,
+                address(facet),
+                false
+            ),
+            abi.encode()
+        );
+
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
+
+        MoreVaultsStorageHelper.setIsNecessaryToCheckLock(
+            address(facet),
+            address(lpToken),
+            true
+        );
+
+        facet.depositCurveGaugeV6(gauge, amount);
+
+        assertEq(
+            MoreVaultsStorageHelper.getStaked(address(facet), lpToken),
+            amount - 10e5
         );
 
         vm.stopPrank();
@@ -257,6 +382,11 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
             ),
             abi.encode()
         );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
+        );
 
         facet.depositCurveGaugeV6(gauge, amount);
 
@@ -331,6 +461,11 @@ contract CurveLiquidityGaugeV6FacetTest is Test {
                 false
             ),
             abi.encode()
+        );
+        vm.mockCall(
+            lpToken,
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(facet)),
+            abi.encode(amount)
         );
 
         facet.depositCurveGaugeV6(gauge, amount);

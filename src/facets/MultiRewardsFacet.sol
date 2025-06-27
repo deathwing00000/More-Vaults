@@ -134,6 +134,13 @@ contract MultiRewardsFacet is IMultiRewardsFacet, BaseFacetInitializer {
         }
         IERC20 stakingToken = _staking.stakingToken();
         stakingToken.forceApprove(staking, amount);
+        // we have to save dust for lock checks in `beforeAccounting` of CurveFacet
+        if (
+            10e5 >= stakingToken.balanceOf(address(this)) - amount &&
+            ds.isNecessaryToCheckLock[address(stakingToken)]
+        ) {
+            amount -= 10e5;
+        }
         _staking.stake(amount);
 
         ds.stakingAddresses[MULTI_REWARDS_STAKINGS_ID].add(staking);

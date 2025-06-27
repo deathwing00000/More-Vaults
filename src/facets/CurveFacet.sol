@@ -7,7 +7,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {AccessControlLib} from "../libraries/AccessControlLib.sol";
 import {ICurveFacet} from "../interfaces/facets/ICurveFacet.sol";
 import {ICurveRouter} from "../interfaces/Curve/ICurveRouter.sol";
-import {ICurveViews} from "../interfaces/Curve/ICurveViews.sol";
+import {ICurvePool} from "../interfaces/Curve/ICurvePool.sol";
 import {BaseFacetInitializer} from "./BaseFacetInitializer.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -95,12 +95,29 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
 
         for (uint256 i = 0; i < tokensHeld.length(); ) {
             if (ds.isNecessaryToCheckLock[tokensHeld.at(i)]) {
-                // needed to prevent Curve read-only reentrancy attack
-                ICurveViews(tokensHeld.at(i)).remove_liquidity_one_coin(
-                    1,
-                    0,
-                    0
-                );
+                // needed to prevent Curve read-only reentrancy attack and check lock with call of remove_liquidity
+                uint256 poolLength = ds.curvePoolLength[tokensHeld.at(i)];
+                if (poolLength == 2) {
+                    uint256[2] memory amounts;
+                    amounts[0] = 0;
+                    amounts[1] = 0;
+                    ICurvePool(tokensHeld.at(i)).remove_liquidity(1, amounts);
+                } else if (poolLength == 3) {
+                    uint256[3] memory amounts;
+                    amounts[0] = 0;
+                    amounts[1] = 0;
+                    amounts[2] = 0;
+                    ICurvePool(tokensHeld.at(i)).remove_liquidity(1, amounts);
+                } else if (poolLength == 4) {
+                    uint256[4] memory amounts;
+                    amounts[0] = 0;
+                    amounts[1] = 0;
+                    amounts[2] = 0;
+                    amounts[3] = 0;
+                    ICurvePool(tokensHeld.at(i)).remove_liquidity(1, amounts);
+                } else {
+                    revert InvalidPoolLength(poolLength);
+                }
             }
             unchecked {
                 ++i;
@@ -147,7 +164,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
 
             uint256 minPrice;
             for (uint256 j = 0; j < poolLength; ) {
-                address token = ICurveViews(lpToken).coins(j);
+                address token = ICurvePool(lpToken).coins(j);
                 uint256 tokenDecimals = IERC20Metadata(token).decimals();
                 uint256 price = MoreVaultsLib.convertToUnderlying(
                     token,
@@ -165,7 +182,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
 
             //Price per LP in terms of underlying asset with decimals of the underlying asset
             uint256 pricePerLP = minPrice.mulDiv(
-                ICurveViews(lpToken).get_virtual_price(),
+                ICurvePool(lpToken).get_virtual_price(),
                 1e18,
                 Math.Rounding.Floor
             );
@@ -220,7 +237,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         } else {
             // if add liquidity, validate, that first coin in pool is available in vault
             MoreVaultsLib.validateAssetAvailable(
-                ICurveViews(outputToken).coins(0)
+                ICurvePool(outputToken).coins(0)
             );
         }
         IERC20(inputToken).forceApprove(curveRouter, _amount);
@@ -286,7 +303,7 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
         } else {
             // if add liquidity, validate, that first coin in pool is available in vault
             MoreVaultsLib.validateAssetAvailable(
-                ICurveViews(outputToken).coins(0)
+                ICurvePool(outputToken).coins(0)
             );
         }
         IERC20(inputToken).forceApprove(curveRouter, _amount);
@@ -333,11 +350,12 @@ contract CurveFacet is ICurveFacet, BaseFacetInitializer {
     function _getPoolLength(
         address pool
     ) internal view returns (uint256 length) {
+        length = 2;
         assembly {
             let freePtr := mload(0x40)
             mstore(freePtr, COINS_SELECTOR)
             for {
-                let i := 0
+                let i := 2
             } 1 {
                 i := add(i, 1)
             } {

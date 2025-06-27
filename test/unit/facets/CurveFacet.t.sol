@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
-import {BaseFacetInitializer, ICurveFacet, CurveFacet, ICurveRouter, ICurveViews, IERC20} from "../../../src/facets/CurveFacet.sol";
+import {BaseFacetInitializer, ICurveFacet, CurveFacet, ICurveRouter, ICurvePool, IERC20} from "../../../src/facets/CurveFacet.sol";
 import {AccessControlLib} from "../../../src/libraries/AccessControlLib.sol";
 import {MoreVaultsStorageHelper} from "../../helper/MoreVaultsStorageHelper.sol";
 import {MoreVaultsLib} from "../../../src/libraries/MoreVaultsLib.sol";
@@ -247,7 +247,7 @@ contract CurveFacetTest is Test {
         );
         vm.mockCall(
             pool,
-            abi.encodeWithSelector(ICurveViews.coins.selector, 0),
+            abi.encodeWithSelector(ICurvePool.coins.selector, 0),
             abi.encode(unsupportedToken)
         );
 
@@ -313,7 +313,7 @@ contract CurveFacetTest is Test {
         );
         vm.mockCall(
             pool,
-            abi.encodeWithSelector(ICurveViews.coins.selector, 0),
+            abi.encodeWithSelector(ICurvePool.coins.selector, 0),
             abi.encode(token1)
         );
 
@@ -566,7 +566,7 @@ contract CurveFacetTest is Test {
         );
         vm.mockCall(
             pool,
-            abi.encodeWithSelector(ICurveViews.coins.selector, 0),
+            abi.encodeWithSelector(ICurvePool.coins.selector, 0),
             abi.encode(unsupportedToken)
         );
 
@@ -618,7 +618,7 @@ contract CurveFacetTest is Test {
         );
         vm.mockCall(
             pool,
-            abi.encodeWithSelector(ICurveViews.coins.selector, 0),
+            abi.encodeWithSelector(ICurvePool.coins.selector, 0),
             abi.encode(token1)
         );
 

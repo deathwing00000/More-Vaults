@@ -183,6 +183,13 @@ contract CurveLiquidityGaugeV6Facet is
             .moreVaultsStorage();
         ds.stakingAddresses[CURVE_LIQUIDITY_GAUGES_V6_ID].add(gauge);
         ds.stakingTokenToGauge[address(lpToken)] = gauge;
+        // we have to save dust for lock checks in `beforeAccounting` of CurveFacet
+        if (
+            10e5 >= lpToken.balanceOf(address(this)) - amount &&
+            ds.isNecessaryToCheckLock[address(lpToken)]
+        ) {
+            amount -= 10e5;
+        }
         ds.staked[address(lpToken)] += amount;
     }
 

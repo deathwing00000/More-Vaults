@@ -666,6 +666,7 @@ library MoreVaultsLib {
                     )
                 );
             // revert if onFacetRemoval exists on facet and failed
+            // TODO: remove second condition after all facets will be upgraded
             if (!success && result.length > 0) {
                 revert OnFacetRemovalFailed(_facetAddress, result);
             }

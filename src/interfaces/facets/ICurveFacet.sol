@@ -11,6 +11,7 @@ interface ICurveFacet is IGenericMoreVaultFacetInitializable {
     /// @param asset Address of the unsupported asset
     error UnsupportedAsset(address asset);
     error InvalidSwapType(uint256 indexOfSwap);
+    error InvalidPoolLength(uint256 poolLength);
 
     function beforeAccounting() external;
 
