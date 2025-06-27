@@ -100,7 +100,11 @@ contract VaultFacetTest is Test {
         MoreVaultsStorageHelper.setMoreVaultsRegistry(facet, registry);
         MoreVaultsStorageHelper.setCurator(facet, curator);
         MoreVaultsStorageHelper.setGuardian(facet, guardian);
-        MoreVaultsStorageHelper.setDepositWhitelist(facet, user, 10_000_000 ether);
+        MoreVaultsStorageHelper.setDepositWhitelist(
+            facet,
+            user,
+            10_000_000 ether
+        );
 
         // Mint some assets to user for testing
         MockERC20(asset).mint(user, 1000 ether);
@@ -1699,7 +1703,14 @@ contract VaultFacetTest is Test {
         vm.startPrank(user2);
         MockERC20(asset).mint(user2, 100 ether);
         IERC20(asset).approve(facet, type(uint256).max);
-        vm.expectRevert(abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector, user2, 100 ether, 90 ether));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                user2,
+                100 ether,
+                10 ether
+            )
+        );
         VaultFacet(facet).deposit(100 ether, user2);
         vm.stopPrank();
     }
@@ -1745,12 +1756,21 @@ contract VaultFacetTest is Test {
         vm.startPrank(user2);
         MockERC20(asset).mint(user2, 100 ether);
         IERC20(asset).approve(facet, type(uint256).max);
-        vm.expectRevert(abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector, user2, 100 ether, 90 ether));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                user2,
+                100 ether,
+                10 ether
+            )
+        );
         VaultFacet(facet).mint(10_000 ether, user2);
         vm.stopPrank();
     }
 
-    function test_multiAssetDeposit_ShouldRevertWhenDeposit_WhitelistIsExceeded() public {
+    function test_multiAssetDeposit_ShouldRevertWhenDeposit_WhitelistIsExceeded()
+        public
+    {
         address[] memory depositors = new address[](1);
         address user2 = address(114);
         depositors[0] = user2;
@@ -1821,7 +1841,14 @@ contract VaultFacetTest is Test {
         vm.startPrank(user2);
         MockERC20(asset).mint(user2, 100 ether);
         IERC20(asset).approve(facet, type(uint256).max);
-        vm.expectRevert(abi.encodeWithSelector(ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector, user2, 300 ether, 290 ether));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC4626Upgradeable.ERC4626ExceededMaxDeposit.selector,
+                user2,
+                300 ether,
+                10 ether
+            )
+        );
         VaultFacet(facet).deposit(tokens, amounts, user2);
         vm.stopPrank();
     }

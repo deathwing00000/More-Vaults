@@ -80,12 +80,15 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     /**
      * @inheritdoc IConfigurationFacet
      */
-    function setDepositWhitelist(address[] calldata depositors, uint256[] calldata undelyingAssetCaps) external {
-        if (depositors.length != undelyingAssetCaps.length) {
+    function setDepositWhitelist(
+        address[] calldata depositors,
+        uint256[] calldata underlyingAssetCaps
+    ) external {
+        if (depositors.length != underlyingAssetCaps.length) {
             revert ArraysLengthsMismatch();
         }
         AccessControlLib.validateCurator(msg.sender);
-        MoreVaultsLib._setDepositWhitelist(depositors, undelyingAssetCaps);
+        MoreVaultsLib._setDepositWhitelist(depositors, underlyingAssetCaps);
     }
 
     /**
@@ -188,7 +191,9 @@ contract ConfigurationFacet is BaseFacetInitializer, IConfigurationFacet {
     /**
      * @inheritdoc IConfigurationFacet
      */
-    function getDepositWhitelist(address depositor) external view returns (uint256) {
+    function getDepositWhitelist(
+        address depositor
+    ) external view returns (uint256) {
         return MoreVaultsLib.moreVaultsStorage().depositWhitelist[depositor];
     }
 }
